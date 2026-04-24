@@ -1,0 +1,35 @@
+@font-face {
+    font-family: "ravi";
+    src: url("ravi_normal.woff") format("woff");
+    font-weight: normal;
+    font-display: fallback;
+}
+
+@font-face {
+    font-family: "ravi";
+    src: url("ravi_bold.woff") format("woff");
+    font-weight: bold;
+    font-display: fallback;
+}
+
+
+@font-face {
+    font-family: "ravi";
+    src: url("ravi_medium.woff") format("woff");
+    font-weight: 500;
+    font-display: fallback;
+}
+
+@font-face {
+    font-family: "ravi";
+    src: url("ravi_semibold.woff") format("woff");
+    font-weight: 600;
+    font-display: fallback;
+}
+
+@font-face {
+    font-family: "ravi";
+    src: url("ravi_bold.woff") format("woff");
+    font-weight: 700;
+    font-display: fallback;
+}
