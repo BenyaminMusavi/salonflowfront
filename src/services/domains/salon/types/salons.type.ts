@@ -1,6 +1,6 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
-interface ISalon {
+interface ISalons {
   id: number;
   name: string;
   address?: string;
@@ -8,4 +8,4 @@ interface ISalon {
   coverImageUrl?: string;
 }
 
-export type TSalonEntity = TResponse<ISalon>; 
+export type TSalonsEntity = TResponse<ISalons[]>; 

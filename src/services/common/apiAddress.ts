@@ -6,6 +6,7 @@ export const API_ADDRESS = {
   SALON: {
     BASE: "/api/salons",
     APPROVED: "/api/salons/approved",
+    BY_ID: (id: number) => `/api/salons/${id}`,
   },
 };
 
