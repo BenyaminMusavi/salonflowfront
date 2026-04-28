@@ -6,3 +6,14 @@ interface IServiceType {
 }
 
 export type TServiceTypeEntity = TResponse<IServiceType[]>;
+
+
+interface IService {
+  id: number;
+  name: string;
+  price: number;
+  duration?: number;
+  description?: string;
+}
+
+export type TServicesEntity = TResponse<IService[]>;
