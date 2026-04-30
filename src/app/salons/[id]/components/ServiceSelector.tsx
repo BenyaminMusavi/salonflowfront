@@ -2,6 +2,13 @@
 
 import { useQueryServicesBySalon } from "@/services/domains/service-type/hooks";
 
+interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  price?: number;
+}
+
 interface Props {
   salonId: number;
   selected: number[];
@@ -15,7 +22,7 @@ export default function ServiceSelector({
 }: Props) {
   const { data, isLoading } = useQueryServicesBySalon(salonId);
 
-  const services = data?.data ?? [];
+  const services: Service[] = data?.data ?? [];
 
   const toggle = (id: number) => {
     setSelected(
@@ -27,10 +34,13 @@ export default function ServiceSelector({
 
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-x-auto py-2">
-        <div className="h-20 w-40 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="h-20 w-40 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="h-20 w-40 bg-gray-200 rounded-xl animate-pulse" />
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="min-w-[200px] h-[120px] rounded-xl bg-gray-200 animate-pulse"
+          />
+        ))}
       </div>
     );
   }
@@ -45,7 +55,8 @@ export default function ServiceSelector({
             key={service.id}
             onClick={() => toggle(service.id)}
             className={`
-              min-w-[200px] p-4 rounded-xl border transition text-right
+              min-w-[220px] text-right p-4 rounded-xl border transition
+              flex flex-col gap-2
               ${
                 isSelected
                   ? "border-blue-500 bg-blue-50"
@@ -53,17 +64,22 @@ export default function ServiceSelector({
               }
             `}
           >
-            <div className="font-medium text-sm">{service.name}</div>
+            {/* Name */}
+            <div className="font-medium text-sm text-gray-900">
+              {service.name}
+            </div>
 
+            {/* Description */}
             {service.description && (
-              <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+              <div className="text-xs text-gray-500 line-clamp-2">
                 {service.description}
               </div>
             )}
 
-            {service.price && (
-              <div className="text-sm font-bold mt-2">
-                {service.price} تومان
+            {/* Price */}
+            {service.price !== undefined && (
+              <div className="text-sm font-bold text-gray-800 mt-auto">
+                {service.price.toLocaleString()} تومان
               </div>
             )}
           </button>

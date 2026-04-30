@@ -17,11 +17,11 @@ import { TStaffEntity } from "@/services/domains/salon/types/staffProfile.type";
     );
   }
 
-   async getBySalon(salonId: number) {
-    return await axiosInstance.get<unknown, TStaffEntity>(
-      API_ADDRESS.SALON.BY_SALON(salonId)
-    );
-  }
+  //  async getBySalon(salonId: number) {
+  //   return await axiosInstance.get<unknown, TStaffEntity>(
+  //     API_ADDRESS.SALON.BY_SALON(salonId)
+  //   );
+  // }
 }
 const salonService = new SalonService();
 export default salonService;

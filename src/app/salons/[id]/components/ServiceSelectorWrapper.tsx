@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import ServiceSelector from "./ServiceSelector";
 
-export function ServiceSelectorWrapper({ salonId }: { salonId: number }) {
-  const [selected, setSelected] = useState<number[]>([]);
+interface Props {
+  salonId: number;
+  selected: number[];
+  setSelected: (ids: number[]) => void;
+}
 
+export function ServiceSelectorWrapper({
+  salonId,
+  selected,
+  setSelected,
+}: Props) {
   return (
     <ServiceSelector
       salonId={salonId}

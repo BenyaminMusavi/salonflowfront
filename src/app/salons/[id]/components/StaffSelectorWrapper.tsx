@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import StaffSelector from "./StaffSelector";
 
-export function StaffSelectorWrapper({ salonId }: { salonId: number }) {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+interface Props {
+  salonId: number;
+  selectedId: number | null;
+  setSelectedId: (id: number | null) => void;
+}
 
+export function StaffSelectorWrapper({
+  salonId,
+  selectedId,
+  setSelectedId,
+}: Props) {
   return (
     <StaffSelector
       salonId={salonId}

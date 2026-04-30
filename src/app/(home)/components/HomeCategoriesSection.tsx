@@ -1,9 +1,9 @@
 "use client";
 
-import { useQueryServiceTypes } from "@/services/domains/service-type/hooks";
+import { useQueryHomeServices } from "@/services/domains/home/hooks/useQueryHomeServices";
 
 export default function HomeCategoriesSection() {
-  const { data } = useQueryServiceTypes();
+  const { data } = useQueryHomeServices();
 
   return (
     <div className="mt-12">

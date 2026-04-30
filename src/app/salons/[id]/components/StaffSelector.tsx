@@ -19,16 +19,43 @@ export default function StaffSelector({
 
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-x-auto py-2">
-        <div className="w-14 h-14 rounded-full bg-gray-200 animate-pulse" />
-        <div className="w-14 h-14 rounded-full bg-gray-200 animate-pulse" />
-        <div className="w-14 h-14 rounded-full bg-gray-200 animate-pulse" />
+      <div className="flex gap-4 overflow-x-auto py-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="w-16 h-16 rounded-full bg-gray-200 animate-pulse"
+          />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-3">
+    <div className="flex gap-4 overflow-x-auto pb-2">
+      {/* گزینه "بدون انتخاب کارمند" */}
+      <button
+        onClick={() => setSelectedId(null)}
+        className="flex flex-col items-center min-w-[70px]"
+      >
+        <div
+          className={`
+            w-16 h-16 rounded-full flex items-center justify-center border transition
+            ${
+              selectedId === null
+                ? "ring-2 ring-blue-500 ring-offset-2"
+                : "hover:ring-2 hover:ring-gray-300 hover:ring-offset-2"
+            }
+          `}
+        >
+          <span className="text-xs text-gray-500">Any</span>
+        </div>
+
+        <span className="text-[12px] mt-1 text-gray-500">
+          فرقی ندارد
+        </span>
+      </button>
+
+      {/* staff list */}
       {staffList.map((staff) => {
         const isSelected = selectedId === staff.id;
 

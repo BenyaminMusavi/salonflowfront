@@ -1,14 +1,18 @@
-import SalonSidebarSection from "./components/SalonSidebarSection";
-import { StaffSelectorWrapper } from "./components/StaffSelectorWrapper";
-import { ServiceSelectorWrapper } from "./components/ServiceSelectorWrapper";
+"use client";
 
-export default async function SalonPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const salonId = Number(id);
+import { useState } from "react";
+import { useParams } from "next/navigation";
+
+import SalonSidebarSection from "./components/SalonSidebarSection";
+import StaffSelector from "./components/StaffSelector";
+import ServiceSelector from "./components/ServiceSelector";
+
+export default function SalonPage() {
+  const params = useParams();
+  const salonId = Number(params.id);
+
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
   return (
     <div className="w-full flex justify-center">
@@ -17,21 +21,45 @@ export default async function SalonPage({
         {/* Booking Section */}
         <div className="flex-1 bg-white border rounded-2xl overflow-hidden">
 
-          {/* TOP STEP AREA */}
-          <div className="flex flex-col gap-6 p-6 border-b">
+          {/* STEP 1: SERVICES */}
+          <div className="p-6 border-b">
+            <h3 className="text-sm font-medium mb-3 text-gray-500">
+              انتخاب خدمات
+            </h3>
 
-            <StaffSelectorWrapper salonId={salonId} />
-
+            <ServiceSelector
+              salonId={salonId}
+              selected={selectedServices}
+              setSelected={setSelectedServices}
+            />
           </div>
 
-          {/* MAIN SERVICES AREA */}
+          {/* STEP 2: STAFF */}
+          {selectedServices.length > 0 && (
+            <div className="p-6 border-b">
+              <h3 className="text-sm font-medium mb-3 text-gray-500">
+                انتخاب کارمند (اختیاری)
+              </h3>
+
+              <StaffSelector
+                salonId={salonId}
+                selectedId={selectedStaffId}
+                setSelectedId={setSelectedStaffId}
+              />
+            </div>
+          )}
+
+          {/* STEP 3 */}
           <div className="p-6">
-            <ServiceSelectorWrapper salonId={salonId} />
-          </div>
-
-          {/* NEXT STEP */}
-          <div className="border-t p-6 text-sm text-gray-500">
-            انتخاب سرویس → انتخاب کارمند → انتخاب زمان
+            {selectedServices.length === 0 ? (
+              <div className="text-gray-400 text-sm">
+                ابتدا سرویس مورد نظر را انتخاب کنید
+              </div>
+            ) : (
+              <div className="text-green-600 text-sm">
+                ✅ حالا مرحله بعدی: انتخاب تاریخ و ساعت
+              </div>
+            )}
           </div>
 
         </div>
