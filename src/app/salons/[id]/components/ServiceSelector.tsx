@@ -1,13 +1,7 @@
 "use client";
 
-import { useQueryServicesBySalon } from "@/services/domains/service-type/hooks";
-
-interface Service {
-  id: number;
-  name: string;
-  description?: string;
-  price?: number;
-}
+import { useQuerySalonOfferings } from "@/services/domains/salon-offering/hooks/useQuerySalonOfferings";
+import { ISalonOffering } from "@/services/domains/salon-offering/types/salon-offering-type";
 
 interface Props {
   salonId: number;
@@ -20,9 +14,9 @@ export default function ServiceSelector({
   selected,
   setSelected,
 }: Props) {
-  const { data, isLoading } = useQueryServicesBySalon(salonId);
+  const { data, isLoading } = useQuerySalonOfferings(salonId);
 
-  const services: Service[] = data?.data ?? [];
+  const services: ISalonOffering[] = data?.data ?? [];
 
   const toggle = (id: number) => {
     setSelected(
@@ -66,22 +60,18 @@ export default function ServiceSelector({
           >
             {/* Name */}
             <div className="font-medium text-sm text-gray-900">
-              {service.name}
+              {service.serviceName}
             </div>
 
-            {/* Description */}
-            {service.description && (
-              <div className="text-xs text-gray-500 line-clamp-2">
-                {service.description}
-              </div>
-            )}
+            {/* Duration */}
+            <div className="text-xs text-gray-500">
+              {service.durationMinutes} دقیقه
+            </div>
 
             {/* Price */}
-            {service.price !== undefined && (
-              <div className="text-sm font-bold text-gray-800 mt-auto">
-                {service.price.toLocaleString()} تومان
-              </div>
-            )}
+            <div className="text-sm font-bold text-gray-800 mt-auto">
+              {service.basePrice.toLocaleString()} تومان
+            </div>
           </button>
         );
       })}

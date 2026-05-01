@@ -42,10 +42,12 @@ export default function SalonPage() {
               </h3>
 
               <StaffSelector
-                salonId={salonId}
-                selectedId={selectedStaffId}
-                setSelectedId={setSelectedStaffId}
-              />
+  salonId={salonId}
+  offeringIds={selectedServices}           
+  selectedId={selectedStaffId}
+  setSelectedId={setSelectedStaffId}
+/>
+
             </div>
           )}
 

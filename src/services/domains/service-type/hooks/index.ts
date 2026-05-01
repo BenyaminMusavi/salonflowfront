@@ -1,4 +1,4 @@
-import { useQueryServicesBySalon } from "./useQueryServicesBySalon ";
+import { useQueryServicesBySalon } from "./useQueryServicesBySalon";
 import { useQueryServiceTypes } from "./useQueryServiceTypes";
 
 export {

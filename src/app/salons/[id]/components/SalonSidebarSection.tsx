@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuerySalonById } from "@/services/domains/salon/hooks";
+import { useQuerySalonById } from "@/services/domains/salons/hooks";
 
 interface Props {
   salonId: number;
@@ -40,21 +40,15 @@ export default function SalonSidebarSection({ salonId }: Props) {
         {/* Cover */}
         <div className="relative h-[140px] w-full">
           <img
-            src={salon.coverImage || "/placeholder.jpg"}
+            src={salon.coverImageUrl || "/placeholder.jpg"}
             className="w-full h-full object-cover"
           />
 
-          {/* Logo */}
-          <div className="absolute -bottom-8 left-4">
-            <img
-              src={salon.logo || "/logo-placeholder.png"}
-              className="w-16 h-16 rounded-full border-4 border-white object-cover bg-white"
-            />
-          </div>
+          {/* Logo – چون DTO نداره حذف شد */}
         </div>
 
         {/* Content */}
-        <div className="pt-10 p-5 space-y-4 overflow-y-auto">
+        <div className="pt-6 p-5 space-y-4 overflow-y-auto">
 
           {/* Name */}
           <h2 className="text-lg font-bold text-gray-900">
@@ -79,16 +73,26 @@ export default function SalonSidebarSection({ salonId }: Props) {
             </p>
           )}
 
-          {/* Divider */}
           <div className="border-t" />
 
           {/* Info */}
           <div className="space-y-2 text-sm text-gray-600">
             {salon.phone && <div>📞 {salon.phone}</div>}
-            {salon.whatsapp && <div>💬 {salon.whatsapp}</div>}
-            {salon.instagram && <div>📷 {salon.instagram}</div>}
+            {salon.whatsappNumber && <div>💬 {salon.whatsappNumber}</div>}
+            {salon.instagramHandle && <div>📷 @{salon.instagramHandle}</div>}
             {salon.address && <div>📍 {salon.address}</div>}
-            {salon.email && <div>✉️ {salon.email}</div>}
+            {salon.websiteUrl && (
+              <div>
+                🌐{" "}
+                <a
+                  href={salon.websiteUrl}
+                  target="_blank"
+                  className="text-blue-600"
+                >
+                  وب‌سایت
+                </a>
+              </div>
+            )}
           </div>
 
         </div>

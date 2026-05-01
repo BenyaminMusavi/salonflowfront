@@ -15,8 +15,9 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4">
-        <HomeCategoriesSection />
-        <HomeSalonPreviewSection />
+        <HomeCategoriesSection/>
+
+        <HomeSalonPreviewSection/>
       </div>
 
       {/* 🔥 Footer (important trust layer) */}

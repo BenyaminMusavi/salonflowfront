@@ -1,10 +1,10 @@
 "use client";
 
-import { useQueryHomeSalons } from "@/services/domains/home/hooks/useQueryHomeSalons";
+import { useQueryApprovedSalons } from "@/services/domains/salons/hooks/useQueryApprovedSalons";
 import { useRouter } from "next/navigation";
 
 export default function HomeSalonPreviewSection() {
-  const { data } = useQueryHomeSalons();
+  const { data } = useQueryApprovedSalons();
   const router = useRouter();
 
   const salons = data?.data?.slice(0, 15) || [];
@@ -49,7 +49,7 @@ export default function HomeSalonPreviewSection() {
             {/* Image */}
             <div className="h-36 w-full overflow-hidden">
               <img
-                src={salon.imageUrl}
+                src={salon.coverImageUrl}
                 alt={salon.name}
                 className="w-full h-full object-cover"
               />

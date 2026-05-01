@@ -10,13 +10,6 @@ class ServicesTypeService {
     );
   }
 
-  // سرویس‌های یک سالن (اصلی برای UI رزرو تو)
-  async getServicesBySalon(salonId: number) {
-    return await axiosInstance.get<unknown, TServicesEntity>(
-      API_ADDRESS.SALON_OFFERING.BY_SALON(salonId)
-    );
-  }
-
   // گرفتن یک service type (در صورت نیاز)
   async getById(id: number) {
     return await axiosInstance.get<unknown, TServiceTypeEntity>(

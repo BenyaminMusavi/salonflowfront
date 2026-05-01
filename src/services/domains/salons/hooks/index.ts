@@ -4,6 +4,6 @@ import { useQueryStaffBySalon } from "./useQueryStaffBySalon";
 
 export {
   useQueryApprovedSalons,
-    useQuerySalonById,
-      useQueryStaffBySalon,
+  useQuerySalonById,
+  useQueryStaffBySalon,
 };

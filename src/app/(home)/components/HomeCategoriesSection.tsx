@@ -1,9 +1,9 @@
 "use client";
 
-import { useQueryHomeServices } from "@/services/domains/home/hooks/useQueryHomeServices";
+import { useQueryServiceTypes } from "@/services/domains/service-type/hooks";
 
 export default function HomeCategoriesSection() {
-  const { data } = useQueryHomeServices();
+  const { data } = useQueryServiceTypes();
 
   return (
     <div className="mt-12">
@@ -12,7 +12,7 @@ export default function HomeCategoriesSection() {
       </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {data?.data.map((item) => (
+        {data?.data?.map((item) => (
           <div
             key={item.id}
             className="bg-white border border-gray-100 rounded-2xl p-5 text-center hover:shadow-md hover:border-blue-200 transition cursor-pointer"

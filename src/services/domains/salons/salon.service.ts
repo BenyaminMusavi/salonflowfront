@@ -1,9 +1,8 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS, API_BASE_URL } from "@/services/common/apiAddress";
-import { TSalonsEntity } from "@/services/domains/salon/types/salons.type";
-import { TSalonEntity } from "@/services/domains/salon/types/salon.type";
-import { TStaffEntity } from "@/services/domains/salon/types/staffProfile.type";
-
+import { TSalonsEntity } from "@/services/domains/salons/types/salons.type";
+import { TSalonEntity } from "@/services/domains/salons/types/salon.type";
+  
  class SalonService {
   async getApproved() {
     return await axiosInstance.get<unknown, TSalonsEntity>(
@@ -17,11 +16,6 @@ import { TStaffEntity } from "@/services/domains/salon/types/staffProfile.type";
     );
   }
 
-  //  async getBySalon(salonId: number) {
-  //   return await axiosInstance.get<unknown, TStaffEntity>(
-  //     API_ADDRESS.SALON.BY_SALON(salonId)
-  //   );
-  // }
 }
 const salonService = new SalonService();
 export default salonService;
