@@ -21,10 +21,16 @@ export const API_ADDRESS = {
     BASE: "/api/salon-offering",
     BY_SALON: (salonId: number) => `/api/salon-offering/salon/${salonId}`
   },
-
-    STAFF_PROFILE: {
+  
+  STAFF_PROFILE: {
     BY_SALON_FOR_SERVICES: (salonId: number) =>
       `/api/staff-profiles/by-salon/${salonId}/for-services`,
   },
+
+BOOKING: {
+  SLOTS: "/api/booking/slots",
+  CREATE: "/api/booking/create",
+},
+
 };
 
