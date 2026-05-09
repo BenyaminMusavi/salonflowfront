@@ -10,26 +10,21 @@ export const usePrefetchSlots = () => {
     offeringIds: number[];
     date: string;
   }) => {
-    const safeParams = {
-      salonId: params.salonId,
-      staffId: params.staffId ?? null,
-      offeringIds: [...params.offeringIds].sort(),
-      date: params.date,
-    };
-
     return queryClient.prefetchQuery({
       queryKey: [
         "available-slots",
-        safeParams.salonId,
-        safeParams.staffId,
-        safeParams.date,
-        safeParams.offeringIds,
+        params.salonId,
+        params.staffId ?? null,
+        params.date,
+        params.offeringIds,
       ],
 
       queryFn: () =>
         bookingService.getAvailableSlots({
-          ...safeParams,
-          date: safeParams.date + "T00:00:00",
+          salonId: params.salonId,
+          staffId: params.staffId ?? null,
+          offeringIds: params.offeringIds,
+          date: params.date,
         }),
 
       staleTime: 30_000,

@@ -4,8 +4,8 @@ import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hook
 
 interface Props {
   salonId: number;
-  offeringIds: number[];                
-  selectedId: number | null;
+  offeringIds: number[];
+  selectedId: number | null | undefined;
   setSelectedId: (id: number | null) => void;
 }
 
@@ -15,15 +15,20 @@ export default function StaffSelector({
   selectedId,
   setSelectedId,
 }: Props) {
-  const { data, isLoading } = useQueryStaffForOfferings(salonId, offeringIds, {
-    enabled: offeringIds.length > 0,     // ✅ فقط وقتی سرویس انتخاب شده
-  });
+  const { data, isLoading } = useQueryStaffForOfferings(
+    salonId,
+    offeringIds,
+    {
+      enabled: offeringIds.length > 0,
+    }
+  );
 
   const staffList = data?.data ?? [];
 
-  if (offeringIds.length === 0) {
-    return null; // یا پیام «ابتدا سرویس را انتخاب کنید»
-  }
+  const isAnySelected = selectedId === null;
+  const isInitial = selectedId === undefined;
+
+  if (offeringIds.length === 0) return null;
 
   if (isLoading) {
     return (
@@ -48,14 +53,15 @@ export default function StaffSelector({
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
-      {/* گزینه "بدون انتخاب کارمند" */}
+
+      {/* ANY OPTION */}
       <button
         onClick={() => setSelectedId(null)}
         className="flex flex-col items-center min-w-[70px]"
       >
         <div
           className={`w-16 h-16 rounded-full flex items-center justify-center border transition ${
-            selectedId === null
+            isAnySelected
               ? "ring-2 ring-blue-500 ring-offset-2"
               : "hover:ring-2 hover:ring-gray-300 hover:ring-offset-2"
           }`}
@@ -68,12 +74,16 @@ export default function StaffSelector({
         </span>
       </button>
 
+      {/* STAFF LIST */}
       {staffList.map((staff) => {
         const isSelected = selectedId === staff.id;
+
         return (
           <button
             key={staff.id}
-            onClick={() => setSelectedId(isSelected ? null : staff.id)}
+            onClick={() =>
+              setSelectedId(isSelected ? null : staff.id)
+            }
             className="flex flex-col items-center min-w-[70px] group"
           >
             <div
@@ -88,6 +98,7 @@ export default function StaffSelector({
                 className="w-full h-full rounded-full object-cover bg-white"
               />
             </div>
+
             <span className="text-[12px] mt-1 text-gray-600 text-center truncate max-w-[70px]">
               {staff.fullName}
             </span>
