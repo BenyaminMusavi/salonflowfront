@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQueryAvailableSlots } from "@/services/domains/booking/hooks/useQueryAvailableSlots";
 import { TimeSlotDto } from "@/services/domains/booking/types/booking.type";
 
@@ -22,12 +21,11 @@ export default function TimeSlotPicker({
   selectedSlot,
   setSelectedSlot,
 }: Props) {
-  
-  // 🔥 FIX اصلی: اگر دیتا ناقص بود اصلاً چیزی render نکن
+  // اگر دیتا ناقص باشد اصلاً render نکن
   if (!salonId || !date || !offeringIds?.length) {
     return null;
   }
-  
+
   const { data, isLoading } = useQueryAvailableSlots({
     salonId,
     staffId,
@@ -35,15 +33,16 @@ export default function TimeSlotPicker({
     date,
   });
 
-  const slots: TimeSlotDto[] = data?.data ?? [];
-
-  const groupedSlots = useMemo(() => slots, [slots]);
+const slots = (data ?? []) as TimeSlotDto[];
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="h-12 rounded-xl bg-gray-200 animate-pulse" />
+          <div
+            key={i}
+            className="h-12 rounded-xl bg-gray-200 animate-pulse"
+          />
         ))}
       </div>
     );
@@ -62,7 +61,7 @@ export default function TimeSlotPicker({
       <div className="text-sm text-gray-500">انتخاب ساعت</div>
 
       <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-        {groupedSlots.map((slot, index) => {
+        {slots.map((slot, index) => {
           const isSelected =
             selectedSlot?.start === slot.start &&
             selectedSlot?.end === slot.end;

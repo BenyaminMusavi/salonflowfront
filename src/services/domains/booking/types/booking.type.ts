@@ -1,3 +1,5 @@
+import { TResponse } from "@/services/common/data-types/SharedDataTypes";
+
 export interface TimeSlotDto {
   start: string;
   end: string;

@@ -1,7 +1,7 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import bookingService from "../booking.service";
+
+export const AVAILABLE_SLOTS_QUERY_KEY = "AVAILABLE_SLOTS_QUERY_KEY";
 
 interface Params {
   salonId: number;
@@ -23,11 +23,11 @@ export function useQueryAvailableSlots(params: Params) {
 
   return useQuery({
     queryKey: [
-      "available-slots",
+      AVAILABLE_SLOTS_QUERY_KEY,
       salonId,
       params.staffId ?? null,
       date,
-      offeringIds,
+      offeringIds.join("-"),
     ],
 
     enabled: isValid,

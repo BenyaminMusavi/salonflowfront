@@ -4,26 +4,33 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 
 class BookingService {
   async getAvailableSlots(params: GetAvailableSlotsRequest) {
-    const res = await axiosInstance.get(API_ADDRESS.BOOKING.SLOTS, {
-      params: {
-        salonId: params.salonId,
-        staffId: params.staffId ?? undefined,
-        offeringIds: params.offeringIds,
-        date: params.date.split("T")[0], // فقط date
-      },
-      paramsSerializer: {
-        indexes: null, // offeringIds=1&offeringIds=2
-      },
+    console.log("BOOKING SERVICE REQUEST PARAMS", {
+      salonId: params.salonId,
+      staffId: params.staffId,
+      offeringIds: params.offeringIds,
+      date: params.date,
     });
 
-    // 🔥 مهم‌ترین fix: جلوگیری از undefined
-    return res?.data ?? [];
-  }
+const data = await axiosInstance.get(API_ADDRESS.BOOKING.SLOTS, {
+  params: {
+    salonId: params.salonId,
+    staffId: params.staffId ?? undefined,
+    offeringIds: params.offeringIds,
+    date: params.date.split("T")[0],
+  },
+  paramsSerializer: {
+    indexes: null,
+  },
+});
 
-  async createBooking(body: CreateBookingRequest) {
-    const res = await axiosInstance.post(API_ADDRESS.BOOKING.CREATE, body);
-    return res.data;
+    console.log("BOOKING SERVICE RAW RESPONSE:", data);
+    console.log("IS ARRAY?", Array.isArray(data));
+
+    console.log("BOOKING SERVICE RETURNING:", data);
+
+    return data;
   }
 }
 
-export default new BookingService();
+const bookingService = new BookingService();
+export default bookingService;
