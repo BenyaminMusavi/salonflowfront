@@ -7,6 +7,7 @@ import SalonSidebarSection from "./components/SalonSidebarSection";
 import StaffSelector from "./components/StaffSelector";
 import ServiceSelector from "./components/ServiceSelector";
 import TimeSlotPicker from "./components/TimeSlotPicker";
+import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
 
 import { TimeSlotDto } from "@/services/domains/booking/types/booking.type";
 
@@ -27,13 +28,14 @@ export default function SalonPage() {
 
   // مهم: برای کنترل مرحله پرسنل
   const [staffStepCompleted, setStaffStepCompleted] = useState(false);
+  const { mutate, isPending } = useCreateBooking();
 
   useEffect(() => {
-  setSelectedStaffId(undefined);
-  setSelectedDate("");
-  setSelectedSlot(null);
-  setStaffStepCompleted(false);
-}, [selectedServices]);
+    setSelectedStaffId(undefined);
+    setSelectedDate("");
+    setSelectedSlot(null);
+    setStaffStepCompleted(false);
+  }, [selectedServices]);
 
   // reset تایم وقتی داده‌های وابسته تغییر می‌کنند
   useEffect(() => {
@@ -52,6 +54,31 @@ export default function SalonPage() {
     salonId &&
     selectedServices.length > 0 &&
     selectedDate.length > 0;
+
+  const handleBooking = () => {
+    if (!selectedSlot) return;
+
+    mutate(
+      {
+        salonId,
+        staffId: selectedStaffId ?? null,
+        customerId: 1,
+        offeringIds: selectedServices,
+        startTime: new Date(
+          `${selectedDate}T${selectedSlot.start}`
+        ).toISOString(),
+      },
+      {
+        onSuccess: () => {
+          alert("رزرو با موفقیت ثبت شد");
+        },
+
+        onError: () => {
+          alert("خطا در ثبت رزرو");
+        },
+      }
+    );
+  };
 
   return (
     <div className="w-full flex justify-center">
@@ -124,6 +151,25 @@ export default function SalonPage() {
                 <div className="text-xs text-gray-400">
                   یک زمان مناسب را انتخاب کنید
                 </div>
+              )}
+
+              {selectedSlot && (
+                <button
+                  onClick={handleBooking}
+                  disabled={isPending}
+                  className="
+          w-full md:w-auto
+          h-12 px-6 rounded-xl
+          bg-blue-600 text-white
+          hover:bg-blue-700
+          transition
+          disabled:opacity-50
+        "
+                >
+                  {isPending
+                    ? "در حال ثبت..."
+                    : "ثبت رزرو"}
+                </button>
               )}
 
             </div>

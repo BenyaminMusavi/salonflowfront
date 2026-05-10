@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import applyCaseMiddleware from "axios-case-converter";
+// import applyCaseMiddleware from "axios-case-converter";
 import { getCookie } from "cookies-next";
 
 let isRefreshing = false;
@@ -12,14 +12,20 @@ const resolveQueue = (token: string) => {
     queue = [];
 };
 
-const axiosInstance = applyCaseMiddleware(
-    axios.create({
-        baseURL: process.env.NEXT_PUBLIC_API_DOMAIN,
-        headers: {
-            Accept: "application/json",
-        },
-    }),
-);
+// const axiosInstance = applyCaseMiddleware(
+//     axios.create({
+//         baseURL: process.env.NEXT_PUBLIC_API_DOMAIN,
+//         headers: {
+//             Accept: "application/json",
+//         },
+//     }),
+// );
+const axiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_DOMAIN,
+    headers: {
+        Accept: "application/json",
+    },
+});
 
 /* ---------- REQUEST ---------- */
 axiosInstance.interceptors.request.use((config) => {

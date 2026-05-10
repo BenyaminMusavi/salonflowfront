@@ -18,6 +18,7 @@ export interface CreateBookingRequest {
   staffId?: number | null;
   offeringIds: number[];
   startTime: string;
+  customerId : number;
 }
 
 export type AvailableSlotsResponse = TimeSlotDto[];
