@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 
 import "@/shared/styles/globals.css";
 import { Providers } from "./common/providers/Providers";
+import AuthModal from "@/shared/components/composites/auth/AuthModal";
 
 export const metadata: Metadata = {
   title: "Salon Flow",
@@ -44,7 +45,12 @@ export default function RootLayout({
   return (
     <html lang="fa" dir={"rtl"} className={`${ravi.variable} font-sans`}>
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+
+                    <AuthModal />
+                    
+        </Providers>
       </body>
     </html>
   );

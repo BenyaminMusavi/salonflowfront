@@ -5,6 +5,15 @@ export const API_ADDRESS = {
     SALONS: "/api/home/salons",
   },
   
+   AUTH: {
+    SEND_OTP: "/api/auth/send-otp",
+    VERIFY_OTP: "/api/auth/verify-otp",
+    LOGIN_PASSWORD: "/api/auth/login-password",
+    REFRESH: "/api/auth/refresh",
+    ME: "/api/auth/me",
+    SWITCH_CONTEXT: "/api/auth/switch-context",
+  },
+
   SERVICE_TYPE: {
     BASE: "/api/service-type",
     BY_ID: (id: number) => `/api/service-type/${id}`,
