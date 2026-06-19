@@ -36,7 +36,7 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
   const { mutateAsync, isPending } = useSetPasswordWithOtp();
-  const setAccessToken = useTokenStore((s) => s.setAccessToken);
+  const setToken = useTokenStore((s) => s.setToken);
 
   const onSubmit = async (data: TNewPasswordFormSchema) => {
     if (!phone) {
@@ -57,7 +57,7 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
         code: data.otp,
         password: data.password,
       });
-      setAccessToken(res.data.accessToken);
+      setToken(res.data, true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);

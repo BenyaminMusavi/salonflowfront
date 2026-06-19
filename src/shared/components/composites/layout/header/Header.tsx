@@ -1,6 +1,5 @@
 "use client";
 import { ReactNode } from "react";
-import {BellIcon, NotificationIcon, PlusIcon, UserIcon} from "@phosphor-icons/react";
 
 interface IProps {
   children: ReactNode;

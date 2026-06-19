@@ -35,4 +35,7 @@ export const RouteAddress = {
   SALONS: {
     DETAILS: (id: string | number) => `/salons/${id}`,
   },
+  WALLET: {
+    BASE: "/wallet",
+  },
 };

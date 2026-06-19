@@ -59,7 +59,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             "relative transition flex items-center w-full rounded-[2px] bg-foreground/5",
             "focus-within:inset-ring-2 focus-within:inset-ring-primary",
-            hasError && "!inset-ring-2 !inset-ring-content-error",
+            hasError && "!inset-ring-2 !inset-ring-error",
             inputWrapperClassname
           )}
         >
@@ -67,7 +67,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {startIcon && (
             <div
               className={cn(
-                "flex justify-center w-[30px] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary-60",
+                "flex justify-center w-[30px] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60",
                 startIconClassName
               )}
             >
@@ -97,8 +97,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               className={cn(
                 "absolute transition left-3 top-1/2 -translate-y-1/2",
                 (endIconClickable || isPasswordType)
-                  ? "cursor-pointer text-secondary-60 hover:text-secondary-80"
-                  : "text-secondary-60",
+                  ? "cursor-pointer text-foreground/60 hover:text-foreground/80"
+                  : "text-foreground/60",
                 endIconClassName
               )}
               onClick={(e) => {

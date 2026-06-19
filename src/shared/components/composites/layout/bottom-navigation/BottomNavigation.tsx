@@ -11,6 +11,7 @@ import {
   HouseSimpleIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
+  WalletIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -18,20 +19,20 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 function BottomNavigation() {
   const pathname = usePathname();
 
-  const getPurePath = (path: string) =>
-    path.split("?")[0].replace(/\/$/, "");
+  const getPurePath = (path: string) => path.split("?")[0].replace(/\/$/, "");
 
   const currentPath = getPurePath(pathname);
 
   const navItems = [
-    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon },          // Home
-    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon },    // Search
+    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon }, // Home
+    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon }, // Search
     { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon }, // Bookings / Reservations
-    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon },        // Profile
+    { href: RouteAddress.WALLET.BASE, icon: WalletIcon }, // Bookings / Wallet
+    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon }, // Profile
   ];
 
   const isMainPage = navItems.some(
-    (item) => getPurePath(item.href) === currentPath
+    (item) => getPurePath(item.href) === currentPath,
   );
 
   if (!isMainPage) return null;
@@ -39,7 +40,6 @@ function BottomNavigation() {
   return (
     <div className="fixed bottom-4 inset-x-0 flex justify-center z-40 px-safe-area">
       <div className="relative flex items-center px-1 w-fit h-[64px] rounded-full border border-foreground/10 bg-foreground/5 backdrop-blur-md">
-
         {navItems.map(({ href, icon: Icon }) => {
           const isActive = currentPath === getPurePath(href);
 
@@ -78,7 +78,7 @@ function BottomNavigation() {
                   size={24}
                   weight={isActive ? "fill" : "regular"}
                   className={cn(
-                    isActive ? "text-primary" : "text-foreground/40"
+                    isActive ? "text-primary" : "text-foreground/40",
                   )}
                 />
               </motion.div>

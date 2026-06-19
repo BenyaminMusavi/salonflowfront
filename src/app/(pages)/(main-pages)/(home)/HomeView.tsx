@@ -5,7 +5,7 @@ import HomeSearch from "@/app/(pages)/(main-pages)/(home)/components/home-search
 
 function HomeView() {
   return (
-    <div className="flex flex-col gap-y-4 py-5">
+    <div className="flex flex-col gap-y-4 pb-6 pt-24">
       <HomeHeader />
       <HomeSalons />
       <HomeSearch />

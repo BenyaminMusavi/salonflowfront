@@ -1,8 +1,15 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
-export interface IAuthResponse {
+export interface IAuth {
   accessToken: string;
   refreshToken: string | null;
+}
+
+interface IAuthMe {
+  userId: number
+  phone: string
+  firstName: string | null
+  lastName: string | null
 }
 
 export interface ILoginRequest {
@@ -29,4 +36,5 @@ export interface ISetPasswordWithOtpRequest {
   password: string;
 }
 
-export type TAuthEntity = TResponse<IAuthResponse>
+export type TAuthEntity = TResponse<IAuth>;
+export type TAuthMeEntity = TResponse<IAuthMe>

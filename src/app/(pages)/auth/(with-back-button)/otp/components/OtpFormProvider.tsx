@@ -8,7 +8,7 @@ import {
   otpFormSchema,
   TOtpFormSchema,
 } from "./otpFormSchema";
-import { useVerifyOtp } from "@/services/domains/auth/hooks/useAuth";
+import { useVerifyOtp } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -34,7 +34,7 @@ const OtpFormProvider = ({ children }: IProps) => {
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
   const { mutateAsync, isPending } = useVerifyOtp();
-  const setAccessToken = useTokenStore((s) => s.setAccessToken);
+  const setToken = useTokenStore((s) => s.setToken);
 
   const onSubmit = async (data: TOtpFormSchema) => {
     if (!phone) {
@@ -47,7 +47,7 @@ const OtpFormProvider = ({ children }: IProps) => {
         phone,
         code: data.otp,
       });
-      setAccessToken(res.data.accessToken);
+      setToken(res.data, true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);

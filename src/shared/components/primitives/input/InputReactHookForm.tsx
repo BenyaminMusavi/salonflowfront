@@ -93,7 +93,7 @@ export function InputReactHookForm<TFieldValues extends FieldValues>({
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="mt-2"
           >
-            <p className="text-xs font-medium text-surface-error-fill">
+            <p className="text-xs font-medium text-error">
               {fieldState.error.message}
             </p>
           </motion.div>

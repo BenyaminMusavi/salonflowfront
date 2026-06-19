@@ -4,15 +4,13 @@ import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  loginFormSchema,
-  TLoginFormSchema,
-} from "./loginFormSchema";
-import { useLoginWithPassword } from "@/services/domains/auth/hooks/useMutateLoginWithPassword";
+import { loginFormSchema, TLoginFormSchema } from "./loginFormSchema";
+import { useMutateLoginWithPassword } from "@/services/domains/auth/hooks/useMutateLoginWithPassword";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
+import { useFormError } from "@/shared/hooks/useFormError";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -24,25 +22,30 @@ const LoginFormProvider = ({ children }: IProps) => {
     resolver: zodResolver(loginFormSchema()),
     defaultValues: {
       phone: "",
-      password: ""
+      password: "",
     },
     mode: "onChange",
   });
 
   const { setError, handleSubmit } = methods;
-  const [generalError, setGeneralError] = useState("");
+  const {setGeneralError, clearError} = useFormError()
   const router = useRouter();
-  const { mutateAsync, isPending } = useLoginWithPassword();
-  const setAccessToken = useTokenStore((s) => s.setAccessToken);
+  const { mutateAsync, isPending } = useMutateLoginWithPassword();
+  const setAccessToken = useTokenStore((s) => s.setToken);
+  const setIsLoggedIn = useTokenStore((s) => s.setIsLoggedIn);
 
   const onSubmit = async (data: TLoginFormSchema) => {
-    setGeneralError("");
+    clearError();
     try {
       const res = await mutateAsync({
         phone: data.phone,
         password: data.password,
       });
-      setAccessToken(res.data.accessToken);
+      setAccessToken({
+        accessToken: res.data.accessToken,
+        refreshToken: res.data.refreshToken,
+      });
+      setIsLoggedIn(true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
@@ -53,9 +56,6 @@ const LoginFormProvider = ({ children }: IProps) => {
     <FormLoadingProvider isLoading={isPending}>
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {generalError && (
-            <p className="px-4 text-xs font-medium text-error">{generalError}</p>
-          )}
           {children}
         </form>
       </FormProvider>

@@ -1,36 +1,49 @@
-// useTokenStore.ts
-import { create } from 'zustand';
+import {create} from 'zustand';
+import {createJSONStorage, persist} from 'zustand/middleware';
+import { IAuth } from "@/services/domains/auth/types/auth.type";
 
-interface IAuthState {
-    accessToken?: string;
-    isLoggedIn: boolean;
-    redirectUrl?: string;
-
-    setAccessToken: (token?: string) => void;
-    setRedirectUrl: (url: string) => void;
-    clear: () => void;
+interface ITokenState {
+  token?: IAuth;
+  setToken: (token: IAuth, isLoggedIn?: boolean) => void;
+  isLoggedIn: boolean;
+  redirectUrl?: string;
+  setIsLoggedIn: (isLoggedIn: boolean) => void;
+  setRedirectUrl: (pathName: string) => void;
+  clear: () => void;
 }
 
-export const useTokenStore = create<IAuthState>((set) => ({
-    accessToken: undefined,
-    isLoggedIn: false,
-    redirectUrl: undefined,
-
-    setAccessToken: (token) =>
+const initial = {
+  token: undefined,
+  isLoggedIn: false,
+  redirectUrl: undefined,
+};
+export const useTokenStore = create<ITokenState>()(
+  persist(
+    (set, get) => ({
+      ...initial,
+      setToken: (token, isLoggedIn = false) => {
         set({
-            accessToken: token,
-            isLoggedIn: Boolean(token),
-        }),
-
-    setRedirectUrl: (url) =>
+          token: token,
+          isLoggedIn: isLoggedIn,
+        });
+      },
+      setRedirectUrl: (pathName) => {
         set({
-            redirectUrl: url,
-        }),
-
-    clear: () =>
+          redirectUrl: pathName,
+        });
+      },
+      clear: () => {
+        set(initial);
+      },
+      setIsLoggedIn: (isLoggedIn) => {
         set({
-            accessToken: undefined,
-            isLoggedIn: false,
-            redirectUrl: undefined,
-        }),
-}));
+          isLoggedIn: isLoggedIn,
+        });
+      },
+    }),
+    {
+      name: 'salon_flow_token_state',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);

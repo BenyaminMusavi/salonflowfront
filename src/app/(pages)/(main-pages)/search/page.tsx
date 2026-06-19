@@ -1,9 +1,5 @@
-import React from "react";
+import SearchView from "@/app/(pages)/(main-pages)/search/SearchView";
 
-function Page() {
-  return (
-    <div></div>
-  );
+export default function SearchPage() {
+  return <SearchView />;
 }
-
-export default Page;

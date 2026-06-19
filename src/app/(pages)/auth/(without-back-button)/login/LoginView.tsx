@@ -1,8 +1,9 @@
-"use client"
+"use client";
 import React from "react";
-import {  SignInIcon } from "@phosphor-icons/react";
+import { SignInIcon } from "@phosphor-icons/react";
 import LoginFormProvider from "@/app/(pages)/auth/(without-back-button)/login/components/LoginFormProvider";
 import LoginForm from "./components/LoginForm";
+import { FormErrorProvider } from "@/shared/hooks/useFormError";
 
 const LoginView = () => {
   return (
@@ -18,9 +19,11 @@ const LoginView = () => {
           برای ورود شماره موبایل و رمزعبور خود را وارد کنید.
         </span>
       </div>
-      <LoginFormProvider>
-        <LoginForm />
-      </LoginFormProvider>
+      <FormErrorProvider>
+        <LoginFormProvider>
+          <LoginForm />
+        </LoginFormProvider>
+      </FormErrorProvider>
     </div>
   );
 };

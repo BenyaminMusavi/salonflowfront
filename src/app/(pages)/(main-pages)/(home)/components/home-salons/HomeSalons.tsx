@@ -22,7 +22,7 @@ function HomeSalons() {
   return (
     <div className={"flex flex-col gap-y-3 px-safe-area"}>
       <span className={"text-[24px] font-bold text-white"}>
-        بهترین آرایشگرتو پیدا کن
+        آرایشگرتو پیدا کن
       </span>
       <div className="">
         <Swiper
