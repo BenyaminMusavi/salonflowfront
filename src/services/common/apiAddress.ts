@@ -9,6 +9,8 @@ export const API_ADDRESS = {
     SEND_OTP: "/api/auth/send-otp",
     VERIFY_OTP: "/api/auth/verify-otp",
     LOGIN_PASSWORD: "/api/auth/login-password",
+    SET_PASSWORD: "/api/auth/set-password",
+    SET_PASSWORD_WITH_OTP: "/api/auth/set-password-with-otp",
     REFRESH: "/api/auth/refresh",
     ME: "/api/auth/me",
     SWITCH_CONTEXT: "/api/auth/switch-context",

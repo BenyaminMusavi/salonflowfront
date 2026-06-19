@@ -57,7 +57,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <motion.div dir="rtl" className="flex w-full h-full">
         <div
           className={cn(
-            "relative transition flex items-center w-full rounded-[2px] bg-surface-tertiary",
+            "relative transition flex items-center w-full rounded-[2px] bg-foreground/5",
             "focus-within:inset-ring-2 focus-within:inset-ring-primary",
             hasError && "!inset-ring-2 !inset-ring-content-error",
             inputWrapperClassname
@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={finalType}
             className={cn(
-              "w-full h-full rounded-[2px] bg-transparent text-sm text-black",
+              "w-full h-full rounded-[2px] bg-transparent text-sm text-foreground",
               "min-h-12 px-4 py-2.5",
               "placeholder:text-neutral-400",
               "focus:outline-none",
@@ -119,9 +119,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             >
               {isPasswordType ? (
                 showPassword ? (
-                  <EyeOff className="h-5 w-5" />
+                  <EyeOff className="text-foreground h-5 w-5" />
                 ) : (
-                  <Eye className="h-5 w-5" />
+                  <Eye className="text-foreground h-5 w-5" />
                 )
               ) : (
                 endIcon

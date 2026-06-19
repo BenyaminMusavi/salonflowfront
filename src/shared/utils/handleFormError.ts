@@ -1,17 +1,6 @@
 import { FieldValues, UseFormSetError } from "react-hook-form";
 import { TErrorTypeEnum } from "@/services/common/data-types/SharedDataTypes";
 
-const convertErrorKeyToFormField = (key: string): string => {
-  const prefixes = ["ownerInfo", "representativeInfo"];
-  for (const prefix of prefixes) {
-    if (key.startsWith(prefix) && key.length > prefix.length) {
-      const rest = key.slice(prefix.length);
-      return `${prefix}.${rest.charAt(0).toLowerCase() + rest.slice(1)}`;
-    }
-  }
-  return key;
-};
-
 export const handleFormError =
   <TFieldValues extends FieldValues>(
     setError: UseFormSetError<TFieldValues>,
@@ -25,8 +14,7 @@ export const handleFormError =
         const errorMessage = Array.isArray(errorValue)
           ? errorValue.join(" - ")
           : errorValue;
-        const formFieldName = convertErrorKeyToFormField(fieldName);
-        setError(formFieldName as any, {
+        setError(fieldName as any, {
           type: "manual",
           message: errorMessage,
         });

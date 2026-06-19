@@ -5,8 +5,6 @@ export interface IAuthResponse {
   refreshToken: string | null;
 }
 
-export type TAuthResponse = TResponse<IAuthResponse>;
-
 export interface ILoginRequest {
   phone: string;
   password: string;
@@ -20,3 +18,15 @@ export interface IVerifyOtpRequest {
 export interface ISendOtpRequest {
   phone: string;
 }
+
+export interface ISetPasswordRequest {
+  password: string;
+}
+
+export interface ISetPasswordWithOtpRequest {
+  phone: string;
+  code: string;
+  password: string;
+}
+
+export type TAuthEntity = TResponse<IAuthResponse>

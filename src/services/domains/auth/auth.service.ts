@@ -5,6 +5,8 @@ import {
   ILoginRequest,
   IVerifyOtpRequest,
   ISendOtpRequest,
+  ISetPasswordRequest,
+  ISetPasswordWithOtpRequest,
 } from "./types/auth.type";
 
 class AuthService {
@@ -22,9 +24,23 @@ class AuthService {
     );
   }
 
-  async loginPassword(data: ILoginRequest) {
-    return await axiosInstance.post<unknown, TAuthResponse>(
+  async loginWithPassword(data: ILoginRequest) {
+    return await axiosInstance.post<TAuthResponse, ILoginRequest>(
       API_ADDRESS.AUTH.LOGIN_PASSWORD,
+      data
+    );
+  }
+
+  async setPassword(data: ISetPasswordRequest) {
+    return await axiosInstance.post<unknown, TAuthResponse>(
+      API_ADDRESS.AUTH.SET_PASSWORD,
+      data
+    );
+  }
+
+  async setPasswordWithOtp(data: ISetPasswordWithOtpRequest) {
+    return await axiosInstance.post<unknown, TAuthResponse>(
+      API_ADDRESS.AUTH.SET_PASSWORD_WITH_OTP,
       data
     );
   }

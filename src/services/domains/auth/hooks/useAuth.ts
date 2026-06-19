@@ -19,11 +19,7 @@ export const useVerifyOtp = () => {
 
 // ---------------- PASSWORD ----------------
 
-export const useLoginPassword = () => {
-  return useMutation({
-    mutationFn: authService.loginPassword,
-  });
-};
+
 
 // ---------------- ME ----------------
 

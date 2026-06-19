@@ -1,140 +1,90 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import {
+  CalendarBlankIcon,
   CardholderIcon,
   ChartPieSliceIcon,
   CubeTransparentIcon,
   HouseSimpleIcon,
-  PlusIcon,
+  MagnifyingGlassIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
-import { useCurrentBusinessStore } from "@/services/business/useCurrentBusinessStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
 function BottomNavigation() {
   const pathname = usePathname();
-  const { businessId } = useCurrentBusinessStore();
-  if (businessId === null || businessId === undefined) return null;
 
-  const getPurePath = (path: string) => path.split("?")[0].replace(/\/$/, "");
-
-  const navItems = [
-    {
-      label: "خانه",
-      href: RouteAddress.HOME.BASE,
-      icon: HouseSimpleIcon,
-    },
-    {
-      label: "مالی",
-      href: RouteAddress.FINANCE.BASE,
-      icon: CardholderIcon,
-    },
-    { label: "", href: "" },
-    {
-      label: "انبار",
-      href: RouteAddress.INVENTORY.BASE,
-      icon: CubeTransparentIcon,
-    },
-    {
-      label: "گزارشات",
-      href: RouteAddress.REPORTS.BASE,
-      icon: ChartPieSliceIcon,
-    },
-  ];
+  const getPurePath = (path: string) =>
+    path.split("?")[0].replace(/\/$/, "");
 
   const currentPath = getPurePath(pathname);
 
-  const isMainPage = navItems.some(({ href }) => {
-    if (!href) return false;
+  const navItems = [
+    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon },          // Home
+    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon },    // Search
+    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon }, // Bookings / Reservations
+    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon },        // Profile
+  ];
 
-    const targetPath = getPurePath(href);
-
-    console.log({
-      currentPath,
-      targetPath,
-    });
-
-    return currentPath === targetPath;
-  });
+  const isMainPage = navItems.some(
+    (item) => getPurePath(item.href) === currentPath
+  );
 
   if (!isMainPage) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 px-safe-area flex justify-center bg-surface-white">
-      <div className="relative flex w-full max-w-[600px] h-[64px] items-center">
-        {navItems.map(({ label, href, icon: Icon }) => {
-          const dashboardHref = RouteAddress.HOME.BASE;
-          const isActive =
-            href === dashboardHref
-              ? pathname === href
-              : pathname.startsWith(href);
+    <div className="fixed bottom-4 inset-x-0 flex justify-center z-40 px-safe-area">
+      <div className="relative flex items-center px-1 w-fit h-[64px] rounded-full border border-foreground/10 bg-foreground/5 backdrop-blur-md">
+
+        {navItems.map(({ href, icon: Icon }) => {
+          const isActive = currentPath === getPurePath(href);
 
           return (
-            <div
-              key={href.toString()}
-              className="relative flex justify-center items-center w-full h-full"
+            <Link
+              key={href}
+              href={href}
+              className="relative flex flex-1 items-center justify-center h-full"
             >
+              {/* ACTIVE BACKGROUND PILL */}
               {isActive && (
-                <motion.span
-                  layoutId="nav-indicator"
-                  className="absolute top-0 w-9 h-[3px] rounded-b-full bg-content-bold will-change-transform"
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                <motion.div
+                  layoutId="nav-pill"
+                  className="absolute flex h-[calc(100%-8px)] aspect-square inset-y-1 rounded-full bg-white/10"
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                  }}
                 />
               )}
 
-              {href ? (
-                <Link
-                  href={href}
-                  className="flex flex-col gap-y-1 items-center justify-center w-full h-full"
-                >
-                  <motion.div
-                    animate={{
-                      scale: isActive ? 1.15 : 1,
-                      y: isActive ? -2 : 0,
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    {Icon && (
-                      <Icon
-                        size={24}
-                        weight={isActive ? "fill" : "regular"}
-                        className={cn(
-                          isActive
-                            ? "text-content-brand"
-                            : "text-content-tertiary",
-                        )}
-                      />
-                    )}
-                  </motion.div>
-
-                  <span
-                    className={cn(
-                      "text-[12px]",
-                      isActive ? "text-content-bold" : "text-content-tertiary",
-                    )}
-                  >
-                    {label}
-                  </span>
-                </Link>
-              ) : (
-                <div className="w-full h-full" />
-              )}
-            </div>
+              {/* ICON */}
+              <motion.div
+                className="relative z-10 w-14 flex justify-center items-center"
+                animate={{
+                  scale: isActive ? 1.2 : 1,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25,
+                }}
+              >
+                <Icon
+                  size={24}
+                  weight={isActive ? "fill" : "regular"}
+                  className={cn(
+                    isActive ? "text-primary" : "text-foreground/40"
+                  )}
+                />
+              </motion.div>
+            </Link>
           );
         })}
-
-        <div className="absolute left-1/2 -translate-x-1/2 -top-4">
-          <motion.div whileTap={{ scale: 0.9 }}>
-            <Link
-              href={RouteAddress.CREATE.BASE}
-              className="flex items-center justify-center w-16 h-16 rounded-full bg-surface-brand-fill text-content-white shadow-lg"
-            >
-              <PlusIcon size={32} />
-            </Link>
-          </motion.div>
-        </div>
       </div>
     </div>
   );

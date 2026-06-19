@@ -60,7 +60,7 @@ export function InputOtpReactHookForm<TFieldValues extends FieldValues>({
   return (
     <div className={cn("grid w-full gap-2", className)}>
       {label && (
-        <Label className="ms-2 text-secondary-80 text-[12px]">
+        <Label className="ms-2 text-foreground-muted text-[12px]">
           {label}
         </Label>
       )}
@@ -91,7 +91,7 @@ export function InputOtpReactHookForm<TFieldValues extends FieldValues>({
       </div>
 
       {fieldState.error && (
-        <p className="text-xs font-medium text-surface-error-fill">
+        <p className="text-xs font-medium text-error">
           {fieldState.error.message}
         </p>
       )}

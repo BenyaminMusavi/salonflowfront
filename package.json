@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-direction": "^1.1.1",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@storybook/addon-docs": "^10.2.0",
     "@storybook/react-vite": "^10.2.0",
@@ -21,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookies-next": "^6.1.1",
+    "input-otp": "^1.4.2",
     "jalaali-js": "^1.2.8",
     "lucide-react": "^1.9.0",
     "moment-jalaali": "^0.10.4",
@@ -31,8 +34,11 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.73.1",
     "storybook": "^10.3.5",
+    "swiper": "^12.2.0",
     "tailwind-merge": "^3.5.0",
     "uuid": "^14.0.0",
+    "vaul": "^1.1.2",
+    "zod": "^4.4.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

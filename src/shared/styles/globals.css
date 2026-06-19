@@ -2,62 +2,136 @@
 
 /* 2. Map all your theme.extend values to CSS variables */
 @theme {
-    --spacing-layout: 900px;
-    --spacing-layout-lg: 1200px;
-    --spacing-layout-xl: 1440px;
+    /* ==========================
+       Brand
+    ========================== */
+
+    --color-primary: #9be955;
+    --color-primary-hover: #8ddd3b;
+    --color-primary-active: #79c728;
+    --color-primary-foreground: #060e02;
+
+    /* ==========================
+       Backgrounds
+    ========================== */
+
+    --color-background: #060e02;
+    --color-background-secondary: #0c1707;
+    --color-background-tertiary: #13220d;
+    --color-background-elevated: #182b11;
+    --color-background-overlay: rgba(0, 0, 0, 0.7);
+
+    /* ==========================
+       Foregrounds
+    ========================== */
+
+    --color-foreground: #f6f9f2;
+    --color-foreground-secondary: #d6dfd0;
+    --color-foreground-muted: #9cad95;
+    --color-foreground-disabled: #697765;
+    --color-foreground-inverse: #060e02;
+
+    /* ==========================
+       Borders
+    ========================== */
+
+    --color-border: #22341d;
+    --color-border-hover: #355129;
+    --color-border-strong: #486c38;
+
+    /* ==========================
+       Surfaces
+    ========================== */
+
+    --color-surface: #0c1707;
+    --color-surface-hover: #152510;
+    --color-surface-active: #1c3216;
+    --color-surface-disabled: #0a1108;
+
+    /* ==========================
+       Success
+    ========================== */
+
+    --color-success: #3ddc84;
+    --color-success-hover: #2cc972;
+    --color-success-background: rgba(61, 220, 132, 0.12);
+    --color-success-border: #2fa962;
+    --color-success-foreground: #dffbea;
+
+    /* ==========================
+       Error
+    ========================== */
+
+    --color-error: #ff5d73;
+    --color-error-hover: #ef415b;
+    --color-error-background: rgba(255, 93, 115, 0.12);
+    --color-error-border: #c93d4f;
+    --color-error-foreground: #ffe6ea;
+
+    /* ==========================
+       Warning
+    ========================== */
+
+    --color-warning: #ffb547;
+    --color-warning-hover: #f39c12;
+    --color-warning-background: rgba(255, 181, 71, 0.12);
+    --color-warning-border: #d98b0b;
+    --color-warning-foreground: #fff3dc;
+
+    /* ==========================
+       Info
+    ========================== */
+
+    --color-info: #4ea8ff;
+    --color-info-hover: #2f93ff;
+    --color-info-background: rgba(78, 168, 255, 0.12);
+    --color-info-border: #2d7cd3;
+    --color-info-foreground: #e7f4ff;
+
+    /* ==========================
+       Neutral
+    ========================== */
+
+    --color-neutral: #7b8b75;
+    --color-neutral-hover: #95a38f;
+    --color-neutral-background: rgba(123, 139, 117, 0.1);
+    --color-neutral-border: #4c5b47;
+
+    /* ==========================
+       Inputs
+    ========================== */
+
+    --color-input: #13220d;
+    --color-input-hover: #182b11;
+    --color-input-focus: #223d18;
+    --color-input-border: #27401f;
+    --color-input-placeholder: #73826d;
+
+    /* ==========================
+       Buttons
+    ========================== */
+
+    --color-button-primary: var(--color-primary);
+    --color-button-primary-hover: var(--color-primary-hover);
+    --color-button-primary-active: var(--color-primary-active);
+    --color-button-primary-foreground: var(--color-primary-foreground);
+
+    --color-button-secondary: #152510;
+    --color-button-secondary-hover: #1c3216;
+    --color-button-secondary-active: #24411d;
+    --color-button-secondary-foreground: #f6f9f2;
+
+    /* ==========================
+       Focus Ring
+    ========================== */
+
+    --color-ring: #9be955;
+    --color-ring-offset: #060e02;
+
+
+
     --spacing-safe-area: 14px;
-
-    /*Background images*/
-    --bg-gradient-radial: radial-gradient(var(--tw-gradient-stops));
-    --bg-gradient-conic: conic-gradient(
-            from 180deg at 50% 50%,
-            var(--tw-gradient-stops)
-    );
-
-    /* Scale (flips) */
-    --scale--100: -1;
-    --scale-flip: -1;
-
-    /* Colors */
-    --color-primary: #3b11cc;
-    --color-primaryText: #1b134a;
-    --color-primary-foreground: #fff;
-    --color-secondaryText: #605f5f;
-    --color-purple: #3b11cc;
-    --color-primaryBackground: #fbfafe;
-    --color-purple-5: #f5f3fc;
-    --color-onPrimary: #ffffff;
-
-    /* Opacity values */
-    --opacity-2: 0.2;
-    --opacity-5: 0.5;
-    --opacity-7: 0.7;
-
-    /* Custom shadows */
-    --shadow-type: 0px 14px 20px rgba(0, 0, 0, 0.04);
-    --shadow-type2: 0px 8px 40px rgba(59, 17, 204, 0.04);
-    --shadow-type3: 0px 4px 40px rgba(27, 19, 74, 0.04);
-    --shadow-dialog: 0px 8px 30px rgba(0, 0, 0, 0.16);
-    --shadow-suggestedProducts: 0px 8px 32px rgba(27, 19, 74, 0.04);
-    --shadow-peyvandCard1: -8.58px 11.154px 25.74px rgba(27, 19, 74, 0.08);
-    --shadow-valueCards: 0px 8px 80px rgba(0, 0, 0, 0.04);
-    --shadow-faq: 0px 8px 50px rgba(0, 0, 0, 0.04);
-
-    /* Animations */
-    --animation-spin-slow: spin 1.5s linear infinite;
-
-    /* Screens */
-    --breakpoint-xs: 23.4375rem; /*-- 375px --*/
-    --breakpoint-sm: 37.5rem; /*-- 600px --*/
-    --breakpoint-md: 55.625rem; /*-- 890px --*/
-    --breakpoint-lg: 68.75rem; /*-- 1100px --*/
-    --breakpoint-xl: 82.5rem; /*-- 1280px --*/
-    --breakpoint-2xl: 96.125rem; /*-- 1538px --*/
-    --breakpoint-3xl: 120rem; /*-- 1920 --*/
 }
-
-/* 3. Load PostCSS + third-party plugins */
-/*@plugin "tailwind-scrollbar-hide";           !* hide-scrollbar plugin :contentReference[oaicite:3]{index=3} *!*/
 
 /*!* 4. Declare your custom “children” variant *!*/
 @custom-variant children (& > *);
@@ -70,54 +144,9 @@
     }
 
     * {
-        border-color: var(--color-gray-200);
+
     }
 
-    p {
-        color: theme("colors.primaryText");
-    }
-    h1 {
-        color: theme("colors.primaryText");
-    }
-    h2 {
-        color: theme("colors.primaryText");
-    }
-    h3 {
-        color: theme("colors.primaryText");
-    }
-    h4 {
-        color: theme("colors.primaryText");
-    }
-    button {
-        color: theme("colors.primaryText");
-    }
-    span {
-        color: theme("colors.primaryText");
-    }
-    input {
-        color: theme("colors.primaryText");
-    }
-
-    .full-width {
-        left: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        max-width: 100vw;
-        right: 50%;
-        width: 100vw;
-    }
-
-    .mask-bg {
-        /*-webkit-mask-image: radial-gradient(ellipse 100% 80% at 48% 78%, black 70%, transparent 50%);*/
-        /*mask-image: radial-gradient(ellipse 100% 90% at 48% 78%, black 70%, transparent 70%);*/
-        mask-image: linear-gradient(
-                to right,
-                transparent 0%,
-                black 20%,
-                black 75%,
-                transparent 100%
-        );
-    }
 
     .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -129,12 +158,6 @@
     }
 }
 
-/*@layer components {*/
-/*  .btn-primary {*/
-/*    @apply py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;*/
-/*  }*/
-/*}*/
-
 * {
     font-family: var(--font-ravi);
     box-sizing: border-box;
@@ -142,25 +165,32 @@
     -webkit-font-smoothing: antialiased;
 }
 
-:root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 255, 255, 255;
-    --background-end-rgb: 255, 255, 255;
-    --primary-base-color: 59, 16, 204;
-    --primary-background-color: 251, 250, 254;
+.home-swiper {
+    padding-bottom: 32px; /* space for bullets */
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
-        --primary-base-color: 59, 16, 204;
-        --primary-background-color: 251, 250, 254;
-    }
+.home-swiper .swiper-pagination {
+    position: relative !important;
+    bottom: 0 !important;
+    margin-top: 12px;
+    text-align: center;
 }
 
-body {
-    color: rgb(var(--foreground-rgb));
-    background: white;
+.home-swiper .swiper-pagination-bullet {
+    background: #888;
+    opacity: 1;
+}
+
+.home-swiper .swiper-pagination-bullet-active {
+    background: #79c728;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.05) inset !important;
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #111 !important;
+    transition: background-color 9999s ease-in-out 0s;
 }

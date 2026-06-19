@@ -62,7 +62,7 @@ export function InputReactHookForm<TFieldValues extends FieldValues>({
     <div className={cn("flex flex-col w-full items-start gap-1", className)}>
       {label && (
         <Label
-          className={"ms-2 text-content-primary text-sm font-medium"}
+          className={"ms-2 text-foreground text-sm font-medium"}
           htmlFor={field.name}
         >
           {label}
