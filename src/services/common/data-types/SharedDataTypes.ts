@@ -44,6 +44,17 @@ export type TPaginationParam = {
   limit?: number;
 };
 
+/** Backend PagedResult<T> (guide §5.3) */
+export type TPagedResult<T> = {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+};
+
 export type TGeneralError = {
   data?: TError;
   status: number;

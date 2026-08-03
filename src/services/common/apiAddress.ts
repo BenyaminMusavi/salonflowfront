@@ -27,23 +27,27 @@ export const API_ADDRESS = {
   SALON: {
     BASE: "/api/salons",
     APPROVED: "/api/salons",
-    BY_ID: (id: number) => `/api/salons/${id}`,
+    BY_ID: (id: string | number) => `/api/salons/${id}`,
+  },
+
+  FAVORITES: {
+    BASE: "/api/favorites",
+    BY_SALON: (salonId: number) => `/api/favorites/${salonId}`,
   },
 
   SALON_OFFERING: {
     BASE: "/api/salon-offering",
-    BY_SALON: (salonId: number) => `/api/salon-offering/salon/${salonId}`
+    BY_SALON: (salonId: number) => `/api/salon-offering/salon/${salonId}`,
   },
-  
+
   STAFF_PROFILE: {
-    BY_SALON_FOR_SERVICES: (salonId: number) =>
+    BY_SALON_FOR_SERVICES: (salonId: number | string) =>
       `/api/staff-profiles/by-salon/${salonId}/for-services`,
   },
 
-BOOKING: {
-  SLOTS: "/api/booking/slots",
-  CREATE: "/api/booking/create",
-},
-
+  BOOKING: {
+    SLOTS: "/api/booking/slots",
+    CREATE: "/api/booking/create",
+  },
 };
 

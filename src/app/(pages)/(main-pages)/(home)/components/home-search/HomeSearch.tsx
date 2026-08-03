@@ -3,29 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 export default function HomeSearch() {
   const router = useRouter();
-
   const [query, setQuery] = useState("");
-  const [date, setDate] = useState("");
 
   const search = () => {
-    router.push(`/salons?query=${query}&date=${date}`);
+    const params = new URLSearchParams();
+    const trimmed = query.trim();
+    if (trimmed) params.set("search", trimmed);
+    const qs = params.toString();
+    router.push(
+      qs ? `${RouteAddress.SEARCH.BASE}?${qs}` : RouteAddress.SEARCH.BASE
+    );
   };
 
   return (
     <div className="px-safe-area">
       <div className="flex gap-3 items-center">
-        {/* Search Wrapper */}
         <div className="relative flex-1">
-          {/* Icon */}
           <MagnifyingGlassIcon
             size={20}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-primary"
           />
 
-          {/* Input */}
           <input
             className="
               w-full pl-10 pr-4 py-3
@@ -44,8 +46,6 @@ export default function HomeSearch() {
             onKeyDown={(e) => e.key === "Enter" && search()}
           />
         </div>
-
-        {/* optional date input stays untouched */}
       </div>
     </div>
   );

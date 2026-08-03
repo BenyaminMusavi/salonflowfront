@@ -1,14 +1,15 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
-interface IServiceType {
-  id: number;
+export interface IServiceType {
+  id: string | number;
   name: string;
+  displayOrder?: number;
+  imageUrl?: string | null;
 }
 
 export type TServiceTypeEntity = TResponse<IServiceType[]>;
 
-
-interface IService {
+export interface IService {
   id: number;
   name: string;
   price: number;
