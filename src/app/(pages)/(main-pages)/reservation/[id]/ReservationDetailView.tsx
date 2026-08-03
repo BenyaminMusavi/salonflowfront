@@ -18,6 +18,8 @@ import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-map
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import AppointmentReviewSection from "./components/AppointmentReviewSection";
+import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export default function ReservationDetailView() {
   const params = useParams<{ id: string }>();
@@ -164,6 +166,15 @@ export default function ReservationDetailView() {
           </span>
         </div>
       </div>
+
+      {(status === AppointmentStatus.Completed ||
+        appointment.status === AppointmentStatus.Completed) &&
+        !cancelled && (
+          <AppointmentReviewSection
+            appointmentId={appointment.id}
+            status={AppointmentStatus.Completed}
+          />
+        )}
 
       {error && (
         <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">

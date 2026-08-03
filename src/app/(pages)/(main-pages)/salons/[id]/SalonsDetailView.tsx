@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { WarningCircleIcon } from "@phosphor-icons/react";
 import SalonsDetailHero from "./components/salons-details-hero/SalonsDetailHero";
 import SalonsDetailInfo from "./components/salons-details-info/SalonsDetailInfo";
 import SalonsDetailActionButtons from "./components/salons-details-action-buttons/SalonsDetailActionButtons";
+import SalonReviewsSection from "./components/salon-reviews-section/SalonReviewsSection";
+import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
@@ -14,6 +18,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 export default function SalonsDetailView() {
   const params = useParams<{ id: string }>();
   const salonPublicId = params?.id;
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuerySalonById(salonPublicId);
   const salon = data?.data;
@@ -60,6 +65,29 @@ export default function SalonsDetailView() {
         phone={salon.phone}
         websiteUrl={salon.websiteUrl}
       />
+
+      {numericSalonId != null && (
+        <div className="mt-4 px-safe-area">
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-surface-tertiary py-3 text-sm font-medium text-error"
+          >
+            <WarningCircleIcon size={18} />
+            گزارش سالن
+          </button>
+        </div>
+      )}
+
+      <SalonReviewsSection salonId={numericSalonId} />
+
+      {numericSalonId != null && (
+        <ReportSalonSheet
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          salonId={numericSalonId}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center p-4">
         <Link

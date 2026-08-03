@@ -64,5 +64,14 @@ export const API_ADDRESS = {
     ME_BY_ID: (id: number) => `/api/appointments/me/${id}`,
     CANCEL: (id: number) => `/api/appointments/${id}/cancel`,
   },
+
+  REVIEWS: {
+    BASE: "/api/reviews",
+    BY_ID: (id: number) => `/api/reviews/${id}`,
+  },
+
+  SALON_REPORTS: {
+    BASE: "/api/salon-reports",
+  },
 };
 
