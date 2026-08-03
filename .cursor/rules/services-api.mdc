@@ -14,5 +14,6 @@ alwaysApply: false
 - ID mapping: public browse Guids ≠ long IDs for create/favorites/finance. Booking create body is `{ salonId, branchId?, startTime, notes?, services: [{ offeringId, staffId }] }`.
 - Favorites CRUD uses numeric `salonId` (`POST/DELETE /api/favorites/{salonId}`); resolve via `resolveNumericSalonId` from detail when present.
 - Online booking browse: branch services / available-dates / staff-availability / calculate-price / `GET /api/salons/available-slots`. Create needs long `offeringId` + `staffId` — enrich via salon-offerings + staff-for-offerings (`booking-mappers.ts`). Exit salon JWT context before create.
+- Customer appointments: `GET /api/appointments/me`, `GET .../me/{id}`, `POST .../{id}/cancel` (Scheduled only). UI under `/reservation` and `/reservation/[id]`.
 - Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
 - Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.

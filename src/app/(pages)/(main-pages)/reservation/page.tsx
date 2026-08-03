@@ -1,9 +1,5 @@
-import React from "react";
+import ReservationView from "./ReservationView";
 
-function Page() {
-  return (
-    <div></div>
-  );
+export default function ReservationPage() {
+  return <ReservationView />;
 }
-
-export default Page;

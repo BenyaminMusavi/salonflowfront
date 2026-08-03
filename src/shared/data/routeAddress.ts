@@ -25,12 +25,14 @@ export const RouteAddress = {
   },
   PROFILE: {
     BASE: "/profile",
+    SETTINGS: "/profile/settings",
   },
   SEARCH: {
     BASE: "/search",
   },
   RESERVATION: {
     BASE: "/reservation",
+    DETAILS: (id: string | number) => `/reservation/${id}`,
   },
   SALONS: {
     DETAILS: (id: string | number) => `/salons/${id}`,

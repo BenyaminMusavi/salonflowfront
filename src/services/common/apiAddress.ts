@@ -58,5 +58,11 @@ export const API_ADDRESS = {
     SLOTS: "/api/booking/slots",
     CREATE: "/api/booking/create",
   },
+
+  APPOINTMENTS: {
+    ME: "/api/appointments/me",
+    ME_BY_ID: (id: number) => `/api/appointments/me/${id}`,
+    CANCEL: (id: number) => `/api/appointments/${id}/cancel`,
+  },
 };
 

@@ -349,11 +349,19 @@ export default function BookView() {
             شماره نوبت: {createdId}
           </p>
           <Link
-            href={RouteAddress.RESERVATION.BASE}
+            href={RouteAddress.RESERVATION.DETAILS(createdId)}
             className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
           >
-            نوبت‌های من
+            مشاهده نوبت
           </Link>
+          <div className="mt-3">
+            <Link
+              href={RouteAddress.RESERVATION.BASE}
+              className="text-sm text-foreground-muted"
+            >
+              همه نوبت‌ها
+            </Link>
+          </div>
         </div>
       </div>
     );
