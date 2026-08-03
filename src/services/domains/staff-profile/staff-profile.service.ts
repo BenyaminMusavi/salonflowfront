@@ -3,22 +3,19 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import { TStaffProfileEntity } from "@/services/domains/staff-profile/types/staff-profile.type";
 
 class StaffProfileService {
-
+  /** `salonId` = salon public Guid (or numeric if API accepts both). */
   async getStaffForOfferings(
-    salonId: number,
+    salonPublicId: string | number,
     offeringIds: number[]
   ) {
-    const params = new URLSearchParams();
-
-    offeringIds.forEach((id) => {
-      params.append("offeringIds", id.toString());
-    });
-
     return await axiosInstance.get<unknown, TStaffProfileEntity>(
-      `${API_ADDRESS.STAFF_PROFILE.BY_SALON_FOR_SERVICES(salonId)}?${params.toString()}`
+      API_ADDRESS.STAFF_PROFILE.BY_SALON_FOR_SERVICES(salonPublicId),
+      {
+        params: { offeringIds },
+        paramsSerializer: { indexes: null },
+      }
     );
   }
-
 }
 
 const staffProfileService = new StaffProfileService();

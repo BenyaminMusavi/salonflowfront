@@ -1,4 +1,5 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
+import { ISalonBranch } from "@/services/domains/salons/types/booking-browse.type";
 
 export interface ISalonGalleryItem {
   url?: string | null;
@@ -33,6 +34,7 @@ export interface ISalon {
   imageUrl?: string | null;
   gallery?: Array<string | ISalonGalleryItem> | null;
   services?: ISalonServiceSummary[] | null;
+  branches?: ISalonBranch[] | null;
   workingHours?: ISalonWorkingHour[] | null;
   instagramHandle?: string | null;
   whatsappNumber?: string | null;

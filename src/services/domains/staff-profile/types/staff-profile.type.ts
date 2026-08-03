@@ -1,11 +1,13 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
-interface IStaffProfile {
+export interface IStaffProfile {
   id: number;
-  firstName: string;
-  lastName: string;
-  fullName?: string;
-  avatarUrl?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+  staffType?: number;
+  avatarUrl?: string | null;
+  publicId?: string | null;
 }
 
 export type TStaffProfileEntity = TResponse<IStaffProfile[]>;

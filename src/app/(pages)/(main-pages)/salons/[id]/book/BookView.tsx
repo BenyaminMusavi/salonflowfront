@@ -1,0 +1,720 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Stepper } from "@/shared/components/primitives/stepper/Stepper";
+import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
+import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
+import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
+import { useQueryAvailableDates } from "@/services/domains/salons/hooks/useQueryAvailableDates";
+import { useQueryStaffAvailability } from "@/services/domains/salons/hooks/useQueryStaffAvailability";
+import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQueryCalculatePrice";
+import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
+import { useQuerySalonOfferings } from "@/services/domains/salon-offering/hooks/useQuerySalonOfferings";
+import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
+import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
+import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
+import {
+  IBranchService,
+  ISalonBranch,
+  IStaffAvailability,
+} from "@/services/domains/salons/types/booking-browse.type";
+import {
+  enrichBranchServices,
+  getApiErrorMessage,
+  resolveStaffNumericId,
+  toBookingStartTime,
+} from "@/services/domains/booking/utils/booking-mappers";
+import { formatToman } from "@/shared/utils/salonDisplay";
+import { RouteAddress } from "@/shared/data/routeAddress";
+import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
+import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { cn } from "@/shared/utils/className";
+
+const STEPS = [
+  { id: 1, label: "شعبه" },
+  { id: 2, label: "خدمات" },
+  { id: 3, label: "تاریخ" },
+  { id: 4, label: "پرسنل" },
+  { id: 5, label: "پیش‌فاکتور" },
+  { id: 6, label: "ساعت" },
+  { id: 7, label: "تأیید" },
+];
+
+function formatFaDate(date: string) {
+  try {
+    return new Date(`${date}T12:00:00`).toLocaleDateString("fa-IR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  } catch {
+    return date;
+  }
+}
+
+export default function BookView() {
+  const params = useParams<{ id: string }>();
+  const salonPublicId = params?.id;
+  const router = useRouter();
+
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
+  const activeSalonContextId = useSalonContextStore((s) => s.salonId);
+  const { mutateAsync: switchContext } = useMutateSwitchContext();
+  const { mutateAsync: createBooking, isPending: isCreating } =
+    useCreateBooking();
+
+  const { data: salonRes, isLoading: salonLoading } =
+    useQuerySalonById(salonPublicId);
+  const salon = salonRes?.data;
+  const numericSalonId = salon ? resolveNumericSalonId(salon) : undefined;
+
+  const branches: ISalonBranch[] = salon?.branches ?? [];
+
+  const [step, setStep] = useState(1);
+  const [branchId, setBranchId] = useState<number | null>(null);
+  const [branchName, setBranchName] = useState("");
+  const [selectedServices, setSelectedServices] = useState<IBranchService[]>(
+    []
+  );
+  const [date, setDate] = useState<string | null>(null);
+  const [staff, setStaff] = useState<IStaffAvailability | null>(null);
+  const [slotTime, setSlotTime] = useState<string | null>(null);
+  const [slotEndTime, setSlotEndTime] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState("");
+  const [createdId, setCreatedId] = useState<number | null>(null);
+
+  // Auto-select single branch
+  useEffect(() => {
+    if (branches.length === 1 && branchId == null) {
+      setBranchId(branches[0].id);
+      setBranchName(branches[0].name);
+    }
+  }, [branches, branchId]);
+
+  const { data: branchServicesRes, isLoading: servicesLoading } =
+    useQueryBranchServices(branchId);
+
+  const { data: offeringsRes } = useQuerySalonOfferings(
+    numericSalonId ?? 0
+  );
+
+  const enrichedServices = useMemo(() => {
+    const raw = branchServicesRes?.data ?? [];
+    const offerings = offeringsRes?.data ?? [];
+    return enrichBranchServices(raw, offerings);
+  }, [branchServicesRes?.data, offeringsRes?.data]);
+
+  const serviceTypeIds = useMemo(
+    () =>
+      selectedServices
+        .map((s) => s.serviceTypeId)
+        .filter((id): id is number => typeof id === "number" && id > 0),
+    [selectedServices]
+  );
+
+  const offeringIds = useMemo(
+    () =>
+      selectedServices
+        .map((s) => s.offeringId)
+        .filter((id): id is number => typeof id === "number" && id > 0),
+    [selectedServices]
+  );
+
+  const primaryServiceTypeId = serviceTypeIds[0] ?? null;
+
+  const { data: datesRes, isLoading: datesLoading } = useQueryAvailableDates(
+    branchId,
+    primaryServiceTypeId
+  );
+
+  const { data: staffRes, isLoading: staffLoading } =
+    useQueryStaffAvailability(branchId, primaryServiceTypeId, date);
+
+  const { data: priceRes, isLoading: priceLoading } = useQueryCalculatePrice(
+    branchId,
+    serviceTypeIds,
+    staff?.staffPublicId,
+    step >= 5
+  );
+
+  const { data: slotsRes, isLoading: slotsLoading } =
+    useQuerySalonAvailableSlots({
+      branchId: branchId ?? undefined,
+      date: date ?? undefined,
+      serviceTypeIds,
+      staffProfilePublicId: staff?.staffPublicId,
+      enabled: step >= 6,
+    });
+
+  const { data: staffProfilesRes } = useQueryStaffForOfferings(
+    salonPublicId,
+    offeringIds,
+    { enabled: offeringIds.length > 0 && step >= 4 }
+  );
+
+  const price = priceRes?.data;
+  const dates = datesRes?.data ?? [];
+  const staffList = staffRes?.data ?? [];
+  const slots = slotsRes?.data?.slots ?? [];
+  const staffProfiles = staffProfilesRes?.data ?? [];
+
+  const resolvedStaffId = staff
+    ? resolveStaffNumericId(staff, staffProfiles)
+    : undefined;
+
+  const canGoNext = (): boolean => {
+    switch (step) {
+      case 1:
+        return branchId != null;
+      case 2:
+        return (
+          selectedServices.length > 0 &&
+          selectedServices.every(
+            (s) => typeof s.serviceTypeId === "number" && s.serviceTypeId > 0
+          )
+        );
+      case 3:
+        return !!date;
+      case 4:
+        return !!staff;
+      case 5:
+        return !!price;
+      case 6:
+        return !!slotTime;
+      default:
+        return true;
+    }
+  };
+
+  const goNext = () => {
+    setError("");
+    if (step === 2) {
+      const missingType = selectedServices.some(
+        (s) => typeof s.serviceTypeId !== "number"
+      );
+      const missingOffering = selectedServices.some(
+        (s) => typeof s.offeringId !== "number"
+      );
+      if (missingType) {
+        setError(
+          "شناسه نوع سرویس برای تاریخ‌ها در دسترس نیست. لطفاً بعداً دوباره تلاش کنید."
+        );
+        return;
+      }
+      if (missingOffering) {
+        setError(
+          "شناسه offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
+        );
+        return;
+      }
+    }
+    if (!canGoNext()) {
+      setError("لطفاً این مرحله را تکمیل کنید.");
+      return;
+    }
+    setStep((s) => Math.min(7, s + 1));
+  };
+
+  const goBack = () => {
+    setError("");
+    if (step === 1) {
+      router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
+      return;
+    }
+    setStep((s) => Math.max(1, s - 1));
+  };
+
+  const toggleService = (svc: IBranchService) => {
+    setSelectedServices((prev) => {
+      const exists = prev.some(
+        (s) => s.servicePublicId === svc.servicePublicId
+      );
+      if (exists) {
+        return prev.filter((s) => s.servicePublicId !== svc.servicePublicId);
+      }
+      return [...prev, svc];
+    });
+    setDate(null);
+    setStaff(null);
+    setSlotTime(null);
+  };
+
+  const ensureCustomerContext = async () => {
+    if (activeSalonContextId != null) {
+      await switchContext({ salonId: null, branchId: null });
+    }
+  };
+
+  const handleConfirm = async () => {
+    setError("");
+
+    if (!isLoggedIn) {
+      setRedirectUrl(RouteAddress.SALONS.BOOK(salonPublicId!));
+      router.push(RouteAddress.AUTH.LOGIN.BASE);
+      return;
+    }
+
+    if (
+      numericSalonId == null ||
+      branchId == null ||
+      !date ||
+      !slotTime ||
+      !staff
+    ) {
+      setError("اطلاعات رزرو ناقص است.");
+      return;
+    }
+
+    const staffId = resolveStaffNumericId(staff, staffProfiles);
+    if (!staffId) {
+      setError(
+        "شناسه عددی پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید یا بعداً تلاش کنید."
+      );
+      return;
+    }
+
+    if (offeringIds.length === 0 || offeringIds.length !== selectedServices.length) {
+      setError("شناسه offering برای برخی خدمات یافت نشد.");
+      return;
+    }
+
+    try {
+      await ensureCustomerContext();
+      const res = await createBooking({
+        salonId: numericSalonId,
+        branchId,
+        startTime: toBookingStartTime(date, slotTime),
+        notes: notes.trim() || null,
+        services: offeringIds.map((offeringId) => ({
+          offeringId,
+          staffId,
+        })),
+      });
+      setCreatedId(res.data);
+      setStep(7);
+    } catch (e) {
+      setError(
+        getApiErrorMessage(
+          e,
+          "ثبت نوبت ناموفق بود. موجودی کیف‌پول یا آزاد بودن اسلات را بررسی کنید."
+        )
+      );
+    }
+  };
+
+  if (salonLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center text-sm text-foreground-muted">
+        در حال بارگذاری…
+      </div>
+    );
+  }
+
+  if (!salon) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-safe-area text-center text-sm text-error">
+        سالن یافت نشد.
+      </div>
+    );
+  }
+
+  if (numericSalonId == null) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-safe-area text-center">
+        <p className="text-sm text-error">
+          شناسه عددی سالن برای ثبت رزرو در پاسخ جزئیات موجود نیست.
+        </p>
+        <Link
+          href={RouteAddress.SALONS.DETAILS(salon.id)}
+          className="text-sm text-primary"
+        >
+          بازگشت به جزئیات
+        </Link>
+      </div>
+    );
+  }
+
+  if (createdId != null && step === 7) {
+    return (
+      <div className="flex flex-col gap-6 px-safe-area pb-24 pt-4">
+        <TopNavigation>رزرو موفق</TopNavigation>
+        <div className="rounded-[24px] bg-surface-tertiary p-6 text-center">
+          <p className="text-lg font-bold text-foreground">نوبت ثبت شد</p>
+          <p className="mt-2 text-sm text-foreground-muted">
+            شماره نوبت: {createdId}
+          </p>
+          <Link
+            href={RouteAddress.RESERVATION.BASE}
+            className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+          >
+            نوبت‌های من
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col pb-28">
+      <TopNavigation>رزرو — {salon.name}</TopNavigation>
+
+      <Stepper
+        steps={STEPS.map((s) => ({
+          ...s,
+          complete: s.id < step,
+        }))}
+        activeStep={step}
+        onStepClick={(id) => {
+          if (id < step) setStep(id);
+        }}
+      />
+
+      <div className="flex flex-col gap-4 px-safe-area">
+        {error && (
+          <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
+            {error}
+          </p>
+        )}
+
+        {/* Step 1: Branch */}
+        {step === 1 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">انتخاب شعبه</h2>
+            {branches.length === 0 ? (
+              <p className="text-sm text-foreground-muted">
+                شعبه‌ای برای این سالن تعریف نشده است.
+              </p>
+            ) : (
+              branches.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => {
+                    setBranchId(b.id);
+                    setBranchName(b.name);
+                    setSelectedServices([]);
+                    setDate(null);
+                    setStaff(null);
+                    setSlotTime(null);
+                  }}
+                  className={cn(
+                    "rounded-[20px] p-4 text-right transition",
+                    branchId === b.id
+                      ? "bg-primary/15 ring-1 ring-primary"
+                      : "bg-surface-tertiary"
+                  )}
+                >
+                  <p className="font-bold text-foreground">{b.name}</p>
+                  <p className="mt-1 text-xs text-foreground-muted">
+                    {[b.city, b.address].filter(Boolean).join("، ") || "—"}
+                  </p>
+                </button>
+              ))
+            )}
+          </section>
+        )}
+
+        {/* Step 2: Services */}
+        {step === 2 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">انتخاب خدمات</h2>
+            {servicesLoading && (
+              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
+            )}
+            {enrichedServices.map((svc) => {
+              const selected = selectedServices.some(
+                (s) => s.servicePublicId === svc.servicePublicId
+              );
+              return (
+                <button
+                  key={svc.servicePublicId}
+                  type="button"
+                  onClick={() => toggleService(svc)}
+                  className={cn(
+                    "rounded-[20px] p-4 text-right transition",
+                    selected
+                      ? "bg-primary/15 ring-1 ring-primary"
+                      : "bg-surface-tertiary"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-foreground">{svc.name}</p>
+                      <p className="mt-1 text-xs text-foreground-muted">
+                        {svc.durationMinutes} دقیقه
+                        {svc.requiresDeposit
+                          ? ` · بیعانه ${formatToman(svc.depositAmount)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-bold text-foreground">
+                      {formatToman(svc.price)}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </section>
+        )}
+
+        {/* Step 3: Date */}
+        {step === 3 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">انتخاب تاریخ</h2>
+            {datesLoading && (
+              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              {dates.map((d) => (
+                <button
+                  key={d.date}
+                  type="button"
+                  disabled={!d.isAvailable}
+                  onClick={() => {
+                    setDate(d.date);
+                    setStaff(null);
+                    setSlotTime(null);
+                  }}
+                  className={cn(
+                    "rounded-2xl px-2 py-3 text-center text-xs transition",
+                    !d.isAvailable && "cursor-not-allowed opacity-40",
+                    date === d.date
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-tertiary text-foreground"
+                  )}
+                >
+                  {formatFaDate(d.date)}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Step 4: Staff */}
+        {step === 4 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">انتخاب پرسنل</h2>
+            {staffLoading && (
+              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
+            )}
+            {staffList.map((s) => (
+              <button
+                key={s.staffPublicId}
+                type="button"
+                onClick={() => {
+                  setStaff(s);
+                  setSlotTime(null);
+                }}
+                className={cn(
+                  "rounded-[20px] p-4 text-right transition",
+                  staff?.staffPublicId === s.staffPublicId
+                    ? "bg-primary/15 ring-1 ring-primary"
+                    : "bg-surface-tertiary"
+                )}
+              >
+                <p className="font-bold text-foreground">{s.fullName}</p>
+                <p className="mt-1 text-xs text-foreground-muted">
+                  {[s.startTime, s.endTime].filter(Boolean).join(" – ") ||
+                    "ساعات کاری اعلام نشده"}
+                </p>
+              </button>
+            ))}
+          </section>
+        )}
+
+        {/* Step 5: Price preview */}
+        {step === 5 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">پیش‌فاکتور</h2>
+            {priceLoading && (
+              <p className="text-sm text-foreground-muted">در حال محاسبه…</p>
+            )}
+            {price && (
+              <div className="rounded-[24px] bg-surface-tertiary p-5">
+                <ul className="flex flex-col gap-2">
+                  {price.services.map((line) => (
+                    <li
+                      key={line.serviceTypeId}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-foreground">{line.serviceName}</span>
+                      <span className="font-bold text-foreground">
+                        {formatToman(line.price)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="my-4 h-px bg-border" />
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-foreground-muted">جمع کل</span>
+                    <span className="font-bold">
+                      {formatToman(price.totalPrice)} تومان
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground-muted">پرداخت الان</span>
+                    <span className="font-bold text-primary">
+                      {formatToman(price.amountDueNow)} تومان
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground-muted">
+                      باقی‌مانده در سالن
+                    </span>
+                    <span className="font-bold">
+                      {formatToman(price.remainingAfterDeposit)} تومان
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-foreground-muted">
+                    لغو رایگان تا {price.freeCancellationWindowHours} ساعت قبل
+                    از نوبت
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Step 6: Slots */}
+        {step === 6 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">انتخاب ساعت</h2>
+            {slotsLoading && (
+              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
+            )}
+            {!slotsLoading && slots.length === 0 && (
+              <p className="text-sm text-foreground-muted">
+                اسلات آزادی برای این روز یافت نشد.
+              </p>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              {slots.map((slot) => (
+                <button
+                  key={`${slot.time}-${slot.endTime}`}
+                  type="button"
+                  onClick={() => {
+                    setSlotTime(slot.time);
+                    setSlotEndTime(slot.endTime);
+                  }}
+                  className={cn(
+                    "rounded-2xl py-3 text-sm font-medium transition",
+                    slotTime === slot.time
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-tertiary text-foreground"
+                  )}
+                >
+                  {slot.time.slice(0, 5)}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Step 7: Confirm */}
+        {step === 7 && createdId == null && (
+          <section className="flex flex-col gap-4">
+            <h2 className="text-base font-bold text-foreground">تأیید رزرو</h2>
+            <div className="rounded-[24px] bg-surface-tertiary p-5 text-sm">
+              <p>
+                <span className="text-foreground-muted">سالن: </span>
+                {salon.name}
+              </p>
+              <p className="mt-2">
+                <span className="text-foreground-muted">شعبه: </span>
+                {branchName}
+              </p>
+              <p className="mt-2">
+                <span className="text-foreground-muted">خدمات: </span>
+                {selectedServices.map((s) => s.name).join("، ")}
+              </p>
+              <p className="mt-2">
+                <span className="text-foreground-muted">پرسنل: </span>
+                {staff?.fullName}
+                {resolvedStaffId ? ` (#${resolvedStaffId})` : ""}
+              </p>
+              <p className="mt-2">
+                <span className="text-foreground-muted">زمان: </span>
+                {date && formatFaDate(date)} — {slotTime?.slice(0, 5)}
+                {slotEndTime ? ` تا ${slotEndTime.slice(0, 5)}` : ""}
+              </p>
+              {price && (
+                <>
+                  <div className="my-3 h-px bg-border" />
+                  <p>
+                    پرداخت الان:{" "}
+                    <strong>{formatToman(price.amountDueNow)} تومان</strong>
+                  </p>
+                  <p className="mt-1">
+                    باقی‌مانده:{" "}
+                    <strong>
+                      {formatToman(price.remainingAfterDeposit)} تومان
+                    </strong>
+                  </p>
+                  <p className="mt-1 text-xs text-foreground-muted">
+                    لغو رایگان تا {price.freeCancellationWindowHours} ساعت قبل
+                  </p>
+                </>
+              )}
+            </div>
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="text-foreground-muted">یادداشت (اختیاری)</span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
+                placeholder="توضیحات برای سالن…"
+              />
+            </label>
+            {!isLoggedIn && (
+              <p className="text-xs text-foreground-muted">
+                برای ثبت نهایی باید وارد حساب کاربری شوید.
+              </p>
+            )}
+          </section>
+        )}
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
+        <div className="flex w-full max-w-[600px] gap-3">
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex-1 rounded-full bg-surface-tertiary py-4 text-sm font-bold text-foreground"
+          >
+            بازگشت
+          </button>
+          {step < 7 ? (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!canGoNext()}
+              className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+            >
+              ادامه
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={isCreating}
+              className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+            >
+              {isCreating
+                ? "در حال ثبت…"
+                : isLoggedIn
+                  ? "ثبت نوبت"
+                  : "ورود و ثبت نوبت"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -28,6 +28,15 @@ export const API_ADDRESS = {
     BASE: "/api/salons",
     APPROVED: "/api/salons",
     BY_ID: (id: string | number) => `/api/salons/${id}`,
+    BRANCH_SERVICES: (branchId: number) =>
+      `/api/salons/branches/${branchId}/services`,
+    BRANCH_AVAILABLE_DATES: (branchId: number) =>
+      `/api/salons/branches/${branchId}/available-dates`,
+    BRANCH_STAFF_AVAILABILITY: (branchId: number) =>
+      `/api/salons/branches/${branchId}/staff-availability`,
+    BRANCH_CALCULATE_PRICE: (branchId: number) =>
+      `/api/salons/branches/${branchId}/calculate-price`,
+    AVAILABLE_SLOTS: "/api/salons/available-slots",
   },
 
   FAVORITES: {
