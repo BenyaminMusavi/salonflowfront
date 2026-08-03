@@ -53,9 +53,11 @@ export enum TErrorTypeEnum {
   'validation_error' = 'validation_error',
   'inquiry_error' = 'inquiry_error',
   'authentication_error' = 'authentication_error',
+  'authorization_error' = 'authorization_error',
+  'not_found' = 'not_found',
+  'rate_limit_exceeded' = 'rate_limit_exceeded',
   'server_error' = 'server_error',
   'suspended' = 'suspended',
-  // ----------- for seller select account card --------------
   'order_not_exists' = 'order_not_exists',
   'credit_account_required' = 'credit_account_required',
 }

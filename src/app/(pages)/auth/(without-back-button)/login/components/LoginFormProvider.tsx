@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginFormSchema, TLoginFormSchema } from "./loginFormSchema";
 import { useMutateLoginWithPassword } from "@/services/domains/auth/hooks/useMutateLoginWithPassword";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
@@ -32,7 +33,7 @@ const LoginFormProvider = ({ children }: IProps) => {
   const router = useRouter();
   const { mutateAsync, isPending } = useMutateLoginWithPassword();
   const setAccessToken = useTokenStore((s) => s.setToken);
-  const setIsLoggedIn = useTokenStore((s) => s.setIsLoggedIn);
+  const clearSalon = useSalonContextStore((s) => s.clearAll);
 
   const onSubmit = async (data: TLoginFormSchema) => {
     clearError();
@@ -41,11 +42,8 @@ const LoginFormProvider = ({ children }: IProps) => {
         phone: data.phone,
         password: data.password,
       });
-      setAccessToken({
-        accessToken: res.data.accessToken,
-        refreshToken: res.data.refreshToken,
-      });
-      setIsLoggedIn(true);
+      clearSalon();
+      setAccessToken(res.data, true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);

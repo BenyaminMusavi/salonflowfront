@@ -8,8 +8,9 @@ import {
   otpFormSchema,
   TOtpFormSchema,
 } from "./otpFormSchema";
-import { useVerifyOtp } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { useMutateVerifyOtp } from "@/services/domains/auth/hooks/useMutateVerifyOtp";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
@@ -33,8 +34,9 @@ const OtpFormProvider = ({ children }: IProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
-  const { mutateAsync, isPending } = useVerifyOtp();
+  const { mutateAsync, isPending } = useMutateVerifyOtp();
   const setToken = useTokenStore((s) => s.setToken);
+  const clearSalon = useSalonContextStore((s) => s.clearAll);
 
   const onSubmit = async (data: TOtpFormSchema) => {
     if (!phone) {
@@ -47,6 +49,7 @@ const OtpFormProvider = ({ children }: IProps) => {
         phone,
         code: data.otp,
       });
+      clearSalon();
       setToken(res.data, true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {

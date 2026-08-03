@@ -1,40 +1,44 @@
 import { useQuery } from "@tanstack/react-query";
 import bookingService from "../booking.service";
-
-export const AVAILABLE_SLOTS_QUERY_KEY = "AVAILABLE_SLOTS_QUERY_KEY";
+import { availableSlotsKey } from "./availableSlotsKey";
 
 interface Params {
-  salonId: number;
+  salonId: string | number;
+  branchId: number;
   staffId?: number | null;
   offeringIds: number[];
   date: string;
 }
 
+export const AVAILABLE_SLOTS_QUERY_KEY = "available-slots";
+
 export function useQueryAvailableSlots(params: Params) {
-  const salonId = Number(params.salonId);
   const offeringIds = (params.offeringIds ?? []).filter(Boolean);
   const date = params.date;
+  const branchId = Number(params.branchId);
 
   const isValid =
-    Number.isFinite(salonId) &&
-    salonId > 0 &&
+    params.salonId !== undefined &&
+    params.salonId !== null &&
+    params.salonId !== "" &&
+    Number.isFinite(branchId) &&
+    branchId > 0 &&
     offeringIds.length > 0 &&
     !!date;
 
   return useQuery({
-    queryKey: [
-      AVAILABLE_SLOTS_QUERY_KEY,
-      salonId,
-      params.staffId ?? null,
+    queryKey: availableSlotsKey.list({
+      salonId: params.salonId,
+      branchId,
+      staffId: params.staffId ?? null,
+      offeringIds,
       date,
-      offeringIds.join("-"),
-    ],
-
+    }),
     enabled: isValid,
-
     queryFn: () =>
       bookingService.getAvailableSlots({
-        salonId,
+        salonId: params.salonId,
+        branchId,
         staffId: params.staffId ?? null,
         offeringIds,
         date,

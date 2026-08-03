@@ -1,0 +1,14 @@
+---
+description: Core behavioral guardrails for SalonFlow frontend work
+alwaysApply: true
+---
+
+# SalonFlow Core
+
+- Smallest change that solves the request; no unrequested refactors, docs, or tests.
+- Do not re-read files already in context; act, then verify once.
+- One clarifying question if requirements are ambiguous; otherwise pick a sensible default.
+- Prefer targeted edits over rewrites; stop when the task is done.
+- Follow `AGENTS.md`: Next.js 16 quirks, `@/*` → `src/*`, Tailwind v4 tokens in `globals.css`, Farsi/RTL.
+- After agreed architecture changes, update the matching `.cursor/rules/*.mdc` in the same session.
+- Never invent AdminOnly UI in the customer/salon SPA; platform admin is a separate surface.

@@ -1,9 +1,9 @@
 import { useQueryAvailableSlots } from "./useQueryAvailableSlots";
-import { useMutationCreateBooking } from "./useMutationCreateBooking";
+import { useCreateBooking } from "./useCreateBooking";
 import { usePrefetchSlots } from "./usePrefetchSlots";
 
 export {
   useQueryAvailableSlots,
-  useMutationCreateBooking,
+  useCreateBooking,
   usePrefetchSlots,
 };

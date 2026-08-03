@@ -8,9 +8,10 @@ import {
   resetPasswordFormSchema,
   TResetPasswordFormSchema,
 } from "./resetPasswordFormSchema";
-import { useMutateSendOtp } from "@/services/domains/auth/hooks/useMutateSendOtp";
+import { useMutateForgetPassword } from "@/services/domains/auth/hooks/useMutateForgetPassword";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -29,13 +30,15 @@ const ResetPasswordFormProvider = ({ children }: IProps) => {
   const { setError, handleSubmit } = methods;
   const [generalError, setGeneralError] = useState("");
   const router = useRouter();
-  const { mutateAsync, isPending } = useMutateSendOtp();
+  const { mutateAsync, isPending } = useMutateForgetPassword();
 
   const onSubmit = async (data: TResetPasswordFormSchema) => {
     setGeneralError("");
     try {
       await mutateAsync({ phone: data.phone });
-      router.push(`/auth/otp?phone=${encodeURIComponent(data.phone)}`);
+      router.push(
+        `${RouteAddress.AUTH.OTP.BASE}?phone=${encodeURIComponent(data.phone)}`
+      );
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
     }

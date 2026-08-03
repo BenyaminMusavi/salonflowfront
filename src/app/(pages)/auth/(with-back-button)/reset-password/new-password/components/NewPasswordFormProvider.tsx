@@ -10,6 +10,7 @@ import {
 } from "./newPasswordFormSchema";
 import { useSetPasswordWithOtp } from "@/services/domains/auth/hooks/useMutateSetPasswordWithOtp";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
@@ -30,13 +31,14 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
     }
   });
 
-  const { setError, handleSubmit, watch } = methods;
+  const { setError, handleSubmit } = methods;
   const [generalError, setGeneralError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
   const { mutateAsync, isPending } = useSetPasswordWithOtp();
   const setToken = useTokenStore((s) => s.setToken);
+  const clearSalon = useSalonContextStore((s) => s.clearAll);
 
   const onSubmit = async (data: TNewPasswordFormSchema) => {
     if (!phone) {
@@ -57,6 +59,7 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
         code: data.otp,
         password: data.password,
       });
+      clearSalon();
       setToken(res.data, true);
       router.push(RouteAddress.HOME.BASE);
     } catch (e) {

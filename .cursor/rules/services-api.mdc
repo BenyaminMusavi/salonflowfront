@@ -1,0 +1,16 @@
+---
+description: API service layer, auth context, and contract conventions
+globs: src/services/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Services & API
+
+- Singleton domain services in `src/services/domains/<domain>/`; React Query hooks in `hooks/`.
+- Paths only via `API_ADDRESS` in `src/services/common/apiAddress.ts`.
+- Success with body: unwrap `TResponse<T>.data`. Success 204 / empty 200: no `data` expected.
+- Auth header: Bearer access token. On 401 with a prior token, refresh via bare axios (not `axiosInstance`) then retry; pass `salonId`/`branchId` from `useSalonContextStore` on refresh.
+- `switch-context` replaces the access token; `salonId: null` exits to customer/global mode.
+- ID mapping: public browse Guids ≠ long IDs for create/favorites/finance. Booking create body is `{ salonId, branchId?, startTime, notes?, services: [{ offeringId, staffId }] }`.
+- Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
+- Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.

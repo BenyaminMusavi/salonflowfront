@@ -1,48 +1,84 @@
 "use client";
 
-import { PlusIcon, CaretLeftIcon, SignOutIcon } from "@phosphor-icons/react";
+import { PlusIcon, CaretLeftIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { useBusinessStore } from "@/services/business-store/useBusinessStore";
+import { useRouter } from "next/navigation";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
-import { UserIcon } from "@phosphor-icons/react/ssr";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
+import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { useMutateLogout } from "@/services/domains/auth/hooks/useMutateLogout";
+import {
+  useSalonContextStore,
+  ISalonMembership,
+} from "@/services/salon-context-store/useSalonContextStore";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 export default function BusinessSwitcher() {
-  const { businesses, activeBusinessId, addBusiness, setActiveBusiness } =
-    useBusinessStore();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const activeBusiness = businesses.find((b) => b.id === activeBusinessId);
+  const memberships = useSalonContextStore((s) => s.memberships);
+  const salonId = useSalonContextStore((s) => s.salonId);
+  const salonName = useSalonContextStore((s) => s.salonName);
 
-  const handleAddBusiness = () => {
-    const id = crypto.randomUUID();
-    addBusiness({
-      id,
-      name: `کسب و کار ${businesses.length + 1}`,
-      phone: "09123456789",
-      address: "تهران، ایران",
-    });
-    setActiveBusiness(id);
-    setOpen(false);
+  const { data } = useQueryAuthMe();
+  const { mutateAsync: switchContext, isPending: isSwitching } =
+    useMutateSwitchContext();
+  const { mutateAsync: logout, isPending: isLoggingOut } = useMutateLogout();
+
+  const activeMembership = memberships.find((m) => m.salonId === salonId);
+  const displayInitial =
+    activeMembership?.name?.charAt(0) ??
+    salonName?.charAt(0) ??
+    data?.data?.firstName?.charAt(0) ??
+    "?";
+
+  const handleSwitchToCustomer = async () => {
+    try {
+      await switchContext({ salonId: null, branchId: null });
+      setOpen(false);
+    } catch {
+      /* errors surface via network; keep sheet open */
+    }
   };
 
-  const handleSwitch = (id: string) => {
-    setActiveBusiness(id);
-    setOpen(false);
+  const handleSwitchSalon = async (membership: ISalonMembership) => {
+    try {
+      await switchContext({
+        salonId: membership.salonId,
+        branchId: membership.branchId ?? null,
+        salonName: membership.name,
+        salonPublicId: membership.salonPublicId,
+      });
+      setOpen(false);
+    } catch {
+      /* keep sheet open on failure */
+    }
   };
 
-  const {data, isLoading} = useQueryAuthMe()
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setOpen(false);
+      router.push(RouteAddress.AUTH.LOGIN.BASE);
+    }
+  };
+
+  const fullName =
+    `${data?.data?.firstName ?? ""} ${data?.data?.lastName ?? ""}`.trim() ||
+    "کاربر";
 
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}>
-        {businesses.length > 0 ? (
+        {salonId != null || memberships.length > 0 ? (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-[14px] font-bold">
-            {activeBusiness?.name.charAt(0) ?? "?"}
+            {displayInitial}
           </div>
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <PlusIcon size={20} weight="bold" />
+            <UserIcon size={20} weight="bold" />
           </div>
         )}
       </button>
@@ -54,11 +90,14 @@ export default function BusinessSwitcher() {
               <UserIcon size={20} />
             </div>
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-foreground">
-                {(data?.data.firstName || "") + " " + (data?.data.lastName || "")}
-              </p>
+              <p className="text-[14px] font-bold text-foreground">{fullName}</p>
               <p className="text-[12px] text-foreground-muted">
-                {data?.data.phone}
+                {data?.data?.phone}
+              </p>
+              <p className="text-[11px] text-foreground-muted mt-0.5">
+                {salonId != null
+                  ? `کانتکست سالن: ${activeMembership?.name ?? salonName ?? salonId}`
+                  : "کانتکست مشتری"}
               </p>
             </div>
           </div>
@@ -68,29 +107,56 @@ export default function BusinessSwitcher() {
               کسب و کارها
             </p>
 
-            {businesses.map((b) => (
+            <button
+              type="button"
+              disabled={isSwitching || salonId == null}
+              onClick={handleSwitchToCustomer}
+              className={`flex items-center gap-3 rounded-[16px] p-4 text-right transition-colors disabled:opacity-50 ${
+                salonId == null
+                  ? "bg-primary/10 ring-1 ring-primary"
+                  : "bg-background-secondary"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary text-[14px] font-bold text-foreground">
+                <UserIcon size={18} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-foreground">
+                  حساب شخصی (مشتری)
+                </p>
+                <p className="text-[12px] text-foreground-muted">
+                  مرور و رزرو بدون کانتکست سالن
+                </p>
+              </div>
+              {salonId == null && (
+                <div className="h-2 w-2 rounded-full bg-primary" />
+              )}
+            </button>
+
+            {memberships.map((m) => (
               <button
-                key={b.id}
+                key={m.salonId}
                 type="button"
-                onClick={() => handleSwitch(b.id)}
-                className={`flex items-center gap-3 rounded-[16px] p-4 text-right transition-colors ${
-                  b.id === activeBusinessId
+                disabled={isSwitching}
+                onClick={() => handleSwitchSalon(m)}
+                className={`flex items-center gap-3 rounded-[16px] p-4 text-right transition-colors disabled:opacity-50 ${
+                  m.salonId === salonId
                     ? "bg-primary/10 ring-1 ring-primary"
                     : "bg-background-secondary"
                 }`}
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary text-[14px] font-bold text-foreground">
-                  {b.name.charAt(0)}
+                  {m.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <p className="text-[14px] font-bold text-foreground">
-                    {b.name}
+                    {m.name}
                   </p>
                   <p className="text-[12px] text-foreground-muted">
-                    {b.address}
+                    شناسه {m.salonId}
                   </p>
                 </div>
-                {b.id === activeBusinessId && (
+                {m.salonId === salonId && (
                   <div className="h-2 w-2 rounded-full bg-primary" />
                 )}
               </button>
@@ -98,8 +164,8 @@ export default function BusinessSwitcher() {
 
             <button
               type="button"
-              onClick={handleAddBusiness}
               className="flex items-center gap-3 rounded-[16px] border border-dashed border-border p-4 text-right transition-colors hover:bg-background-secondary"
+              onClick={() => setOpen(false)}
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary">
                 <PlusIcon size={18} className="text-primary" />
@@ -113,7 +179,9 @@ export default function BusinessSwitcher() {
 
           <button
             type="button"
-            className="mt-2 flex items-center gap-3 rounded-[16px] bg-background-secondary p-4 text-right"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            className="mt-2 flex items-center gap-3 rounded-[16px] bg-background-secondary p-4 text-right disabled:opacity-50"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary">
               <SignOutIcon size={18} className="text-error" />

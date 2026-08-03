@@ -6,6 +6,10 @@ import {
   ISendOtpRequest,
   ISetPasswordRequest,
   ISetPasswordWithOtpRequest,
+  IForgetPasswordRequest,
+  IRefreshRequest,
+  ILogoutRequest,
+  ISwitchContextRequest,
   TAuthEntity,
   TAuthMeEntity,
 } from "./types/auth.type";
@@ -33,7 +37,7 @@ class AuthService {
   }
 
   async setPassword(data: ISetPasswordRequest) {
-    return await axiosInstance.post<unknown, TAuthEntity>(
+    return await axiosInstance.post<unknown, void>(
       API_ADDRESS.AUTH.SET_PASSWORD,
       data
     );
@@ -46,21 +50,35 @@ class AuthService {
     );
   }
 
-  async refresh(refreshToken: string) {
+  async forgetPassword(data: IForgetPasswordRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.AUTH.FORGET_PASSWORD,
+      data
+    );
+  }
+
+  async refresh(data: IRefreshRequest) {
     return await axiosInstance.post<unknown, TAuthEntity>(
       API_ADDRESS.AUTH.REFRESH,
-      { refreshToken }
+      data
+    );
+  }
+
+  async logout(data: ILogoutRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.AUTH.LOGOUT,
+      data
     );
   }
 
   async me() {
-    return await axiosInstance.get<any, TAuthMeEntity>(API_ADDRESS.AUTH.ME);
+    return await axiosInstance.get<unknown, TAuthMeEntity>(API_ADDRESS.AUTH.ME);
   }
 
-  async switchContext(salonId?: number, branchId?: number) {
+  async switchContext(data: ISwitchContextRequest) {
     return await axiosInstance.post<unknown, TAuthEntity>(
       API_ADDRESS.AUTH.SWITCH_CONTEXT,
-      { salonId, branchId }
+      data
     );
   }
 }
