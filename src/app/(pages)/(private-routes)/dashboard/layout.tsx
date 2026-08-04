@@ -48,7 +48,7 @@ export default function DashboardLayout({
     { href: RouteAddress.DASHBOARD.FINANCE, label: "مالی" },
     { href: RouteAddress.DASHBOARD.Z_REPORT, label: "Z-Report" },
     { href: RouteAddress.DASHBOARD.PAYOUTS, label: "تسویه/کمیسیون" },
-    { href: RouteAddress.ONBOARDING.BASE, label: "ثبت/ویرایش سالن" },
+    { href: RouteAddress.DASHBOARD.SALON_INFO, label: "اطلاعات سالن" },
     { href: RouteAddress.HOME.BASE, label: "بازگشت به مشتری" },
   ];
 

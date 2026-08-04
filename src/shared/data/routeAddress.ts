@@ -59,5 +59,6 @@ export const RouteAddress = {
     Z_REPORT: "/dashboard/z-report",
     PAYOUTS: "/dashboard/payouts",
     NOTIFICATIONS: "/dashboard/notifications",
+    SALON_INFO: "/dashboard/salon-info",
   },
 };
