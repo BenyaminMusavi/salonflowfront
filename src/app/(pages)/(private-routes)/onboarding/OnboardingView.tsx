@@ -12,7 +12,6 @@ import salonService from "@/services/domains/salons/salon.service";
 import {
   DAY_LABELS,
   GENDER_TYPE_OPTIONS,
-  STAFF_TYPE_LABELS,
   useOnboardingDraftStore,
 } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import {
@@ -212,7 +211,6 @@ export default function OnboardingView() {
       branchPublicId: firstBranch ? String(firstBranch) : "",
       isCreator: draft.staff.length === 0,
       phoneNumber: null,
-      staffType: 1,
     };
     draft.setStaff([...draft.staff, member]);
   };
@@ -539,21 +537,6 @@ export default function OnboardingView() {
                   {draft.branches.map((b) => (
                     <option key={String(b.publicId)} value={String(b.publicId)}>
                       {b.name || "شعبه بدون نام"}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={s.staffType}
-                  onChange={(e) => {
-                    const next = [...draft.staff];
-                    next[idx] = { ...s, staffType: Number(e.target.value) };
-                    draft.setStaff(next);
-                  }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
-                >
-                  {Object.entries(STAFF_TYPE_LABELS).map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
                     </option>
                   ))}
                 </select>

@@ -36,7 +36,6 @@ export interface IOnboardingStaff {
   branchPublicId: string;
   isCreator: boolean;
   phoneNumber?: string | null;
-  staffType: number;
 }
 
 export interface IScheduleDay {

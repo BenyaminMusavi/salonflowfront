@@ -5,7 +5,6 @@ export interface IStaffProfile {
   firstName?: string | null;
   lastName?: string | null;
   fullName?: string | null;
-  staffType?: number;
   avatarUrl?: string | null;
   publicId?: string | null;
 }

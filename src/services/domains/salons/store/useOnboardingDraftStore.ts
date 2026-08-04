@@ -85,15 +85,6 @@ export const DAY_LABELS = [
   "شنبه",
 ];
 
-export const STAFF_TYPE_LABELS: Record<number, string> = {
-  1: "آرایشگر مو",
-  2: "گریم",
-  3: "ناخن",
-  4: "آرایشگر مردانه",
-  5: "اسپا",
-  6: "پذیرش",
-};
-
 export const GENDER_TYPE_OPTIONS = [
   { value: 1, label: "بانوان" },
   { value: 2, label: "آقایان" },
