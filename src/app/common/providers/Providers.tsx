@@ -3,6 +3,7 @@ import React, {ReactNode} from 'react';
 import { DirectionProvider } from "@radix-ui/react-direction";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import { useSyncMembershipsFromAuthMe } from "@/services/domains/auth/hooks/useSyncMembershipsFromAuthMe";
 
 type Props = {
     children: ReactNode
@@ -44,8 +45,14 @@ export const QueryProvider = ({ children }: Props) => {
     )
 }
 
+/** Must sit under QueryProvider so useQueryAuthMe can run. */
+export const AuthMeMembershipsSyncProvider = ({ children }: Props) => {
+    useSyncMembershipsFromAuthMe();
+    return <>{children}</>;
+}
+
 export const Providers = composeProvider(
     RtlDirectionProvider,
-    QueryProvider
-    // Add more providers here as needed
+    QueryProvider,
+    AuthMeMembershipsSyncProvider
 )
