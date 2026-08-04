@@ -7,6 +7,7 @@ import {
   CalendarBlank,
   CrownSimple,
   Storefront,
+  BellSimple,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
@@ -25,6 +26,11 @@ const items = [
     label: "اشتراک پلتفرم",
     icon: CrownSimple,
     href: RouteAddress.SUBSCRIPTIONS.BASE,
+  },
+  {
+    label: "اعلان‌ها",
+    icon: BellSimple,
+    href: RouteAddress.NOTIFICATIONS.BASE,
   },
   {
     label: "تنظیمات",

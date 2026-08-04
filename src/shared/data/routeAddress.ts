@@ -41,6 +41,9 @@ export const RouteAddress = {
   WALLET: {
     BASE: "/wallet",
   },
+  NOTIFICATIONS: {
+    BASE: "/notifications",
+  },
   SUBSCRIPTIONS: {
     BASE: "/subscriptions",
   },
@@ -54,5 +57,7 @@ export const RouteAddress = {
     SCHEDULES: "/dashboard/schedules",
     FINANCE: "/dashboard/finance",
     Z_REPORT: "/dashboard/z-report",
+    PAYOUTS: "/dashboard/payouts",
+    NOTIFICATIONS: "/dashboard/notifications",
   },
 };

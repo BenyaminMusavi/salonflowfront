@@ -26,5 +26,7 @@ alwaysApply: false
 - Finance domains: `api/invoices`, `api/payments`, `api/wallets`, `api/tips`, `api/reports/z-report`. Always send a unique `idempotencyKey` on payment create.
 - Owner finance flow: issue invoice from Completed appointments (`POST /api/invoices/from-appointment/{appointmentId}`), then record payment method (Cash/Card/Online/Transfer/Wallet).
 - Customer wallet UI must use real wallet endpoints (balance + transactions), no crypto/mock fields.
+- Owner ops phase-10: payouts/earnings (`api/earnings`, `api/payouts`), commission plans (`api/commission/plans*`), and notifications inbox (`api/notifications`).
+- Admin-only actions/surfaces (review moderation, salon approval workflows, platform subscription mark-paid, admin trust actions) are out of scope in this SPA.
 - Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
 - Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.

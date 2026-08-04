@@ -9,6 +9,8 @@ alwaysApply: false
 - Customer routes live under `src/app/(pages)/(main-pages)/`; owner routes live under `(private-routes)/` with `onboarding` and `dashboard`.
 - Owner dashboard phase-8 surfaces: `/dashboard/catalog`, `/dashboard/staff-services`, `/dashboard/schedules` for catalog, staff assignment, and schedules.
 - Owner dashboard phase-9 surfaces: `/dashboard/finance` and `/dashboard/z-report`; customer wallet page `/wallet` must render real balance/transactions.
+- Owner dashboard phase-10 surfaces: `/dashboard/payouts` and `/dashboard/notifications`; customer notifications at `/notifications`.
+- Never add platform admin UI to this SPA; admin surface is explicitly deferred/out of scope.
 - Use `RouteAddress` for navigation; keep bottom nav customer-only unless adding an owner shell.
 - Icons: `@phosphor-icons/react` or `lucide-react` — never `@radix-ui/react-icons` (not installed).
 - Preserve existing dark theme tokens (`bg-surface-*`, `text-content-*`, primary green).

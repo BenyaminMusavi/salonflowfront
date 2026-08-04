@@ -169,5 +169,32 @@ export const API_ADDRESS = {
   REPORTS: {
     Z_REPORT: "/api/reports/z-report",
   },
+
+  EARNINGS: {
+    BASE: "/api/earnings",
+    APPROVE: (id: number) => `/api/earnings/${id}/approve`,
+  },
+
+  PAYOUTS: {
+    BASE: "/api/payouts",
+    BY_ID: (id: number) => `/api/payouts/${id}`,
+    BY_STAFF: (staffMemberId: number) => `/api/payouts/by-staff/${staffMemberId}`,
+    APPROVE: (id: number) => `/api/payouts/${id}/approve`,
+    MARK_PAID: (id: number) => `/api/payouts/${id}/mark-paid`,
+  },
+
+  COMMISSION: {
+    PLANS: "/api/commission/plans",
+    PLAN_BY_ID: (id: number) => `/api/commission/plans/${id}`,
+    RULES: (planId: number) => `/api/commission/plans/${planId}/rules`,
+    RULE_BY_ID: (planId: number, ruleId: number) =>
+      `/api/commission/plans/${planId}/rules/${ruleId}`,
+  },
+
+  NOTIFICATIONS: {
+    BASE: "/api/notifications",
+    READ: (id: number) => `/api/notifications/${id}/read`,
+    READ_ALL: "/api/notifications/read-all",
+  },
 };
 
