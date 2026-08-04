@@ -1,0 +1,101 @@
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import {
+  IOnboardingBranch,
+  IOnboardingService,
+  IOnboardingStaff,
+  ISaveBasicInfoRequest,
+  IScheduleDay,
+} from "@/services/domains/salons/types/onboarding.type";
+
+const defaultSchedule = (): IScheduleDay[] =>
+  Array.from({ length: 7 }, (_, dayOfWeek) => ({
+    dayOfWeek,
+    isOffDay: dayOfWeek === 5, // Friday off by default
+    startTime: dayOfWeek === 5 ? null : "09:00:00",
+    endTime: dayOfWeek === 5 ? null : "18:00:00",
+  }));
+
+interface IOnboardingDraftState {
+  salonPublicId: string | null;
+  step: number;
+  submitted: boolean;
+  basicInfo: Omit<ISaveBasicInfoRequest, "publicId">;
+  branches: IOnboardingBranch[];
+  services: IOnboardingService[];
+  staff: IOnboardingStaff[];
+  schedule: IScheduleDay[];
+  setSalonPublicId: (id: string | null) => void;
+  setStep: (step: number) => void;
+  setSubmitted: (v: boolean) => void;
+  setBasicInfo: (info: Partial<Omit<ISaveBasicInfoRequest, "publicId">>) => void;
+  setBranches: (branches: IOnboardingBranch[]) => void;
+  setServices: (services: IOnboardingService[]) => void;
+  setStaff: (staff: IOnboardingStaff[]) => void;
+  setSchedule: (days: IScheduleDay[]) => void;
+  reset: () => void;
+}
+
+const initial = {
+  salonPublicId: null as string | null,
+  step: 1,
+  submitted: false,
+  basicInfo: {
+    name: "",
+    description: "",
+    instagramHandle: "",
+    whatsappNumber: "",
+    websiteUrl: "",
+  },
+  branches: [] as IOnboardingBranch[],
+  services: [] as IOnboardingService[],
+  staff: [] as IOnboardingStaff[],
+  schedule: defaultSchedule(),
+};
+
+export const useOnboardingDraftStore = create<IOnboardingDraftState>()(
+  persist(
+    (set) => ({
+      ...initial,
+      setSalonPublicId: (salonPublicId) => set({ salonPublicId }),
+      setStep: (step) => set({ step }),
+      setSubmitted: (submitted) => set({ submitted }),
+      setBasicInfo: (info) =>
+        set((s) => ({ basicInfo: { ...s.basicInfo, ...info } })),
+      setBranches: (branches) => set({ branches }),
+      setServices: (services) => set({ services }),
+      setStaff: (staff) => set({ staff }),
+      setSchedule: (schedule) => set({ schedule }),
+      reset: () => set({ ...initial, schedule: defaultSchedule() }),
+    }),
+    {
+      name: "salon_flow_onboarding_draft",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
+export const DAY_LABELS = [
+  "یکشنبه",
+  "دوشنبه",
+  "سه‌شنبه",
+  "چهارشنبه",
+  "پنجشنبه",
+  "جمعه",
+  "شنبه",
+];
+
+export const STAFF_TYPE_LABELS: Record<number, string> = {
+  1: "آرایشگر مو",
+  2: "گریم",
+  3: "ناخن",
+  4: "آرایشگر مردانه",
+  5: "اسپا",
+  6: "پذیرش",
+};
+
+export const GENDER_TYPE_OPTIONS = [
+  { value: 1, label: "بانوان" },
+  { value: 2, label: "آقایان" },
+  { value: 3, label: "هردو" },
+];

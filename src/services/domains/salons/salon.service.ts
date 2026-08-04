@@ -13,6 +13,14 @@ import {
   TSalonAvailableSlotsEntity,
   TStaffAvailabilityEntity,
 } from "@/services/domains/salons/types/booking-browse.type";
+import {
+  IOnboardingBranch,
+  IOnboardingService,
+  IOnboardingStaff,
+  ISaveBasicInfoRequest,
+  IScheduleDay,
+  TSaveBasicInfoEntity,
+} from "@/services/domains/salons/types/onboarding.type";
 
 class SalonService {
   async getApproved(params: IGetApprovedSalonsParams = {}) {
@@ -35,7 +43,6 @@ class SalonService {
     );
   }
 
-  /** `id` = salon public Guid */
   async getById(id: string) {
     return await axiosInstance.get<unknown, TSalonEntity>(
       API_ADDRESS.SALON.BY_ID(id)
@@ -95,6 +102,68 @@ class SalonService {
         },
         paramsSerializer: { indexes: null },
       }
+    );
+  }
+
+  /* ---------- Onboarding ---------- */
+
+  async saveBasicInfo(body: ISaveBasicInfoRequest) {
+    return await axiosInstance.post<unknown, TSaveBasicInfoEntity>(
+      API_ADDRESS.SALON.SAVE_BASIC_INFO,
+      body
+    );
+  }
+
+  async saveBranches(salonPublicId: string, branches: IOnboardingBranch[]) {
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SAVE_BRANCHES(salonPublicId),
+      { branches }
+    );
+  }
+
+  async saveServices(salonPublicId: string, services: IOnboardingService[]) {
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SAVE_SERVICES(salonPublicId),
+      { services }
+    );
+  }
+
+  async saveStaff(salonPublicId: string, staff: IOnboardingStaff[]) {
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SAVE_STAFF(salonPublicId),
+      { staff }
+    );
+  }
+
+  async saveMedias(
+    salonPublicId: string,
+    files: File[],
+    keepMediaPublicIds?: string[]
+  ) {
+    const form = new FormData();
+    files.forEach((file) => form.append("files", file));
+    if (keepMediaPublicIds?.length) {
+      form.append("keepMediaPublicIds", keepMediaPublicIds.join(","));
+    }
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SAVE_MEDIAS(salonPublicId),
+      form,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+  }
+
+  async saveMySchedule(salonPublicId: string, days: IScheduleDay[]) {
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SAVE_MY_SCHEDULE(salonPublicId),
+      { days }
+    );
+  }
+
+  async submitForReview(salonPublicId: string) {
+    return await axiosInstance.post(
+      API_ADDRESS.SALON.SUBMIT_FOR_REVIEW(salonPublicId)
     );
   }
 }

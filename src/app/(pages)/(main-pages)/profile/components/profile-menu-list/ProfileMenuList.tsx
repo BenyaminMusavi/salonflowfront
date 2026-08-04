@@ -6,6 +6,7 @@ import {
   Gear,
   CalendarBlank,
   CrownSimple,
+  Storefront,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
@@ -14,6 +15,11 @@ const items = [
     label: "نوبت‌های من",
     icon: CalendarBlank,
     href: RouteAddress.RESERVATION.BASE,
+  },
+  {
+    label: "ثبت سالن",
+    icon: Storefront,
+    href: RouteAddress.ONBOARDING.BASE,
   },
   {
     label: "اشتراک پلتفرم",

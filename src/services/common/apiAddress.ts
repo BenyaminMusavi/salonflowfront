@@ -37,6 +37,19 @@ export const API_ADDRESS = {
     BRANCH_CALCULATE_PRICE: (branchId: number) =>
       `/api/salons/branches/${branchId}/calculate-price`,
     AVAILABLE_SLOTS: "/api/salons/available-slots",
+    SAVE_BASIC_INFO: "/api/salons/save-basic-info",
+    SAVE_BRANCHES: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/save-branches`,
+    SAVE_SERVICES: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/save-services`,
+    SAVE_STAFF: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/save-staff`,
+    SAVE_MEDIAS: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/save-medias`,
+    SAVE_MY_SCHEDULE: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/save-my-schedule`,
+    SUBMIT_FOR_REVIEW: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/submit-for-review`,
   },
 
   FAVORITES: {

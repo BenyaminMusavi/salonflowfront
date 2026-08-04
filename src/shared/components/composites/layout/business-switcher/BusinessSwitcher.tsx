@@ -165,7 +165,10 @@ export default function BusinessSwitcher() {
             <button
               type="button"
               className="flex items-center gap-3 rounded-[16px] border border-dashed border-border p-4 text-right transition-colors hover:bg-background-secondary"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                router.push(RouteAddress.ONBOARDING.BASE);
+              }}
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary">
                 <PlusIcon size={18} className="text-primary" />
