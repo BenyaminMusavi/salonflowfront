@@ -23,7 +23,7 @@ export interface ISubscription {
   planName?: string;
   status: SubscriptionStatus | number;
   startsAt?: string | null;
-  endsAt?: string | null;
+  endDate?: string | null;
   trialEndsAt?: string | null;
   maxSalons?: number;
 }
@@ -34,7 +34,7 @@ export interface ISubscriptionEntitlement {
   ownedSalonCount: number;
   status?: SubscriptionStatus | number | null;
   startsAt?: string | null;
-  endsAt?: string | null;
+  endDate?: string | null;
   trialEndsAt?: string | null;
   planId?: number | null;
   planName?: string | null;

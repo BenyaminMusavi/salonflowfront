@@ -202,18 +202,28 @@ export default function SubscriptionsView() {
         </p>
       )}
 
-      {/* Trial CTA */}
-      {trialPlan && (
+      {/* Trial / continue CTA */}
+      {isEntitled ? (
         <button
           type="button"
-          disabled={trialPending}
-          onClick={handleTrial}
-          className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+          onClick={() => router.push(RouteAddress.ONBOARDING.BASE)}
+          className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground"
         >
-          {trialPending
-            ? "در حال فعال‌سازی…"
-            : `شروع دوره آزمایشی ${trialPlan.trialDays ?? 30} روزه رایگان`}
+          ادامه به ثبت‌نام سالن
         </button>
+      ) : (
+        trialPlan && (
+          <button
+            type="button"
+            disabled={trialPending}
+            onClick={handleTrial}
+            className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+          >
+            {trialPending
+              ? "در حال فعال‌سازی…"
+              : `شروع دوره آزمایشی ${trialPlan.trialDays ?? 30} روزه رایگان`}
+          </button>
+        )
       )}
 
       {/* Plans */}

@@ -1,14 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import subscriptionsService from "../subscriptions.service";
 import {
   ICheckoutRequest,
   IStartTrialRequest,
 } from "../types/subscriptions.type";
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { SUBSCRIPTION_ME_QUERY_KEY } from "./useQuerySubscriptionMe";
 import { SUBSCRIPTION_ENTITLEMENT_QUERY_KEY } from "./useSubscriptionEntitlement";
 
 export const useMutateStartTrial = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (body: IStartTrialRequest) =>
@@ -18,6 +21,7 @@ export const useMutateStartTrial = () => {
       queryClient.invalidateQueries({
         queryKey: [SUBSCRIPTION_ENTITLEMENT_QUERY_KEY],
       });
+      router.push(RouteAddress.ONBOARDING.BASE);
     },
   });
 };
