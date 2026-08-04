@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
+import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
 import { useMutateSalonMedia } from "@/services/domains/salons/hooks/useMutateSalonMedia";
@@ -17,6 +18,8 @@ import SalonStatusBanner from "./components/SalonStatusBanner";
 import SalonInfoToast, {
   type SalonInfoToastState,
 } from "./components/SalonInfoToast";
+import SalonInfoSkeleton from "./components/SalonInfoSkeleton";
+import SalonInfoEmptyState from "./components/SalonInfoEmptyState";
 import BasicInfoSection, {
   type BasicInfoValues,
 } from "./components/sections/BasicInfoSection";
@@ -33,6 +36,15 @@ import {
   createEmptyBranch,
   type BranchEditorValues,
 } from "./components/sections/BranchEditorItem";
+import {
+  collectHydratedMediaPublicIds,
+  mapSalonToBasicInfo,
+  mapSalonToBranches,
+  mapSalonToContactInfo,
+  mapSalonToCover,
+  mapSalonToGallery,
+  mapSalonToProfile,
+} from "./utils/mapSalonToForm";
 
 function toOnboardingBranches(
   branches: BranchEditorValues[]
@@ -74,6 +86,9 @@ export default function SalonInfoView() {
   const setDraftBasicInfo = useOnboardingDraftStore((s) => s.setBasicInfo);
   const setDraftBranches = useOnboardingDraftStore((s) => s.setBranches);
 
+  const salonQuery = useQuerySalonById(salonPublicId || undefined);
+  const salon = salonQuery.data?.data;
+
   const saveBasicInfo = useMutateSalonBasicInfo();
   const saveBranches = useMutateSalonBranches();
   const saveMedia = useMutateSalonMedia();
@@ -83,6 +98,8 @@ export default function SalonInfoView() {
     draftSalonPublicId === salonPublicId &&
     !draftSubmitted &&
     draftStep < 7;
+
+  const hydratedForIdRef = useRef<string | null>(null);
 
   const [activeSectionId, setActiveSectionId] = useState<string>(
     SALON_INFO_SECTIONS[0].id
@@ -108,6 +125,30 @@ export default function SalonInfoView() {
   const [toast, setToast] = useState<SalonInfoToastState>(null);
 
   const dismissToast = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    hydratedForIdRef.current = null;
+  }, [salonPublicId]);
+
+  useEffect(() => {
+    if (!salonPublicId || !salon) return;
+    if (hydratedForIdRef.current === salonPublicId) return;
+
+    const nextCover = mapSalonToCover(salon);
+    const nextProfile = mapSalonToProfile(salon);
+    const nextGallery = mapSalonToGallery(salon);
+
+    setBasicInfo(mapSalonToBasicInfo(salon));
+    setContactInfo(mapSalonToContactInfo(salon));
+    setCover(nextCover);
+    setProfile(nextProfile);
+    setGallery(nextGallery);
+    setBranches(mapSalonToBranches(salon));
+    setInitialMediaPublicIds(
+      collectHydratedMediaPublicIds(nextCover, nextProfile, nextGallery)
+    );
+    hydratedForIdRef.current = salonPublicId;
+  }, [salon, salonPublicId]);
 
   useEffect(() => {
     const elements = SALON_INFO_SECTIONS.map((section) =>
@@ -137,7 +178,7 @@ export default function SalonInfoView() {
 
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [salon]);
 
   const onJump = (id: string) => {
     setActiveSectionId(id);
@@ -145,6 +186,11 @@ export default function SalonInfoView() {
       behavior: "smooth",
       block: "start",
     });
+  };
+
+  const onRetryLoad = () => {
+    hydratedForIdRef.current = null;
+    void salonQuery.refetch();
   };
 
   const onSaveBasicContact = async () => {
@@ -302,6 +348,13 @@ export default function SalonInfoView() {
     }
   };
 
+  const showLoading = !!salonPublicId && salonQuery.isLoading && !salon;
+  const showError =
+    !!salonPublicId &&
+    !salonQuery.isLoading &&
+    (salonQuery.isError || !salon);
+  const showMissingContext = !salonPublicId;
+
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
       <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
@@ -313,65 +366,96 @@ export default function SalonInfoView() {
         </p>
       </div>
 
-      <SalonStatusBanner show={isIncompleteDraft} />
+      {showMissingContext && (
+        <SalonInfoEmptyState
+          title="سالن فعالی انتخاب نشده"
+          description="برای ویرایش اطلاعات، ابتدا از طریق تعویض کسب‌وکار یک سالن را فعال کنید یا ثبت سالن را تکمیل کنید."
+          showOnboardingCta
+        />
+      )}
 
-      <BasicInfoSection values={basicInfo} onChange={setBasicInfo} />
-      <ContactSocialSection
-        values={contactInfo}
-        onChange={setContactInfo}
-        onSave={onSaveBasicContact}
-        isSaving={saveBasicInfo.isPending}
-        canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
-      />
-      <MediaSection
-        cover={cover}
-        profile={profile}
-        gallery={gallery}
-        onCoverChange={setCover}
-        onProfileChange={setProfile}
-        onGalleryChange={setGallery}
-        onSave={onSaveMedia}
-        isSaving={saveMedia.isPending}
-        canSave={canSaveMedia}
-      />
-      <BranchesSection
-        branches={branches}
-        onChange={setBranches}
-        onSave={onSaveBranches}
-        isSaving={saveBranches.isPending}
-        canSave={
-          !!salonPublicId &&
-          branches.length > 0 &&
-          branches.every(
-            (b) => b.name.trim() && b.city.trim() && b.address.trim()
-          )
-        }
-      />
+      {showLoading && <SalonInfoSkeleton />}
 
-      <p className="text-xs text-foreground-muted">
-        مدیریت خدمات، پرسنل و برنامه از{" "}
-        <Link
-          href={RouteAddress.DASHBOARD.CATALOG}
-          className="font-semibold text-primary"
-        >
-          کاتالوگ
-        </Link>
-        ،{" "}
-        <Link
-          href={RouteAddress.DASHBOARD.STAFF_SERVICES}
-          className="font-semibold text-primary"
-        >
-          خدمات پرسنل
-        </Link>{" "}
-        و{" "}
-        <Link
-          href={RouteAddress.DASHBOARD.SCHEDULES}
-          className="font-semibold text-primary"
-        >
-          برنامه پرسنل
-        </Link>{" "}
-        انجام می‌شود.
-      </p>
+      {showError && (
+        <SalonInfoEmptyState
+          title="اطلاعات سالن در دسترس نیست"
+          description={
+            isIncompleteDraft
+              ? "این سالن هنوز تکمیل یا تأیید نشده و جزئیات عمومی آن قابل دریافت نیست. ثبت‌نام را ادامه دهید یا دوباره تلاش کنید."
+              : getApiErrorMessage(
+                  salonQuery.error,
+                  "دریافت جزئیات سالن ناموفق بود. ممکن است سالن هنوز عمومی/تأیید نشده باشد."
+                )
+          }
+          onRetry={onRetryLoad}
+          isRetrying={salonQuery.isFetching}
+          showOnboardingCta
+        />
+      )}
+
+      {salon && (
+        <>
+          <SalonStatusBanner show={isIncompleteDraft} />
+
+          <BasicInfoSection values={basicInfo} onChange={setBasicInfo} />
+          <ContactSocialSection
+            values={contactInfo}
+            onChange={setContactInfo}
+            onSave={onSaveBasicContact}
+            isSaving={saveBasicInfo.isPending}
+            canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
+          />
+          <MediaSection
+            cover={cover}
+            profile={profile}
+            gallery={gallery}
+            onCoverChange={setCover}
+            onProfileChange={setProfile}
+            onGalleryChange={setGallery}
+            onSave={onSaveMedia}
+            isSaving={saveMedia.isPending}
+            canSave={canSaveMedia}
+          />
+          <BranchesSection
+            branches={branches}
+            onChange={setBranches}
+            onSave={onSaveBranches}
+            isSaving={saveBranches.isPending}
+            canSave={
+              !!salonPublicId &&
+              branches.length > 0 &&
+              branches.every(
+                (b) => b.name.trim() && b.city.trim() && b.address.trim()
+              )
+            }
+          />
+
+          <p className="text-xs text-foreground-muted">
+            مدیریت خدمات، پرسنل و برنامه از{" "}
+            <Link
+              href={RouteAddress.DASHBOARD.CATALOG}
+              className="font-semibold text-primary"
+            >
+              کاتالوگ
+            </Link>
+            ،{" "}
+            <Link
+              href={RouteAddress.DASHBOARD.STAFF_SERVICES}
+              className="font-semibold text-primary"
+            >
+              خدمات پرسنل
+            </Link>{" "}
+            و{" "}
+            <Link
+              href={RouteAddress.DASHBOARD.SCHEDULES}
+              className="font-semibold text-primary"
+            >
+              برنامه پرسنل
+            </Link>{" "}
+            انجام می‌شود.
+          </p>
+        </>
+      )}
 
       <SalonInfoToast toast={toast} onDismiss={dismissToast} />
     </div>
