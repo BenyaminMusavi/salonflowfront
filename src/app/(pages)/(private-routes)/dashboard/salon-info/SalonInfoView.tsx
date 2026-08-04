@@ -6,7 +6,9 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
+import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
 import SalonInfoJumpNav, {
   SALON_INFO_SECTIONS,
 } from "./components/SalonInfoJumpNav";
@@ -22,6 +24,25 @@ import ContactSocialSection, {
 } from "./components/sections/ContactSocialSection";
 import MediaSection from "./components/sections/MediaSection";
 import BranchesSection from "./components/sections/BranchesSection";
+import {
+  createEmptyBranch,
+  type BranchEditorValues,
+} from "./components/sections/BranchEditorItem";
+
+function toOnboardingBranches(
+  branches: BranchEditorValues[]
+): IOnboardingBranch[] {
+  return branches.map((b) => ({
+    publicId: b.publicId,
+    name: b.name.trim(),
+    city: b.city.trim(),
+    address: b.address.trim(),
+    latitude: null,
+    longitude: null,
+    genderType: b.genderType,
+    phone: b.phone.trim() || null,
+  }));
+}
 
 export default function SalonInfoView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
@@ -32,8 +53,10 @@ export default function SalonInfoView() {
   const draftSubmitted = useOnboardingDraftStore((s) => s.submitted);
   const draftStep = useOnboardingDraftStore((s) => s.step);
   const setDraftBasicInfo = useOnboardingDraftStore((s) => s.setBasicInfo);
+  const setDraftBranches = useOnboardingDraftStore((s) => s.setBranches);
 
   const saveBasicInfo = useMutateSalonBasicInfo();
+  const saveBranches = useMutateSalonBranches();
 
   const isIncompleteDraft =
     !!salonPublicId &&
@@ -53,6 +76,9 @@ export default function SalonInfoView() {
     whatsappNumber: "",
     websiteUrl: "",
   });
+  const [branches, setBranches] = useState<BranchEditorValues[]>([
+    createEmptyBranch(),
+  ]);
   const [toast, setToast] = useState<SalonInfoToastState>(null);
 
   const dismissToast = useCallback(() => setToast(null), []);
@@ -145,6 +171,47 @@ export default function SalonInfoView() {
     }
   };
 
+  const onSaveBranches = async () => {
+    if (!salonPublicId) {
+      setToast({
+        type: "error",
+        message: "شناسه سالن فعال پیدا نشد. دوباره وارد پنل شوید.",
+      });
+      return;
+    }
+    if (branches.length === 0) {
+      setToast({ type: "error", message: "حداقل یک شعبه اضافه کنید." });
+      return;
+    }
+
+    const invalid = branches.find(
+      (b) => !b.name.trim() || !b.city.trim() || !b.address.trim()
+    );
+    if (invalid) {
+      setToast({
+        type: "error",
+        message: "نام، شهر و آدرس هر شعبه الزامی است.",
+      });
+      return;
+    }
+
+    const payload = toOnboardingBranches(branches);
+
+    try {
+      await saveBranches.mutateAsync({
+        salonPublicId,
+        branches: payload,
+      });
+      setDraftBranches(payload);
+      setToast({ type: "success", message: "شعبه‌ها با موفقیت ذخیره شدند." });
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ذخیره شعبه‌ها ناموفق بود."),
+      });
+    }
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
       <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
@@ -167,7 +234,19 @@ export default function SalonInfoView() {
         canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
       />
       <MediaSection />
-      <BranchesSection />
+      <BranchesSection
+        branches={branches}
+        onChange={setBranches}
+        onSave={onSaveBranches}
+        isSaving={saveBranches.isPending}
+        canSave={
+          !!salonPublicId &&
+          branches.length > 0 &&
+          branches.every(
+            (b) => b.name.trim() && b.city.trim() && b.address.trim()
+          )
+        }
+      />
 
       <p className="text-xs text-foreground-muted">
         مدیریت خدمات، پرسنل و برنامه از{" "}

@@ -6,12 +6,29 @@ import { Button } from "@/shared/components/primitives/button/Button";
 import { GENDER_TYPE_OPTIONS } from "@/services/domains/salons/store/useOnboardingDraftStore";
 
 export interface BranchEditorValues {
+  /** Existing branch Guid; null for newly added rows. */
+  publicId: string | null;
+  /** Local React key only — not sent to the API. */
+  clientKey: string;
   name: string;
   city: string;
   address: string;
   phone: string;
   genderType: number;
 }
+
+export const createEmptyBranch = (): BranchEditorValues => ({
+  publicId: null,
+  clientKey:
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `branch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  name: "",
+  city: "",
+  address: "",
+  phone: "",
+  genderType: 3,
+});
 
 interface BranchEditorItemProps {
   index: number;

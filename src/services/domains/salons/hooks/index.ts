@@ -6,6 +6,7 @@ import { useQueryStaffAvailability } from "./useQueryStaffAvailability";
 import { useQueryCalculatePrice } from "./useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "./useQuerySalonAvailableSlots";
 import { useMutateSalonBasicInfo } from "./useMutateSalonBasicInfo";
+import { useMutateSalonBranches } from "./useMutateSalonBranches";
 
 export {
   useQueryApprovedSalons,
@@ -16,4 +17,5 @@ export {
   useQueryCalculatePrice,
   useQuerySalonAvailableSlots,
   useMutateSalonBasicInfo,
+  useMutateSalonBranches,
 };

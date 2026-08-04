@@ -1,35 +1,37 @@
 "use client";
 
-import { useState } from "react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import BranchEditorItem, {
+  createEmptyBranch,
   type BranchEditorValues,
 } from "./BranchEditorItem";
 
-const emptyBranch = (): BranchEditorValues => ({
-  name: "",
-  city: "",
-  address: "",
-  phone: "",
-  genderType: 3,
-});
+interface BranchesSectionProps {
+  branches: BranchEditorValues[];
+  onChange: (branches: BranchEditorValues[]) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+}
 
-export default function BranchesSection() {
-  const [branches, setBranches] = useState<BranchEditorValues[]>([
-    emptyBranch(),
-  ]);
-
+export default function BranchesSection({
+  branches,
+  onChange,
+  onSave,
+  isSaving,
+  canSave,
+}: BranchesSectionProps) {
   const updateBranch = (index: number, values: BranchEditorValues) => {
-    setBranches((prev) => prev.map((b, i) => (i === index ? values : b)));
+    onChange(branches.map((b, i) => (i === index ? values : b)));
   };
 
   const removeBranch = (index: number) => {
-    setBranches((prev) => prev.filter((_, i) => i !== index));
+    onChange(branches.filter((_, i) => i !== index));
   };
 
   const addBranch = () => {
-    setBranches((prev) => [...prev, emptyBranch()]);
+    onChange([...branches, createEmptyBranch()]);
   };
 
   return (
@@ -44,6 +46,7 @@ export default function BranchesSection() {
           variant="secondary"
           size="sm"
           onClick={addBranch}
+          disabled={isSaving}
           className="gap-1"
         >
           <PlusIcon size={14} />
@@ -54,7 +57,7 @@ export default function BranchesSection() {
       <div className="flex flex-col gap-3">
         {branches.map((branch, index) => (
           <BranchEditorItem
-            key={index}
+            key={branch.clientKey}
             index={index}
             values={branch}
             onChange={(values) => updateBranch(index, values)}
@@ -63,12 +66,15 @@ export default function BranchesSection() {
           />
         ))}
 
-        <Button type="button" disabled className="w-full">
+        <Button
+          type="button"
+          className="w-full"
+          onClick={onSave}
+          disabled={!canSave || isSaving}
+          isLoading={isSaving}
+        >
           ذخیره شعبه‌ها
         </Button>
-        <p className="text-xs text-foreground-muted">
-          ذخیره شعبه‌ها در مرحله بعد به API متصل می‌شود.
-        </p>
       </div>
     </section>
   );
