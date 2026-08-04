@@ -49,5 +49,8 @@ export const RouteAddress = {
   },
   DASHBOARD: {
     BASE: "/dashboard",
+    CATALOG: "/dashboard/catalog",
+    STAFF_SERVICES: "/dashboard/staff-services",
+    SCHEDULES: "/dashboard/schedules",
   },
 };

@@ -16,7 +16,7 @@ import {
 } from "@/services/domains/appointments/hooks";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
-import { useQuerySalonOfferings } from "@/services/domains/salon-offering/hooks/useQuerySalonOfferings";
+import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import Link from "next/link";
@@ -55,9 +55,7 @@ export default function DashboardView() {
   const [branchId, setBranchId] = useState<number | "">("");
   const activeBranchId = Number(branchId || branchFallback || 0);
 
-  const offeringsQuery = useQuerySalonOfferings(salonId ?? 0, {
-    enabled: !!salonId,
-  });
+  const offeringsQuery = useQueryCatalogOfferings(true);
   const offerings = offeringsQuery.data?.data ?? [];
   const [offeringId, setOfferingId] = useState<number | "">("");
   const selectedOfferingId = Number(offeringId || 0);
@@ -184,7 +182,7 @@ export default function DashboardView() {
             <option value="">انتخاب سرویس</option>
             {offerings.map((offering) => (
               <option key={offering.id} value={offering.id}>
-                {offering.serviceName}
+                {offering.serviceTypeName}
               </option>
             ))}
           </select>

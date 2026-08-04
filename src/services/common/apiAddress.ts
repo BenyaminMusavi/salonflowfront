@@ -62,6 +62,16 @@ export const API_ADDRESS = {
     BY_SALON: (salonId: number) => `/api/salon-offering/salon/${salonId}`,
   },
 
+  CATALOG: {
+    OFFERINGS: "/api/catalog/offerings",
+    OFFERING_BY_ID: (id: number) => `/api/catalog/offerings/${id}`,
+    OFFERING_ACTIVE: (id: number) => `/api/catalog/offerings/${id}/active`,
+    PRICING_RULES: "/api/catalog/pricing-rules",
+    PRICING_RULE_BY_ID: (id: number) => `/api/catalog/pricing-rules/${id}`,
+    STAFF_SERVICES: (staffMemberId: number) =>
+      `/api/catalog/staff/${staffMemberId}/services`,
+  },
+
   STAFF_PROFILE: {
     BY_SALON_FOR_SERVICES: (salonId: number | string) =>
       `/api/staff-profiles/by-salon/${salonId}/for-services`,
@@ -106,6 +116,20 @@ export const API_ADDRESS = {
   CUSTOMERS: {
     BASE: "/api/customers",
     BY_ID: (id: number) => `/api/customers/${id}`,
+  },
+
+  WORKING_SCHEDULES: {
+    BASE: "/api/working-schedules",
+    BY_STAFF: (staffMemberId: number) =>
+      `/api/working-schedules/staff/${staffMemberId}`,
+    BY_ID: (id: number) => `/api/working-schedules/${id}`,
+  },
+
+  SPECIAL_SCHEDULES: {
+    BASE: "/api/special-schedules",
+    BY_STAFF: (staffMemberId: number) =>
+      `/api/special-schedules/staff/${staffMemberId}`,
+    BY_ID: (id: number) => `/api/special-schedules/${id}`,
   },
 };
 

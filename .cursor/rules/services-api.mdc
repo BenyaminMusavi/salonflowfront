@@ -21,5 +21,7 @@ alwaysApply: false
 - Owner daily board: use salon-context JWT + `GET /api/appointments?date=yyyy-MM-dd` (and optional salon/branch/staff filters), group by `AppointmentStatus`; lifecycle calls are `check-in`, `complete`, `no-show`, `cancel`.
 - Salon-side quick booking uses `POST /api/appointments/quick-book` with phone/fullName/branch/startTime/services; keep `offeringId` and `staffId` numeric.
 - Customers scaffold is `GET /api/customers` (search + pagination) and stays service-only until dedicated UI is requested.
+- Catalog owner module uses `api/catalog` as source of truth (replace legacy `api/salon-offering` for dashboard operations): offerings CRUD, `PATCH .../active`, staff-centric `GET/PUT /api/catalog/staff/{staffMemberId}/services`, and pricing-rules CRUD.
+- Staff schedules use `api/working-schedules` (weekly) and `api/special-schedules` (specific date overrides/off days).
 - Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
 - Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.
