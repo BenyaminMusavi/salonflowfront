@@ -1,15 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
 
-export default function ContactSocialSection() {
-  const [instagramHandle, setInstagramHandle] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [websiteUrl, setWebsiteUrl] = useState("");
+export interface ContactSocialValues {
+  instagramHandle: string;
+  whatsappNumber: string;
+  websiteUrl: string;
+}
 
+interface ContactSocialSectionProps {
+  values: ContactSocialValues;
+  onChange: (values: ContactSocialValues) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+}
+
+export default function ContactSocialSection({
+  values,
+  onChange,
+  onSave,
+  isSaving,
+  canSave,
+}: ContactSocialSectionProps) {
   return (
     <section
       id="salon-contact"
@@ -22,8 +37,10 @@ export default function ContactSocialSection() {
           <Input
             id="salon-instagram"
             placeholder="بدون @"
-            value={instagramHandle}
-            onChange={(e) => setInstagramHandle(e.target.value)}
+            value={values.instagramHandle}
+            onChange={(e) =>
+              onChange({ ...values, instagramHandle: e.target.value })
+            }
             dir="ltr"
             className="text-left"
           />
@@ -34,8 +51,10 @@ export default function ContactSocialSection() {
             id="salon-whatsapp"
             type="tel"
             placeholder="0912…"
-            value={whatsappNumber}
-            onChange={(e) => setWhatsappNumber(e.target.value)}
+            value={values.whatsappNumber}
+            onChange={(e) =>
+              onChange({ ...values, whatsappNumber: e.target.value })
+            }
             dir="ltr"
             className="text-left"
           />
@@ -46,18 +65,23 @@ export default function ContactSocialSection() {
             id="salon-website"
             type="url"
             placeholder="https://"
-            value={websiteUrl}
-            onChange={(e) => setWebsiteUrl(e.target.value)}
+            value={values.websiteUrl}
+            onChange={(e) =>
+              onChange({ ...values, websiteUrl: e.target.value })
+            }
             dir="ltr"
             className="text-left"
           />
         </div>
-        <Button type="button" disabled className="mt-1 w-full">
+        <Button
+          type="button"
+          className="mt-1 w-full"
+          onClick={onSave}
+          disabled={!canSave || isSaving}
+          isLoading={isSaving}
+        >
           ذخیره اطلاعات
         </Button>
-        <p className="text-xs text-foreground-muted">
-          ذخیره اطلاعات پایه و تماس در مرحله بعد به API متصل می‌شود.
-        </p>
       </div>
     </section>
   );

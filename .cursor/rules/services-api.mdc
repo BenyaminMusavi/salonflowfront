@@ -18,6 +18,7 @@ alwaysApply: false
 - Reviews: create/edit/delete + public list by numeric `salonId`. Track customer submission via `useMyReviewsStore` + `GET /api/reviews/{id}` for pending badge. Salon reports: `POST /api/salon-reports`.
 - Subscriptions: plans/me/entitlement/trial/checkout. Gate salon create with `useSubscriptionEntitlement().canCreateSalon` (entitled && under maxSalons). Checkout creates Pending platform invoice (no PSP yet).
 - Onboarding: `/onboarding` — 7-step save-* + submit-for-review; draft in `useOnboardingDraftStore` (salonPublicId). New create blocked without entitlement; resume draft allowed.
+- Owner salon profile edit: `/dashboard/salon-info` — Basic+Contact via `POST save-basic-info` with existing `publicId` (`useMutateSalonBasicInfo`); invalidate `SALON_BY_ID_QUERY_KEY`.
 - Owner daily board: use salon-context JWT + `GET /api/appointments?date=yyyy-MM-dd` (and optional salon/branch/staff filters), group by `AppointmentStatus`; lifecycle calls are `check-in`, `complete`, `no-show`, `cancel`.
 - Salon-side quick booking uses `POST /api/appointments/quick-book` with phone/fullName/branch/startTime/services; keep `offeringId` and `staffId` numeric.
 - Customers scaffold is `GET /api/customers` (search + pagination) and stays service-only until dedicated UI is requested.

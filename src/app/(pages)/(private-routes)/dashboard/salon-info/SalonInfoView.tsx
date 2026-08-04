@@ -1,24 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
+import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import SalonInfoJumpNav, {
   SALON_INFO_SECTIONS,
 } from "./components/SalonInfoJumpNav";
 import SalonStatusBanner from "./components/SalonStatusBanner";
-import BasicInfoSection from "./components/sections/BasicInfoSection";
-import ContactSocialSection from "./components/sections/ContactSocialSection";
+import SalonInfoToast, {
+  type SalonInfoToastState,
+} from "./components/SalonInfoToast";
+import BasicInfoSection, {
+  type BasicInfoValues,
+} from "./components/sections/BasicInfoSection";
+import ContactSocialSection, {
+  type ContactSocialValues,
+} from "./components/sections/ContactSocialSection";
 import MediaSection from "./components/sections/MediaSection";
 import BranchesSection from "./components/sections/BranchesSection";
 
 export default function SalonInfoView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
+  const salonId = useSalonContextStore((s) => s.salonId);
+  const branchId = useSalonContextStore((s) => s.branchId);
+  const setActiveContext = useSalonContextStore((s) => s.setActiveContext);
   const draftSalonPublicId = useOnboardingDraftStore((s) => s.salonPublicId);
   const draftSubmitted = useOnboardingDraftStore((s) => s.submitted);
   const draftStep = useOnboardingDraftStore((s) => s.step);
+  const setDraftBasicInfo = useOnboardingDraftStore((s) => s.setBasicInfo);
+
+  const saveBasicInfo = useMutateSalonBasicInfo();
 
   const isIncompleteDraft =
     !!salonPublicId &&
@@ -29,6 +44,18 @@ export default function SalonInfoView() {
   const [activeSectionId, setActiveSectionId] = useState<string>(
     SALON_INFO_SECTIONS[0].id
   );
+  const [basicInfo, setBasicInfo] = useState<BasicInfoValues>({
+    name: "",
+    description: "",
+  });
+  const [contactInfo, setContactInfo] = useState<ContactSocialValues>({
+    instagramHandle: "",
+    whatsappNumber: "",
+    websiteUrl: "",
+  });
+  const [toast, setToast] = useState<SalonInfoToastState>(null);
+
+  const dismissToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
     const elements = SALON_INFO_SECTIONS.map((section) =>
@@ -68,6 +95,56 @@ export default function SalonInfoView() {
     });
   };
 
+  const onSaveBasicContact = async () => {
+    const name = basicInfo.name.trim();
+    if (!salonPublicId) {
+      setToast({
+        type: "error",
+        message: "شناسه سالن فعال پیدا نشد. دوباره وارد پنل شوید.",
+      });
+      return;
+    }
+    if (!name) {
+      setToast({ type: "error", message: "نام سالن الزامی است." });
+      return;
+    }
+
+    try {
+      await saveBasicInfo.mutateAsync({
+        publicId: salonPublicId,
+        name,
+        description: basicInfo.description.trim() || null,
+        instagramHandle: contactInfo.instagramHandle.trim() || null,
+        whatsappNumber: contactInfo.whatsappNumber.trim() || null,
+        websiteUrl: contactInfo.websiteUrl.trim() || null,
+      });
+
+      setDraftBasicInfo({
+        name,
+        description: basicInfo.description.trim(),
+        instagramHandle: contactInfo.instagramHandle.trim(),
+        whatsappNumber: contactInfo.whatsappNumber.trim(),
+        websiteUrl: contactInfo.websiteUrl.trim(),
+      });
+
+      if (salonId != null) {
+        setActiveContext({
+          salonId,
+          branchId,
+          salonPublicId,
+          salonName: name,
+        });
+      }
+
+      setToast({ type: "success", message: "اطلاعات سالن با موفقیت ذخیره شد." });
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ذخیره اطلاعات سالن ناموفق بود."),
+      });
+    }
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
       <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
@@ -81,8 +158,14 @@ export default function SalonInfoView() {
 
       <SalonStatusBanner show={isIncompleteDraft} />
 
-      <BasicInfoSection />
-      <ContactSocialSection />
+      <BasicInfoSection values={basicInfo} onChange={setBasicInfo} />
+      <ContactSocialSection
+        values={contactInfo}
+        onChange={setContactInfo}
+        onSave={onSaveBasicContact}
+        isSaving={saveBasicInfo.isPending}
+        canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
+      />
       <MediaSection />
       <BranchesSection />
 
@@ -110,6 +193,8 @@ export default function SalonInfoView() {
         </Link>{" "}
         انجام می‌شود.
       </p>
+
+      <SalonInfoToast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }
