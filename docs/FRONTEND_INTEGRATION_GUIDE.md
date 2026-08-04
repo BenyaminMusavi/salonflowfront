@@ -117,11 +117,31 @@
   "userId": 42,
   "phone": "09121234567",
   "firstName": "سارا",
-  "lastName": "محمدی"
+  "lastName": "محمدی",
+  "memberships": [
+    {
+      "salonId": 12,
+      "salonPublicId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "salonName": "سالن زیبایی سارا",
+      "roleId": 1,
+      "roleName": "Owner",
+      "branchId": null
+    }
+  ]
 }
 ```
 
+| فیلد membership | نوع | معنی |
+|-----------------|-----|------|
+| `salonId` | number | شناسهٔ عددی سالن |
+| `salonPublicId` | string | Guid عمومی سالن |
+| `salonName` | string | نام نمایشی سالن |
+| `roleId` | number | شناسهٔ نقش کاربر در سالن |
+| `roleName` | string | نام نقش (مثلاً Owner) |
+| `branchId` | number \| null | شعبهٔ پیش‌فرض/مرتبط در صورت وجود |
+
 > برای پروفایل مبتنی بر JWT از همین endpoint استفاده کنید. `GET /api/users/me` در وضعیت فعلی قرارداد قابل‌اعتماد برای کلاینت نیست.
+> کلاینت `memberships` را با `setMemberships` در `useSalonContextStore` همگام می‌کند؛ ورود به داشبورد نیازمند JWT سالن از طریق `POST /api/auth/switch-context` است (صرفاً داشتن membership کافی نیست).
 
 ### ۱.۳ Switch-Context
 

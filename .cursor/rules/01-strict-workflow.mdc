@@ -1,0 +1,10 @@
+---
+description: Stop for approval after each task; on approval, commit and push
+alwaysApply: true
+---
+
+# Strict Workflow Rule
+
+After completing any requested task or step, you MUST stop and explicitly ask for my confirmation/approval.
+Do NOT start the next task until I approve.
+Once I approve (e.g., I say 'approved', 'ok', or 'continue'), you MUST automatically run Git commands to stage, commit (with a descriptive conventional commit message based on the work done), and push the changes to the remote repository.

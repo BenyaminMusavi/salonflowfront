@@ -44,3 +44,9 @@ app/(pages)/(main-pages)/       ← All main pages wrapped in <Header> + <Bottom
 - Auth: Zustand `useTokenStore`, Axios interceptor injects Bearer token, 401 triggers logout
 - `RouteAddress` in `shared/data/routeAddress.ts` — has HOME, AUTH, PROFILE, SEARCH, RESERVATION
 - Theme: dark background (`#060e02`), green primary (`#9be955`), defined in `globals.css`
+
+## Strict Workflow Rule
+
+After completing any requested task or step, you MUST stop and explicitly ask for my confirmation/approval.
+Do NOT start the next task until I approve.
+Once I approve (e.g., I say 'approved', 'ok', or 'continue'), you MUST automatically run Git commands to stage, commit (with a descriptive conventional commit message based on the work done), and push the changes to the remote repository.
