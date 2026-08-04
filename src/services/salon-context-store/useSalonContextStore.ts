@@ -6,6 +6,8 @@ export interface ISalonMembership {
   salonPublicId?: string;
   name: string;
   branchId?: number | null;
+  roleId?: number;
+  roleName?: string;
 }
 
 interface ISalonContextState {
@@ -14,6 +16,8 @@ interface ISalonContextState {
   salonPublicId: string | null;
   salonName: string | null;
   memberships: ISalonMembership[];
+  _hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
   setActiveContext: (ctx: {
     salonId: number | null;
     branchId?: number | null;
@@ -38,6 +42,8 @@ export const useSalonContextStore = create<ISalonContextState>()(
     (set, get) => ({
       ...emptyContext,
       memberships: [],
+      _hasHydrated: false,
+      setHasHydrated: (value) => set({ _hasHydrated: value }),
       setActiveContext: (ctx) =>
         set({
           salonId: ctx.salonId,
@@ -63,6 +69,16 @@ export const useSalonContextStore = create<ISalonContextState>()(
     {
       name: "salon_flow_salon_context",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        salonId: state.salonId,
+        branchId: state.branchId,
+        salonPublicId: state.salonPublicId,
+        salonName: state.salonName,
+        memberships: state.memberships,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

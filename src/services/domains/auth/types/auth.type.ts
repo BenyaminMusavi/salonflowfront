@@ -6,11 +6,21 @@ export interface IAuth {
   hasPassword?: boolean;
 }
 
-interface IAuthMe {
+export interface IAuthMeMembership {
+  salonId: number;
+  salonPublicId: string;
+  salonName: string;
+  roleId: number;
+  roleName: string;
+  branchId: number | null;
+}
+
+export interface IAuthMe {
   userId: number;
   phone: string;
   firstName: string | null;
   lastName: string | null;
+  memberships: IAuthMeMembership[];
 }
 
 export interface ILoginRequest {
