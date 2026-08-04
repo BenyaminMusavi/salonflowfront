@@ -48,13 +48,18 @@ export enum InvoiceStatus {
   Refunded = 6,
 }
 
-export enum StaffType {
-  HairStylist = 1,
-  MakeupArtist = 2,
-  NailTechnician = 3,
-  Barber = 4,
-  SpaTherapist = 5,
-  Receptionist = 6,
+/** Branch / service audience (guide §5.4). */
+export enum GenderType {
+  Male = 1,
+  Female = 2,
+  Mixed = 3,
+}
+
+/** User / customer (guide §5.4). */
+export enum PersonGender {
+  Male = 1,
+  Female = 2,
+  Other = 3,
 }
 
 export enum SalonApprovalStatus {

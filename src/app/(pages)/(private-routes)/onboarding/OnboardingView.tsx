@@ -23,7 +23,6 @@ import {
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
-import { StaffType } from "@/services/common/enums/domain-enums";
 
 const STEPS = [
   { id: 1, label: "اطلاعات" },
@@ -213,7 +212,7 @@ export default function OnboardingView() {
       branchPublicId: firstBranch ? String(firstBranch) : "",
       isCreator: draft.staff.length === 0,
       phoneNumber: null,
-      staffType: StaffType.HairStylist,
+      staffType: 1,
     };
     draft.setStaff([...draft.staff, member]);
   };

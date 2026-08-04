@@ -1,5 +1,4 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
-import { StaffType } from "@/services/common/enums/domain-enums";
 
 export interface ISaveBasicInfoRequest {
   publicId: string | null;
@@ -37,7 +36,7 @@ export interface IOnboardingStaff {
   branchPublicId: string;
   isCreator: boolean;
   phoneNumber?: string | null;
-  staffType: StaffType | number;
+  staffType: number;
 }
 
 export interface IScheduleDay {
