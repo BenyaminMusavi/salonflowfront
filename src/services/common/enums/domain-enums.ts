@@ -116,3 +116,21 @@ export enum TrustStatus {
   UnderReview = 2,
   Suspended = 3,
 }
+
+/** Media upload entity owner (guide §3.1). */
+export enum MediaEntityType {
+  Salon = 1,
+}
+
+/** Common media kind for upload form field `mediaType`. */
+export enum MediaType {
+  Image = 1,
+}
+
+/** Media usage on salon (guide §3.1). */
+export enum MediaUsageType {
+  Cover = 1,
+  Banner = 2,
+  Profile = 3,
+  Gallery = 4,
+}

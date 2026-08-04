@@ -7,6 +7,7 @@ import { useQueryCalculatePrice } from "./useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "./useQuerySalonAvailableSlots";
 import { useMutateSalonBasicInfo } from "./useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "./useMutateSalonBranches";
+import { useMutateSalonMedia } from "./useMutateSalonMedia";
 
 export {
   useQueryApprovedSalons,
@@ -18,4 +19,5 @@ export {
   useQuerySalonAvailableSlots,
   useMutateSalonBasicInfo,
   useMutateSalonBranches,
+  useMutateSalonMedia,
 };

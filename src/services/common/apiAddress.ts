@@ -196,5 +196,10 @@ export const API_ADDRESS = {
     READ: (id: number) => `/api/notifications/${id}/read`,
     READ_ALL: "/api/notifications/read-all",
   },
+
+  MEDIA: {
+    UPLOAD: (entityType: number, entityPublicId: string) =>
+      `/api/Media/upload/${entityType}/${entityPublicId}`,
+  },
 };
 

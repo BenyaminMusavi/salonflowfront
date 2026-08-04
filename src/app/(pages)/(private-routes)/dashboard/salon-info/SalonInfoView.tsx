@@ -7,6 +7,7 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
+import { useMutateSalonMedia } from "@/services/domains/salons/hooks/useMutateSalonMedia";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
 import SalonInfoJumpNav, {
@@ -22,7 +23,11 @@ import BasicInfoSection, {
 import ContactSocialSection, {
   type ContactSocialValues,
 } from "./components/sections/ContactSocialSection";
-import MediaSection from "./components/sections/MediaSection";
+import MediaSection, {
+  createEmptyMediaSlot,
+  type GalleryMediaItem,
+  type MediaSlotState,
+} from "./components/sections/MediaSection";
 import BranchesSection from "./components/sections/BranchesSection";
 import {
   createEmptyBranch,
@@ -44,6 +49,20 @@ function toOnboardingBranches(
   }));
 }
 
+function collectKeepMediaPublicIds(
+  cover: MediaSlotState,
+  profile: MediaSlotState,
+  gallery: GalleryMediaItem[]
+): string[] {
+  const ids: string[] = [];
+  if (cover.publicId && !cover.file) ids.push(cover.publicId);
+  if (profile.publicId && !profile.file) ids.push(profile.publicId);
+  for (const item of gallery) {
+    if (item.publicId && !item.file) ids.push(item.publicId);
+  }
+  return Array.from(new Set(ids));
+}
+
 export default function SalonInfoView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonId = useSalonContextStore((s) => s.salonId);
@@ -57,6 +76,7 @@ export default function SalonInfoView() {
 
   const saveBasicInfo = useMutateSalonBasicInfo();
   const saveBranches = useMutateSalonBranches();
+  const saveMedia = useMutateSalonMedia();
 
   const isIncompleteDraft =
     !!salonPublicId &&
@@ -79,6 +99,12 @@ export default function SalonInfoView() {
   const [branches, setBranches] = useState<BranchEditorValues[]>([
     createEmptyBranch(),
   ]);
+  const [cover, setCover] = useState<MediaSlotState>(createEmptyMediaSlot);
+  const [profile, setProfile] = useState<MediaSlotState>(createEmptyMediaSlot);
+  const [gallery, setGallery] = useState<GalleryMediaItem[]>([]);
+  const [initialMediaPublicIds, setInitialMediaPublicIds] = useState<string[]>(
+    []
+  );
   const [toast, setToast] = useState<SalonInfoToastState>(null);
 
   const dismissToast = useCallback(() => setToast(null), []);
@@ -212,6 +238,70 @@ export default function SalonInfoView() {
     }
   };
 
+  const keepMediaPublicIds = collectKeepMediaPublicIds(cover, profile, gallery);
+  const hasPendingMediaUploads = !!(
+    cover.file ||
+    profile.file ||
+    gallery.some((g) => g.file)
+  );
+  const hasMediaRemovals = initialMediaPublicIds.some(
+    (id) => !keepMediaPublicIds.includes(id)
+  );
+  const canSaveMedia =
+    !!salonPublicId && (hasPendingMediaUploads || hasMediaRemovals);
+
+  const onSaveMedia = async () => {
+    if (!salonPublicId) {
+      setToast({
+        type: "error",
+        message: "شناسه سالن فعال پیدا نشد. دوباره وارد پنل شوید.",
+      });
+      return;
+    }
+    if (!canSaveMedia) {
+      setToast({
+        type: "error",
+        message: "تغییری برای ذخیره رسانه وجود ندارد.",
+      });
+      return;
+    }
+
+    try {
+      const result = await saveMedia.mutateAsync({
+        salonPublicId,
+        coverFile: cover.file,
+        profileFile: profile.file,
+        galleryFiles: gallery.filter((g) => g.file).map((g) => g.file!),
+        keepMediaPublicIds,
+      });
+
+      setCover((prev) => ({
+        ...prev,
+        file: null,
+        fileName: null,
+      }));
+      setProfile((prev) => ({
+        ...prev,
+        file: null,
+        fileName: null,
+      }));
+      setGallery((prev) =>
+        prev.map((item) => ({
+          ...item,
+          file: null,
+        }))
+      );
+      setInitialMediaPublicIds(result.keepMediaPublicIds);
+
+      setToast({ type: "success", message: "رسانه سالن با موفقیت ذخیره شد." });
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ذخیره رسانه ناموفق بود."),
+      });
+    }
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
       <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
@@ -233,7 +323,17 @@ export default function SalonInfoView() {
         isSaving={saveBasicInfo.isPending}
         canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
       />
-      <MediaSection />
+      <MediaSection
+        cover={cover}
+        profile={profile}
+        gallery={gallery}
+        onCoverChange={setCover}
+        onProfileChange={setProfile}
+        onGalleryChange={setGallery}
+        onSave={onSaveMedia}
+        isSaving={saveMedia.isPending}
+        canSave={canSaveMedia}
+      />
       <BranchesSection
         branches={branches}
         onChange={setBranches}
