@@ -7,6 +7,8 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 export type SwitchContextInput = ISwitchContextRequest & {
   salonName?: string;
   salonPublicId?: string;
+  roleId?: number;
+  roleName?: string;
 };
 
 export const useMutateSwitchContext = () => {
@@ -35,6 +37,8 @@ export const useMutateSwitchContext = () => {
         branchId: variables.branchId,
         salonPublicId: variables.salonPublicId,
         name: variables.salonName ?? `سالن ${variables.salonId}`,
+        roleId: variables.roleId,
+        roleName: variables.roleName,
       });
     },
   });

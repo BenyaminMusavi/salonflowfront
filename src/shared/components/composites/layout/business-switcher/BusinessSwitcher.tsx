@@ -49,8 +49,11 @@ export default function BusinessSwitcher() {
         branchId: membership.branchId ?? null,
         salonName: membership.name,
         salonPublicId: membership.salonPublicId,
+        roleId: membership.roleId,
+        roleName: membership.roleName,
       });
       setOpen(false);
+      router.push(RouteAddress.DASHBOARD.BASE);
     } catch {
       /* keep sheet open on failure */
     }
@@ -152,9 +155,11 @@ export default function BusinessSwitcher() {
                   <p className="text-[14px] font-bold text-foreground">
                     {m.name}
                   </p>
-                  <p className="text-[12px] text-foreground-muted">
-                    شناسه {m.salonId}
-                  </p>
+                  {m.roleName ? (
+                    <p className="text-[12px] text-foreground-muted">
+                      {m.roleName}
+                    </p>
+                  ) : null}
                 </div>
                 {m.salonId === salonId && (
                   <div className="h-2 w-2 rounded-full bg-primary" />
