@@ -47,4 +47,7 @@ export const RouteAddress = {
   ONBOARDING: {
     BASE: "/onboarding",
   },
+  DASHBOARD: {
+    BASE: "/dashboard",
+  },
 };

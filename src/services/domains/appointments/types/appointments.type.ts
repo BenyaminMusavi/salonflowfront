@@ -1,4 +1,5 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
+import { TPagedResult } from "@/services/common/data-types/SharedDataTypes";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export interface IMyAppointmentListItem {
@@ -36,5 +37,66 @@ export interface ICancelAppointmentRequest {
   reason: string;
 }
 
+export interface ISalonAppointmentServiceLine {
+  serviceName: string;
+  durationMinutes: number;
+  price: number;
+}
+
+export interface ISalonAppointmentItem {
+  id: number;
+  publicId?: string;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus | number;
+  salonName: string;
+  branchName?: string | null;
+  staffNames?: string | null;
+  services?: ISalonAppointmentServiceLine[];
+}
+
+export interface ISalonAppointmentsQuery {
+  salonId?: number;
+  date: string;
+  status?: number;
+  branchId?: number;
+  staffMemberId?: number;
+  customerId?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface IAppointmentServiceInput {
+  offeringId: number;
+  staffId: number;
+}
+
+export interface IQuickBookRequest {
+  phone: string;
+  fullName: string;
+  branchId: number;
+  startTime: string;
+  notes?: string | null;
+  services: IAppointmentServiceInput[];
+}
+
+export interface ICreateSalonAppointmentRequest {
+  customerId: number;
+  branchId: number;
+  startTime: string;
+  notes?: string | null;
+  source?: number;
+  services: IAppointmentServiceInput[];
+}
+
+export interface IQuickBookResult {
+  appointmentId: number;
+  customerId: number;
+  isNewCustomer: boolean;
+}
+
+export type TSalonAppointmentsEntity = TResponse<TPagedResult<ISalonAppointmentItem>>;
 export type TMyAppointmentsEntity = TResponse<IMyAppointmentListItem[]>;
 export type TMyAppointmentDetailEntity = TResponse<IMyAppointmentDetail>;
+export type TQuickBookEntity = TResponse<IQuickBookResult>;
+export type TCreateSalonAppointmentEntity = TResponse<number>;

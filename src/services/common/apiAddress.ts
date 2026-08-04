@@ -76,6 +76,13 @@ export const API_ADDRESS = {
     ME: "/api/appointments/me",
     ME_BY_ID: (id: number) => `/api/appointments/me/${id}`,
     CANCEL: (id: number) => `/api/appointments/${id}/cancel`,
+    SALON_LIST: "/api/appointments",
+    CREATE: "/api/appointments",
+    QUICK_BOOK: "/api/appointments/quick-book",
+    CHECK_IN: (id: number) => `/api/appointments/${id}/check-in`,
+    COMPLETE: (id: number) => `/api/appointments/${id}/complete`,
+    NO_SHOW: (id: number) => `/api/appointments/${id}/no-show`,
+    RESCHEDULE: (id: number) => `/api/appointments/${id}/reschedule`,
   },
 
   REVIEWS: {
@@ -94,6 +101,11 @@ export const API_ADDRESS = {
     TRIAL: "/api/subscriptions/trial",
     CHECKOUT: "/api/subscriptions/checkout",
     INVOICES_ME: "/api/subscriptions/invoices/me",
+  },
+
+  CUSTOMERS: {
+    BASE: "/api/customers",
+    BY_ID: (id: number) => `/api/customers/${id}`,
   },
 };
 

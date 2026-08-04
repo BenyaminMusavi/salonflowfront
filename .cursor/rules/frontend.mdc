@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Frontend UI
 
-- Customer routes live under `src/app/(pages)/(main-pages)/`; owner onboarding under `(private-routes)/onboarding/`; salon dashboard under `(private-routes)/dashboard/` when added.
+- Customer routes live under `src/app/(pages)/(main-pages)/`; owner routes live under `(private-routes)/` with `onboarding` and `dashboard`.
 - Use `RouteAddress` for navigation; keep bottom nav customer-only unless adding an owner shell.
 - Icons: `@phosphor-icons/react` or `lucide-react` — never `@radix-ui/react-icons` (not installed).
 - Preserve existing dark theme tokens (`bg-surface-*`, `text-content-*`, primary green).
