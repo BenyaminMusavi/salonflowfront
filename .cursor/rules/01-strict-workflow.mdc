@@ -8,3 +8,13 @@ alwaysApply: true
 After completing any requested task or step, you MUST stop and explicitly ask for my confirmation/approval.
 Do NOT start the next task until I approve.
 Once I approve (e.g., I say 'approved', 'ok', or 'continue'), you MUST automatically run Git commands to stage, commit (with a descriptive conventional commit message based on the work done), and push the changes to the remote repository.
+
+# Workflow Trigger: 'Sync Backend'
+
+Whenever the user types exactly `Sync Backend`, you MUST perform the following steps:
+
+1. Read the file `docs/FRONTEND_INTEGRATION_GUIDE.md` to check for any recent backend API contract changes, new endpoints, or DTO updates.
+2. Scan the current frontend codebase (`src/services/domains/`, `src/app/`, types, and hooks) to find any mismatches between the guide and the implemented code.
+3. Provide a brief summary of what changed in the backend and exactly what needs to be updated in the frontend.
+4. STOP and explicitly ask for my permission: `Do you want me to apply these frontend updates?`.
+5. Do NOT write or modify any code until I approve.

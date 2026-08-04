@@ -122,26 +122,18 @@
     {
       "salonId": 12,
       "salonPublicId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "salonName": "سالن زیبایی سارا",
-      "roleId": 1,
-      "roleName": "Owner",
+      "salonName": "سالن زیبایی آوا",
+      "roleId": 2,
+      "roleName": "SalonOwner",
       "branchId": null
     }
   ]
 }
 ```
 
-| فیلد membership | نوع | معنی |
-|-----------------|-----|------|
-| `salonId` | number | شناسهٔ عددی سالن |
-| `salonPublicId` | string | Guid عمومی سالن |
-| `salonName` | string | نام نمایشی سالن |
-| `roleId` | number | شناسهٔ نقش کاربر در سالن |
-| `roleName` | string | نام نقش (مثلاً Owner) |
-| `branchId` | number \| null | شعبهٔ پیش‌فرض/مرتبط در صورت وجود |
+`memberships` فقط عضویت‌های **فعال** روی سالن‌های حذف‌نشده است (یک ردیف به‌ازای هر membership؛ برای Staff ممکن است چند شعبه از یک سالن بیاید). از این لیست Business Switcher را پر کنید، سپس با `salonId`/`branchId` به `switch-context` بروید تا JWT داشبورد ست شود.
 
 > برای پروفایل مبتنی بر JWT از همین endpoint استفاده کنید. `GET /api/users/me` در وضعیت فعلی قرارداد قابل‌اعتماد برای کلاینت نیست.
-> کلاینت `memberships` را با `setMemberships` در `useSalonContextStore` همگام می‌کند؛ ورود به داشبورد نیازمند JWT سالن از طریق `POST /api/auth/switch-context` است (صرفاً داشتن membership کافی نیست).
 
 ### ۱.۳ Switch-Context
 
@@ -395,7 +387,7 @@
 `GET /api/staff-profiles/by-salon/{salonPublicId}/for-services?offeringIds=44&offeringIds=45`
 
 ```json
-[{ "id": 7, "firstName": "علی", "staffType": 1, "avatarUrl": null }]
+[{ "id": 7, "firstName": "علی", "avatarUrl": null }]
 ```
 
 #### گام ۶ — ثبت نوبت آنلاین
@@ -626,15 +618,13 @@
       "publicId": null,
       "branchPublicId": "…",
       "isCreator": true,
-      "phoneNumber": null,
-      "staffType": 1
+      "phoneNumber": null
     },
     {
       "publicId": null,
       "branchPublicId": "…",
       "isCreator": false,
-      "phoneNumber": "0912…",
-      "staffType": 4
+      "phoneNumber": "0912…"
     }
   ]
 }
@@ -642,7 +632,7 @@
 
 اگر `isCreator=false` باشد `phoneNumber` الزامی است.
 
-`StaffType`: 1 HairStylist … 6 Receptionist.
+قابلیت پرسنل از طریق انتساب به `ServiceOffering` (`StaffMemberService`) تعریف می‌شود — فیلد `staffType` حذف شده است.
 
 #### رسانه (multipart، حداکثر ۱۰MB در این endpoint)
 
@@ -653,7 +643,8 @@
 
 آپلود عمومی‌تر: `POST /api/Media/upload/{entityType}/{entityPublicId}` (تا ~۵۰MB) با فیلدهای `file`, `mediaType`, `usageType`, `isPrimary`, `mediaPublicId?`.
 
-`EntityType`: 1=Salon …؛ `MediaUsageType`: 1 Cover, 2 Banner, 3 Profile, 4 Gallery.
+`EntityType`: 1 Salon, 2 ServiceType, 3 ServiceOffering, 4 StaffMember, 5 Customer, 6 Gallery (obsolete), 7 Appointment, 8 Payment, 9 Invoice, 10 SalonBranch, 11 Review, 12 PlatformInvoice, 13 SalonSubscription, 14 Tip, 15 Refund, 16 Wallet, 17 WalletTransaction, 18 SalonReport, 19 PromoCode, 20 Notification, 21 StaffPayout, 22 StaffEarning, 23 User.  
+`MediaUsageType`: 1 Cover, 2 Banner, 3 Profile, 4 Gallery.
 
 #### برنامهٔ کاری مالک
 
@@ -1241,15 +1232,19 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 |------|--------|
 | AppointmentStatus | 1 Scheduled, 2 Completed, 3 Cancelled, 4 NoShow, 5 CheckedIn |
 | AppointmentSource | 1 Online, 2 WalkIn, 3 Phone, 4 Quick |
+| GenderType | 1 Male, 2 Female, 3 Mixed (branch / service audience) |
+| PersonGender | 1 Male, 2 Female, 3 Other (user / customer) |
 | PaymentMethod | 1 Cash, 2 Card, 3 Online, 4 Transfer, 5 Wallet |
 | PaymentType | 1 Appointment, 2 Deposit, 3 Full, 4 Refund, 5 Penalty |
 | PaymentStatus | 1 Pending, 2 Paid, 3 Failed, 4 Refunded, 5 Cancelled |
 | InvoiceStatus | 1 Draft … 6 Refunded |
-| StaffType | 1–6 |
+| SMSStatus | 1 Pending, 2 Sent, 3 Failed |
+| AuditAction | 1 Insert, 2 Update, 3 Delete |
 | SalonApprovalStatus | 1 Pending, 2 Approved, 3 Rejected, 4 Draft |
 | SubscriptionStatus | 1 Trialing, 2 Active, 3 Grace, 4 PastDue, 5 Canceled, 6 Expired, 7 Suspended |
 | PlatformInvoiceStatus | 1 Pending, 2 Paid, 3 Cancelled, 4 Expired |
 | PromoCodeScope | 1 PlatformSubscription, 2 SalonBooking |
+| EntityType | see Media section (1–23; Gallery=6 obsolete) |
 
 ### ۵.۵ چک‌لیست سریع کلاینت
 
