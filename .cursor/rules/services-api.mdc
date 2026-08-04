@@ -16,5 +16,6 @@ alwaysApply: false
 - Online booking browse: branch services / available-dates / staff-availability / calculate-price / `GET /api/salons/available-slots`. Create needs long `offeringId` + `staffId` — enrich via salon-offerings + staff-for-offerings (`booking-mappers.ts`). Exit salon JWT context before create.
 - Customer appointments: `GET /api/appointments/me`, `GET .../me/{id}`, `POST .../{id}/cancel` (Scheduled only). UI under `/reservation` and `/reservation/[id]`.
 - Reviews: create/edit/delete + public list by numeric `salonId`. Track customer submission via `useMyReviewsStore` + `GET /api/reviews/{id}` for pending badge. Salon reports: `POST /api/salon-reports`.
+- Subscriptions: plans/me/entitlement/trial/checkout. Gate salon create with `useSubscriptionEntitlement().canCreateSalon` (entitled && under maxSalons). Checkout creates Pending platform invoice (no PSP yet).
 - Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
 - Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.

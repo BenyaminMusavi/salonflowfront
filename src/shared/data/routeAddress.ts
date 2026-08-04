@@ -41,4 +41,7 @@ export const RouteAddress = {
   WALLET: {
     BASE: "/wallet",
   },
+  SUBSCRIPTIONS: {
+    BASE: "/subscriptions",
+  },
 };

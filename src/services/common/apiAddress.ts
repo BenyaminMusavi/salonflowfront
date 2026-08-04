@@ -73,5 +73,14 @@ export const API_ADDRESS = {
   SALON_REPORTS: {
     BASE: "/api/salon-reports",
   },
+
+  SUBSCRIPTIONS: {
+    PLANS: "/api/subscriptions/plans",
+    ME: "/api/subscriptions/me",
+    ENTITLEMENT: "/api/subscriptions/me/entitlement",
+    TRIAL: "/api/subscriptions/trial",
+    CHECKOUT: "/api/subscriptions/checkout",
+    INVOICES_ME: "/api/subscriptions/invoices/me",
+  },
 };
 

@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { CaretLeft, Gear, CalendarBlank } from "@phosphor-icons/react";
+import {
+  CaretLeft,
+  Gear,
+  CalendarBlank,
+  CrownSimple,
+} from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
 const items = [
@@ -9,6 +14,11 @@ const items = [
     label: "نوبت‌های من",
     icon: CalendarBlank,
     href: RouteAddress.RESERVATION.BASE,
+  },
+  {
+    label: "اشتراک پلتفرم",
+    icon: CrownSimple,
+    href: RouteAddress.SUBSCRIPTIONS.BASE,
   },
   {
     label: "تنظیمات",
