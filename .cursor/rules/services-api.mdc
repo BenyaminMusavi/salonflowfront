@@ -23,5 +23,8 @@ alwaysApply: false
 - Customers scaffold is `GET /api/customers` (search + pagination) and stays service-only until dedicated UI is requested.
 - Catalog owner module uses `api/catalog` as source of truth (replace legacy `api/salon-offering` for dashboard operations): offerings CRUD, `PATCH .../active`, staff-centric `GET/PUT /api/catalog/staff/{staffMemberId}/services`, and pricing-rules CRUD.
 - Staff schedules use `api/working-schedules` (weekly) and `api/special-schedules` (specific date overrides/off days).
+- Finance domains: `api/invoices`, `api/payments`, `api/wallets`, `api/tips`, `api/reports/z-report`. Always send a unique `idempotencyKey` on payment create.
+- Owner finance flow: issue invoice from Completed appointments (`POST /api/invoices/from-appointment/{appointmentId}`), then record payment method (Cash/Card/Online/Transfer/Wallet).
+- Customer wallet UI must use real wallet endpoints (balance + transactions), no crypto/mock fields.
 - Shared domain enums live in `src/services/common/enums/domain-enums.ts`.
 - Contract source of truth: `docs/FRONTEND_INTEGRATION_GUIDE.md`.

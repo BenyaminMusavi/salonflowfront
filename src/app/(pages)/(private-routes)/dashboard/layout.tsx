@@ -44,6 +44,8 @@ export default function DashboardLayout({
     { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
     { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
     { href: RouteAddress.DASHBOARD.SCHEDULES, label: "برنامه پرسنل" },
+    { href: RouteAddress.DASHBOARD.FINANCE, label: "مالی" },
+    { href: RouteAddress.DASHBOARD.Z_REPORT, label: "Z-Report" },
     { href: RouteAddress.ONBOARDING.BASE, label: "ثبت/ویرایش سالن" },
     { href: RouteAddress.HOME.BASE, label: "بازگشت به مشتری" },
   ];

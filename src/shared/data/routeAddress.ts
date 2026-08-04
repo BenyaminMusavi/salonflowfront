@@ -52,5 +52,7 @@ export const RouteAddress = {
     CATALOG: "/dashboard/catalog",
     STAFF_SERVICES: "/dashboard/staff-services",
     SCHEDULES: "/dashboard/schedules",
+    FINANCE: "/dashboard/finance",
+    Z_REPORT: "/dashboard/z-report",
   },
 };

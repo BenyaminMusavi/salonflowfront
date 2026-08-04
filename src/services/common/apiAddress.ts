@@ -131,5 +131,43 @@ export const API_ADDRESS = {
       `/api/special-schedules/staff/${staffMemberId}`,
     BY_ID: (id: number) => `/api/special-schedules/${id}`,
   },
+
+  INVOICES: {
+    BASE: "/api/invoices",
+    BY_ID: (id: number) => `/api/invoices/${id}`,
+    FROM_APPOINTMENT: (appointmentId: number) =>
+      `/api/invoices/from-appointment/${appointmentId}`,
+    ADD_ITEM: (id: number) => `/api/invoices/${id}/items`,
+    DELETE_ITEM: (id: number, itemId: number) =>
+      `/api/invoices/${id}/items/${itemId}`,
+    CANCEL: (id: number) => `/api/invoices/${id}/cancel`,
+  },
+
+  PAYMENTS: {
+    BASE: "/api/payments",
+    REFUND: "/api/payments/refund",
+    BY_INVOICE: (invoiceId: number) => `/api/payments/by-invoice/${invoiceId}`,
+  },
+
+  WALLETS: {
+    BASE: "/api/wallets",
+    ME: "/api/wallets/me",
+    ME_TRANSACTIONS: "/api/wallets/me/transactions",
+    BY_CUSTOMER: (customerId: number) => `/api/wallets/${customerId}`,
+    TRANSACTIONS: (customerId: number) =>
+      `/api/wallets/${customerId}/transactions`,
+    CHARGE: "/api/wallets/charge",
+    DEBIT: "/api/wallets/debit",
+  },
+
+  TIPS: {
+    BASE: "/api/tips",
+    BY_APPOINTMENT: (appointmentId: number) =>
+      `/api/tips/by-appointment/${appointmentId}`,
+  },
+
+  REPORTS: {
+    Z_REPORT: "/api/reports/z-report",
+  },
 };
 

@@ -1,17 +1,50 @@
 "use client";
 
-import WalletHeader from "./components/wallet-header/WalletHeader";
-import WalletBalanceCard from "./components/wallet-balance-card/WalletBalanceCard";
-import WalletQuickActions from "./components/wallet-quick-actions/WalletQuickActions";
-import WalletTransactionHistory from "./components/wallet-transaction-history/WalletTransactionHistory";
+import { useQueryMyWallet, useQueryMyWalletTransactions } from "@/services/domains/wallets/hooks";
+import { formatToman } from "@/shared/utils/salonDisplay";
 
 export default function WalletView() {
+  const walletQuery = useQueryMyWallet();
+  const txQuery = useQueryMyWalletTransactions();
+  const wallet = walletQuery.data?.data;
+  const txs = txQuery.data?.data ?? [];
+
   return (
-    <div className="flex flex-col gap-6 pb-32 pt-5">
-      <WalletHeader />
-      <WalletBalanceCard />
-      <WalletQuickActions />
-      <WalletTransactionHistory />
+    <div className="flex flex-col gap-4 px-safe-area pb-24 pt-5">
+      <h1 className="text-center text-sm font-bold text-foreground">کیف پول من</h1>
+
+      <div className="rounded-2xl bg-gradient-to-br from-primary via-primary-hover to-primary-active p-5">
+        <p className="text-xs text-primary-foreground/70">موجودی فعلی</p>
+        <p className="mt-1 text-2xl font-bold text-primary-foreground">
+          {formatToman(wallet?.balance)} تومان
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-surface-secondary p-3">
+        <h2 className="mb-2 text-sm font-bold text-foreground">تراکنش‌ها</h2>
+        {txQuery.isLoading ? (
+          <p className="text-xs text-foreground-muted">در حال دریافت تراکنش‌ها...</p>
+        ) : txQuery.isError ? (
+          <p className="text-xs text-error">دریافت تراکنش‌ها ناموفق بود.</p>
+        ) : (
+          <div className="space-y-2">
+            {txs.map((tx) => (
+              <div key={tx.id} className="rounded-md border border-border p-2">
+                <p className="text-sm font-bold text-foreground">
+                  {formatToman(tx.amount)} تومان
+                </p>
+                <p className="text-xs text-foreground-muted">
+                  {tx.description || "بدون توضیح"}{" "}
+                  {tx.createdAt ? `• ${new Date(tx.createdAt).toLocaleString("fa-IR")}` : ""}
+                </p>
+              </div>
+            ))}
+            {txs.length === 0 ? (
+              <p className="text-xs text-foreground-muted">تراکنشی ثبت نشده است.</p>
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
