@@ -3,6 +3,7 @@
 import { Input } from "@/shared/components/primitives/input/Input";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
+import { GenderType } from "@/services/common/enums/domain-enums";
 import { GENDER_TYPE_OPTIONS } from "@/services/domains/salons/store/useOnboardingDraftStore";
 
 export interface BranchEditorValues {
@@ -14,7 +15,7 @@ export interface BranchEditorValues {
   city: string;
   address: string;
   phone: string;
-  genderType: number;
+  genderType: GenderType;
 }
 
 export const createEmptyBranch = (): BranchEditorValues => ({
@@ -27,7 +28,7 @@ export const createEmptyBranch = (): BranchEditorValues => ({
   city: "",
   address: "",
   phone: "",
-  genderType: 3,
+  genderType: GenderType.Mixed,
 });
 
 interface BranchEditorItemProps {
@@ -105,7 +106,9 @@ export default function BranchEditorItem({
           <select
             className="h-12 rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
             value={values.genderType}
-            onChange={(e) => update({ genderType: Number(e.target.value) })}
+            onChange={(e) =>
+              update({ genderType: Number(e.target.value) as GenderType })
+            }
           >
             {GENDER_TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

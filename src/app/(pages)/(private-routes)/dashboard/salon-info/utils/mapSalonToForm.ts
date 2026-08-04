@@ -1,4 +1,5 @@
 import type { ISalon, ISalonGalleryItem } from "@/services/domains/salons/types/salon.type";
+import { GenderType } from "@/services/common/enums/domain-enums";
 import type { BasicInfoValues } from "../components/sections/BasicInfoSection";
 import type { ContactSocialValues } from "../components/sections/ContactSocialSection";
 import {
@@ -12,9 +13,12 @@ import {
   type MediaSlotState,
 } from "../components/sections/MediaSection";
 
-function parseGenderType(value: number | string | null | undefined): number {
+function parseGenderType(value: number | string | null | undefined): GenderType {
   const n = Number(value);
-  return n === 1 || n === 2 || n === 3 ? n : 3;
+  if (n === GenderType.Male || n === GenderType.Female || n === GenderType.Mixed) {
+    return n;
+  }
+  return GenderType.Mixed;
 }
 
 function galleryUrl(item: string | ISalonGalleryItem): string | null {

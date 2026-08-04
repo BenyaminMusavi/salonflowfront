@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { GenderType } from "@/services/common/enums/domain-enums";
 import {
   IOnboardingBranch,
   IOnboardingService,
@@ -85,8 +86,9 @@ export const DAY_LABELS = [
   "شنبه",
 ];
 
+/** Matches guide §5.4 GenderType: 1 Male, 2 Female, 3 Mixed. */
 export const GENDER_TYPE_OPTIONS = [
-  { value: 1, label: "بانوان" },
-  { value: 2, label: "آقایان" },
-  { value: 3, label: "هردو" },
-];
+  { value: GenderType.Male, label: "آقایان" },
+  { value: GenderType.Female, label: "بانوان" },
+  { value: GenderType.Mixed, label: "هردو" },
+] as const;

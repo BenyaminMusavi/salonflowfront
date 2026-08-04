@@ -22,6 +22,7 @@ import {
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { GenderType } from "@/services/common/enums/domain-enums";
 
 const STEPS = [
   { id: 1, label: "اطلاعات" },
@@ -187,7 +188,7 @@ export default function OnboardingView() {
       address: "",
       latitude: null,
       longitude: null,
-      genderType: 1,
+      genderType: GenderType.Male,
       phone: "",
     };
     draft.setBranches([...draft.branches, branch]);
@@ -402,7 +403,10 @@ export default function OnboardingView() {
                   value={b.genderType}
                   onChange={(e) => {
                     const next = [...draft.branches];
-                    next[idx] = { ...b, genderType: Number(e.target.value) };
+                    next[idx] = {
+                      ...b,
+                      genderType: Number(e.target.value) as GenderType,
+                    };
                     draft.setBranches(next);
                   }}
                   className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"

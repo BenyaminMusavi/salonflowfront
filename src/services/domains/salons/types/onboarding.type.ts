@@ -1,4 +1,5 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
+import { GenderType } from "@/services/common/enums/domain-enums";
 
 export interface ISaveBasicInfoRequest {
   publicId: string | null;
@@ -20,7 +21,7 @@ export interface IOnboardingBranch {
   address: string;
   latitude?: number | null;
   longitude?: number | null;
-  genderType: number;
+  genderType: GenderType;
   phone?: string | null;
 }
 
