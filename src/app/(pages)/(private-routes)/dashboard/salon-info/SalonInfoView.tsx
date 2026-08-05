@@ -85,6 +85,7 @@ export default function SalonInfoView() {
   const draftStep = useOnboardingDraftStore((s) => s.step);
   const setDraftBasicInfo = useOnboardingDraftStore((s) => s.setBasicInfo);
   const setDraftBranches = useOnboardingDraftStore((s) => s.setBranches);
+  const setDraftStaff = useOnboardingDraftStore((s) => s.setStaff);
 
   const salonQuery = useQuerySalonById(salonPublicId || undefined);
   const salon = salonQuery.data?.data;
@@ -267,14 +268,62 @@ export default function SalonInfoView() {
       return;
     }
 
-    const payload = toOnboardingBranches(branches);
+    const previousBranches = toOnboardingBranches(branches);
+    const payload = previousBranches.map((b) => ({
+      ...b,
+      publicId: b.publicId || null,
+    }));
 
     try {
-      await saveBranches.mutateAsync({
+      const res = await saveBranches.mutateAsync({
         salonPublicId,
         branches: payload,
       });
-      setDraftBranches(payload);
+      const saved = res.data ?? [];
+      if (saved.length === 0) {
+        setToast({
+          type: "error",
+          message: "لیست شعبه‌ها از سرور دریافت نشد.",
+        });
+        return;
+      }
+
+      setDraftBranches(saved);
+      setBranches((prev) =>
+        prev.map((b, i) => {
+          const server = saved[i];
+          if (!server) return b;
+          return {
+            ...b,
+            publicId: server.publicId,
+            name: server.name,
+            city: server.city,
+            address: server.address,
+            phone: server.phone ?? "",
+            genderType: server.genderType,
+          };
+        })
+      );
+
+      const draftStaff = useOnboardingDraftStore.getState().staff;
+      if (draftStaff.length > 0) {
+        const remap = new Map<string, string>();
+        previousBranches.forEach((old, i) => {
+          const nextId = saved[i]?.publicId;
+          if (old.publicId && nextId && old.publicId !== nextId) {
+            remap.set(String(old.publicId), String(nextId));
+          }
+        });
+        if (remap.size > 0) {
+          setDraftStaff(
+            draftStaff.map((s) => ({
+              ...s,
+              branchPublicId: remap.get(s.branchPublicId) ?? s.branchPublicId,
+            }))
+          );
+        }
+      }
+
       setToast({ type: "success", message: "شعبه‌ها با موفقیت ذخیره شدند." });
     } catch (err) {
       setToast({

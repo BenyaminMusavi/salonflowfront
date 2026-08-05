@@ -42,6 +42,27 @@ function isBranchComplete(b: IOnboardingBranch) {
   return Boolean(b.name.trim() && b.city.trim() && b.address.trim());
 }
 
+/** Remap staff branchPublicId when save-branches replaces temp/local IDs with server Guids. */
+function remapStaffBranchIds(
+  staff: IOnboardingStaff[],
+  previous: IOnboardingBranch[],
+  saved: IOnboardingBranch[]
+): IOnboardingStaff[] {
+  const remap = new Map<string, string>();
+  previous.forEach((old, i) => {
+    const nextId = saved[i]?.publicId;
+    if (!nextId) return;
+    if (old.publicId && old.publicId !== nextId) {
+      remap.set(String(old.publicId), String(nextId));
+    }
+  });
+  if (remap.size === 0) return staff;
+  return staff.map((s) => ({
+    ...s,
+    branchPublicId: remap.get(s.branchPublicId) ?? s.branchPublicId,
+  }));
+}
+
 const fieldClass =
   "rounded-2xl bg-input border border-input-border px-3 py-2 text-sm text-foreground outline-none placeholder:text-input-placeholder hover:bg-input-hover focus:bg-input-focus focus:border-border-strong";
 
@@ -131,12 +152,22 @@ export default function OnboardingView() {
             "برای ادامه، نام، شهر و آدرس همه شعبه‌ها را تکمیل کنید."
           );
         }
-        const branches = draft.branches.map((b) => ({
+        const previousBranches = draft.branches;
+        const payload = previousBranches.map((b) => ({
           ...b,
-          publicId: b.publicId || newId(),
+          publicId: b.publicId || null,
         }));
-        draft.setBranches(branches);
-        await salonService.saveBranches(salonPublicId, branches);
+        const res = await salonService.saveBranches(salonPublicId, payload);
+        const saved = res.data ?? [];
+        if (saved.length === 0) {
+          throw new Error("لیست شعبه‌ها از سرور دریافت نشد.");
+        }
+        draft.setBranches(saved);
+        if (draft.staff.length > 0) {
+          draft.setStaff(
+            remapStaffBranchIds(draft.staff, previousBranches, saved)
+          );
+        }
         draft.setStep(3);
         return;
       }
@@ -208,7 +239,7 @@ export default function OnboardingView() {
     }
     setError("");
     const branch: IOnboardingBranch = {
-      publicId: newId(),
+      publicId: null,
       name: "",
       city: "",
       address: "",
