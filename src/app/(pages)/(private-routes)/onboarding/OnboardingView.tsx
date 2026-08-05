@@ -126,6 +126,11 @@ export default function OnboardingView() {
         if (draft.branches.length === 0) {
           throw new Error("حداقل یک شعبه اضافه کنید.");
         }
+        if (draft.branches.some((b) => !isBranchComplete(b))) {
+          throw new Error(
+            "برای ادامه، نام، شهر و آدرس همه شعبه‌ها را تکمیل کنید."
+          );
+        }
         const branches = draft.branches.map((b) => ({
           ...b,
           publicId: b.publicId || newId(),
