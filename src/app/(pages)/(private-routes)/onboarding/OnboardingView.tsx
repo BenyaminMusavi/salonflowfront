@@ -654,22 +654,31 @@ export default function OnboardingView() {
             <p className="text-xs text-foreground-muted">
               حداکثر ۱۰ مگابایت برای هر فایل در این مرحله. می‌توانید رد شوید.
             </p>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) =>
-                setMediaFiles(Array.from(e.target.files ?? []))
-              }
-              className="text-sm"
-            />
-            {mediaFiles.length > 0 && (
-              <ul className="text-xs text-foreground-muted">
-                {mediaFiles.map((f) => (
-                  <li key={f.name + f.size}>{f.name}</li>
-                ))}
-              </ul>
-            )}
+            <div className={cardClass}>
+              <input
+                id="onboarding-media-input"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) =>
+                  setMediaFiles(Array.from(e.target.files ?? []))
+                }
+                className="sr-only"
+              />
+              <label
+                htmlFor="onboarding-media-input"
+                className={cn(fieldClass, "cursor-pointer text-center")}
+              >
+                انتخاب تصویر
+              </label>
+              {mediaFiles.length > 0 && (
+                <ul className="text-xs text-foreground-muted">
+                  {mediaFiles.map((f) => (
+                    <li key={f.name + f.size}>{f.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
         )}
 
