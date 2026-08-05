@@ -38,6 +38,10 @@ function newId() {
   return crypto.randomUUID();
 }
 
+function isBranchComplete(b: IOnboardingBranch) {
+  return Boolean(b.name.trim() && b.city.trim() && b.address.trim());
+}
+
 const fieldClass =
   "rounded-2xl bg-input border border-input-border px-3 py-2 text-sm text-foreground outline-none placeholder:text-input-placeholder hover:bg-input-hover focus:bg-input-focus focus:border-border-strong";
 
@@ -184,6 +188,11 @@ export default function OnboardingView() {
       setSaving(false);
     }
   };
+
+  const lastBranch = draft.branches[draft.branches.length - 1];
+  const canAddBranch =
+    draft.branches.length === 0 ||
+    (lastBranch != null && isBranchComplete(lastBranch));
 
   const addBranch = () => {
     const branch: IOnboardingBranch = {
