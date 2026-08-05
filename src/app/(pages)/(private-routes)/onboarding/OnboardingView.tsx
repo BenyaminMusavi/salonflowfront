@@ -689,13 +689,13 @@ export default function OnboardingView() {
             {draft.schedule.map((day, idx) => (
               <div
                 key={day.dayOfWeek}
-                className="flex flex-col gap-2 rounded-[16px] bg-surface p-3"
+                className={cardClass}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-semibold text-foreground">
                     {DAY_LABELS[day.dayOfWeek]}
                   </span>
-                  <label className="flex items-center gap-2 text-xs">
+                  <label className="flex items-center gap-2 text-xs text-foreground-muted">
                     <input
                       type="checkbox"
                       checked={day.isOffDay}
