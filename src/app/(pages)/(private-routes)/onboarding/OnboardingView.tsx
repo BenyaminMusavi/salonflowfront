@@ -195,6 +195,13 @@ export default function OnboardingView() {
     (lastBranch != null && isBranchComplete(lastBranch));
 
   const addBranch = () => {
+    if (!canAddBranch) {
+      setError(
+        "برای افزودن شعبه جدید، نام، شهر و آدرس شعبه قبلی را تکمیل کنید."
+      );
+      return;
+    }
+    setError("");
     const branch: IOnboardingBranch = {
       publicId: newId(),
       name: "",
@@ -358,7 +365,11 @@ export default function OnboardingView() {
               <button
                 type="button"
                 onClick={addBranch}
-                className="text-sm font-bold text-primary"
+                disabled={!canAddBranch}
+                className={cn(
+                  "text-sm font-bold text-primary",
+                  !canAddBranch && "cursor-not-allowed opacity-40"
+                )}
               >
                 + افزودن
               </button>
