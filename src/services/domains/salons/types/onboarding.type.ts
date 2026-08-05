@@ -48,3 +48,4 @@ export interface IScheduleDay {
 
 export type TSaveBasicInfoEntity = TResponse<ISaveBasicInfoResult>;
 export type TSaveBranchesEntity = TResponse<IOnboardingBranch[]>;
+export type TSaveServicesEntity = TResponse<IOnboardingService[]>;

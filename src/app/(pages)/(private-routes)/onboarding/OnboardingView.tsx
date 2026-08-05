@@ -34,10 +34,6 @@ const STEPS = [
   { id: 7, label: "ارسال" },
 ];
 
-function newId() {
-  return crypto.randomUUID();
-}
-
 function isBranchComplete(b: IOnboardingBranch) {
   return Boolean(b.name.trim() && b.city.trim() && b.address.trim());
 }
@@ -176,7 +172,16 @@ export default function OnboardingView() {
         if (draft.services.length === 0) {
           throw new Error("حداقل یک خدمت اضافه کنید.");
         }
-        await salonService.saveServices(salonPublicId, draft.services);
+        const payload = draft.services.map((s) => ({
+          ...s,
+          publicId: s.publicId || null,
+        }));
+        const res = await salonService.saveServices(salonPublicId, payload);
+        const saved = res.data ?? [];
+        if (saved.length === 0) {
+          throw new Error("لیست خدمات از سرور دریافت نشد.");
+        }
+        draft.setServices(saved);
         draft.setStep(4);
         return;
       }
@@ -254,7 +259,7 @@ export default function OnboardingView() {
   const addService = () => {
     const firstType = serviceTypes[0];
     const svc: IOnboardingService = {
-      publicId: newId(),
+      publicId: null,
       serviceTypePublicId: String(firstType?.id ?? ""),
       basePrice: 0,
       durationMinutes: 45,
@@ -265,7 +270,7 @@ export default function OnboardingView() {
   const addStaff = () => {
     const firstBranch = draft.branches[0]?.publicId;
     const member: IOnboardingStaff = {
-      publicId: newId(),
+      publicId: null,
       branchPublicId: firstBranch ? String(firstBranch) : "",
       isCreator: draft.staff.length === 0,
       phoneNumber: null,

@@ -21,6 +21,7 @@ import {
   IScheduleDay,
   TSaveBasicInfoEntity,
   TSaveBranchesEntity,
+  TSaveServicesEntity,
 } from "@/services/domains/salons/types/onboarding.type";
 
 class SalonService {
@@ -123,7 +124,7 @@ class SalonService {
   }
 
   async saveServices(salonPublicId: string, services: IOnboardingService[]) {
-    return await axiosInstance.post(
+    return await axiosInstance.post<unknown, TSaveServicesEntity>(
       API_ADDRESS.SALON.SAVE_SERVICES(salonPublicId),
       { services }
     );
