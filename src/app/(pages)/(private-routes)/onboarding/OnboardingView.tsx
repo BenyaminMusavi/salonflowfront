@@ -38,6 +38,11 @@ function newId() {
   return crypto.randomUUID();
 }
 
+const fieldClass =
+  "rounded-2xl bg-input border border-input-border px-3 py-2 text-sm text-foreground outline-none placeholder:text-input-placeholder hover:bg-input-hover focus:bg-input-focus focus:border-border-strong";
+
+const cardClass = "flex flex-col gap-2 rounded-[20px] bg-surface p-4";
+
 export default function OnboardingView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
@@ -220,7 +225,7 @@ export default function OnboardingView() {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
         <TopNavigation>ثبت سالن</TopNavigation>
-        <div className="rounded-[24px] bg-surface-tertiary p-6 text-center">
+        <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-base font-bold text-foreground">
             برای ایجاد سالن جدید اشتراک لازم است
           </p>
@@ -243,7 +248,7 @@ export default function OnboardingView() {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
         <TopNavigation>ثبت سالن</TopNavigation>
-        <div className="rounded-[24px] bg-surface-tertiary p-6 text-center">
+        <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-lg font-bold text-foreground">
             در انتظار تأیید ادمین
           </p>
@@ -325,7 +330,7 @@ export default function OnboardingView() {
                     onChange={(e) =>
                       draft.setBasicInfo({ [key]: e.target.value })
                     }
-                    className="rounded-2xl bg-surface-tertiary px-4 py-3 outline-none"
+                    className={fieldClass}
                   />
                 ) : (
                   <input
@@ -333,7 +338,7 @@ export default function OnboardingView() {
                     onChange={(e) =>
                       draft.setBasicInfo({ [key]: e.target.value })
                     }
-                    className="rounded-2xl bg-surface-tertiary px-4 py-3 outline-none"
+                    className={fieldClass}
                   />
                 )}
               </label>
@@ -357,7 +362,7 @@ export default function OnboardingView() {
             {draft.branches.map((b, idx) => (
               <div
                 key={b.publicId ?? idx}
-                className="flex flex-col gap-2 rounded-[20px] bg-surface-tertiary p-4"
+                className={cardClass}
               >
                 <input
                   placeholder="نام شعبه"
@@ -367,7 +372,7 @@ export default function OnboardingView() {
                     next[idx] = { ...b, name: e.target.value };
                     draft.setBranches(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <input
                   placeholder="شهر"
@@ -377,7 +382,7 @@ export default function OnboardingView() {
                     next[idx] = { ...b, city: e.target.value };
                     draft.setBranches(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <input
                   placeholder="آدرس"
@@ -387,7 +392,7 @@ export default function OnboardingView() {
                     next[idx] = { ...b, address: e.target.value };
                     draft.setBranches(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <input
                   placeholder="تلفن"
@@ -397,7 +402,7 @@ export default function OnboardingView() {
                     next[idx] = { ...b, phone: e.target.value };
                     draft.setBranches(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <select
                   value={b.genderType}
@@ -409,7 +414,7 @@ export default function OnboardingView() {
                     };
                     draft.setBranches(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 >
                   {GENDER_TYPE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -447,7 +452,7 @@ export default function OnboardingView() {
             {draft.services.map((s, idx) => (
               <div
                 key={s.publicId ?? idx}
-                className="flex flex-col gap-2 rounded-[20px] bg-surface-tertiary p-4"
+                className={cardClass}
               >
                 <select
                   value={s.serviceTypePublicId}
@@ -459,7 +464,7 @@ export default function OnboardingView() {
                     };
                     draft.setServices(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 >
                   <option value="">نوع خدمت</option>
                   {serviceTypes.map((t) => (
@@ -480,7 +485,7 @@ export default function OnboardingView() {
                     };
                     draft.setServices(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <input
                   type="number"
@@ -494,7 +499,7 @@ export default function OnboardingView() {
                     };
                     draft.setServices(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 />
                 <button
                   type="button"
@@ -526,7 +531,7 @@ export default function OnboardingView() {
             {draft.staff.map((s, idx) => (
               <div
                 key={s.publicId ?? idx}
-                className="flex flex-col gap-2 rounded-[20px] bg-surface-tertiary p-4"
+                className={cardClass}
               >
                 <select
                   value={s.branchPublicId}
@@ -535,7 +540,7 @@ export default function OnboardingView() {
                     next[idx] = { ...s, branchPublicId: e.target.value };
                     draft.setStaff(next);
                   }}
-                  className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                  className={fieldClass}
                 >
                   <option value="">انتخاب شعبه</option>
                   {draft.branches.map((b) => (
@@ -569,7 +574,7 @@ export default function OnboardingView() {
                       next[idx] = { ...s, phoneNumber: e.target.value };
                       draft.setStaff(next);
                     }}
-                    className="rounded-2xl bg-background-secondary px-3 py-2 text-sm outline-none"
+                    className={fieldClass}
                   />
                 )}
                 <button
@@ -619,7 +624,7 @@ export default function OnboardingView() {
             {draft.schedule.map((day, idx) => (
               <div
                 key={day.dayOfWeek}
-                className="flex flex-col gap-2 rounded-[16px] bg-surface-tertiary p-3"
+                className="flex flex-col gap-2 rounded-[16px] bg-surface p-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">
@@ -656,7 +661,7 @@ export default function OnboardingView() {
                         };
                         draft.setSchedule(next);
                       }}
-                      className="flex-1 rounded-xl bg-background-secondary px-2 py-2 text-sm"
+                      className={cn(fieldClass, "flex-1")}
                     />
                     <input
                       type="time"
@@ -669,7 +674,7 @@ export default function OnboardingView() {
                         };
                         draft.setSchedule(next);
                       }}
-                      className="flex-1 rounded-xl bg-background-secondary px-2 py-2 text-sm"
+                      className={cn(fieldClass, "flex-1")}
                     />
                   </div>
                 )}
@@ -680,7 +685,7 @@ export default function OnboardingView() {
 
         {/* Step 7 — Submit */}
         {step === 7 && (
-          <section className="flex flex-col gap-3 rounded-[24px] bg-surface-tertiary p-5">
+          <section className="flex flex-col gap-3 rounded-[24px] bg-surface p-5">
             <h2 className="text-base font-bold">ارسال برای بررسی</h2>
             <p className="text-sm text-foreground-muted">
               با تأیید، سالن «{draft.basicInfo.name}» برای تأیید ادمین ارسال
@@ -704,7 +709,7 @@ export default function OnboardingView() {
               if (step === 1) router.push(RouteAddress.HOME.BASE);
               else draft.setStep(Math.max(1, step - 1));
             }}
-            className="flex-1 rounded-full bg-surface-tertiary py-4 text-sm font-bold"
+            className="flex-1 rounded-full bg-surface py-4 text-sm font-bold"
           >
             بازگشت
           </button>
