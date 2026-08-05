@@ -297,11 +297,6 @@ export default function OnboardingView() {
       />
 
       <div className="flex flex-col gap-4 px-safe-area">
-        {draft.salonPublicId && (
-          <p className="text-[11px] text-foreground-muted" dir="ltr">
-            Draft: {draft.salonPublicId}
-          </p>
-        )}
         {error && (
           <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
             {error}
