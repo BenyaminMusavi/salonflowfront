@@ -57,7 +57,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <motion.div dir="rtl" className="flex w-full h-full">
         <div
           className={cn(
-            "relative transition flex items-center w-full rounded-[2px] bg-foreground/5",
+            "relative transition flex items-center w-full rounded-[2px]",
+            "bg-input border border-input-border",
+            "hover:bg-input-hover",
+            "focus-within:bg-input-focus focus-within:border-border-strong",
             "focus-within:inset-ring-2 focus-within:inset-ring-primary",
             hasError && "!inset-ring-2 !inset-ring-error",
             inputWrapperClassname
@@ -81,7 +84,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "w-full h-full rounded-[2px] bg-transparent text-sm text-foreground",
               "min-h-12 px-4 py-2.5",
-              "placeholder:text-neutral-400",
+              "placeholder:text-input-placeholder",
               "focus:outline-none",
               "disabled:cursor-not-allowed disabled:opacity-50",
               startIcon && "pr-12",
