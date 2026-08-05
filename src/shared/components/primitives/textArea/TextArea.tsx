@@ -29,9 +29,12 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       <motion.div dir="rtl" className="flex w-full">
         <div
           className={cn(
-            "relative transition flex w-full rounded-[2px] bg-surface-tertiary",
+            "relative transition flex w-full rounded-[2px]",
+            "bg-input border border-input-border",
+            "hover:bg-input-hover",
+            "focus-within:bg-input-focus focus-within:border-border-strong",
             "focus-within:inset-ring-2 focus-within:inset-ring-primary",
-            hasError && "!inset-ring-2 !inset-ring-content-error",
+            hasError && "!inset-ring-2 !inset-ring-error",
             inputWrapperClassname
           )}
         >
@@ -39,7 +42,7 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
           {startIcon && (
             <div
               className={cn(
-                "flex justify-center w-[30px] pointer-events-none absolute right-3 top-4 text-secondary-60",
+                "flex justify-center w-[30px] pointer-events-none absolute right-3 top-4 text-foreground/60",
                 startIconClassName
               )}
             >
@@ -50,9 +53,9 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
           <textarea
             ref={ref}
             className={cn(
-              "w-full rounded-[2px] bg-transparent text-sm text-black",
+              "w-full rounded-[2px] bg-transparent text-sm text-foreground",
               "min-h-32 px-4 py-2.5 resize-none", // resize-none by default
-              "placeholder:text-neutral-400",
+              "placeholder:text-input-placeholder",
               "focus:outline-none",
               "disabled:cursor-not-allowed disabled:opacity-50",
               startIcon && "pr-12",
