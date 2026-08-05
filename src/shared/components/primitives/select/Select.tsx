@@ -83,14 +83,19 @@ const SelectTrigger = React.forwardRef<
   const { isMobile, setOpen } = useSelect();
 
   const commonClass = cn(
-    "flex h-12 w-full items-center justify-between rounded-[2px] bg-surface-tertiary px-3 text-sm focus-visible:outline-none focus-visible:inset-ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50",
-    hasError && "!inset-ring-2 inset-ring-content-error",
+    "flex h-12 w-full items-center justify-between rounded-[2px] px-3 text-sm text-foreground",
+    "bg-input border border-input-border",
+    "hover:bg-input-hover hover:border-border-hover",
+    "focus-visible:outline-none focus-visible:bg-input-focus focus-visible:border-border-strong",
+    "focus-visible:inset-ring-2 focus-visible:inset-ring-primary",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+    hasError && "!inset-ring-2 !inset-ring-error",
     className,
   );
 
   const triggerContent = (
     <div className="flex items-center gap-4 overflow-hidden">
-      {icon && <span className="shrink-0 text-content-bold">{icon}</span>}
+      {icon && <span className="shrink-0 text-foreground">{icon}</span>}
       <span className="truncate">{children}</span>
     </div>
   );
@@ -129,7 +134,7 @@ const SelectContent = ({
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerOverlay />
         <DrawerContent className="pb-8 pt-2">
-          <DrawerTitle className="text-center text-base text-content-primary font-medium my-4">{drawerLabel}</DrawerTitle>
+          <DrawerTitle className="text-center text-base text-foreground font-medium my-4">{drawerLabel}</DrawerTitle>
           <DrawerDescription className="sr-only">
             یک مورد را انتخاب کنید
           </DrawerDescription>
@@ -147,7 +152,7 @@ const SelectContent = ({
         // Optional: Adds 4px space between the trigger and the dropdown
         sideOffset={4}
         className={cn(
-          "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+          "relative z-50 min-w-[8rem] overflow-hidden rounded-md border border-border bg-background-elevated text-foreground shadow-md",
           // When position="popper", Radix allows these data attributes for better styling
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className,
@@ -177,7 +182,7 @@ const SelectItem = React.forwardRef<
 
   const itemContent = (
     <div className="flex items-center gap-4">
-      {icon && <span className="shrink-0 text-content-bold">{icon}</span>}
+      {icon && <span className="shrink-0 text-foreground">{icon}</span>}
       <span className={"mt-1"}>{children}</span>
     </div>
   );
@@ -192,15 +197,15 @@ const SelectItem = React.forwardRef<
           setOpen(false);
         }}
         className={cn(
-          "flex w-full items-center justify-between px-6 py-4 text-base transition-colors border-b border-border-primary",
+          "flex w-full items-center justify-between px-6 py-4 text-base text-foreground transition-colors border-b border-border focus:bg-surface-hover",
           className
         )}
       >
         {itemContent}
         {isSelected ? (
-          <span className="w-5 h-5 bg-white border-[6px] border-surface-success-fill rounded-full" />
+          <span className="w-5 h-5 bg-white border-[6px] border-success rounded-full" />
         ) : (
-          <span className="w-5 h-5 bg-white border-2 border-border-primary rounded-full" />
+          <span className="w-5 h-5 bg-white border-2 border-border rounded-full" />
         )}
       </button>
     );
@@ -211,7 +216,7 @@ const SelectItem = React.forwardRef<
       ref={ref}
       value={value}
       className={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm text-foreground outline-none focus:bg-surface-hover focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       {...props}
@@ -237,7 +242,11 @@ const SelectValue = React.forwardRef<
     // On Mobile: Render a plain span.
     // We use the 'children' (selectedLabel) we passed from the Form component.
     return (
-      <span className="block truncate text-sm">{children || placeholder}</span>
+      <span className="block truncate text-sm text-foreground">
+        {children || (
+          <span className="text-foreground-muted">{placeholder}</span>
+        )}
+      </span>
     );
   }
 
