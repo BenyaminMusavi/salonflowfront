@@ -13,6 +13,8 @@ export interface IBookWizardDraft {
   selectedServices: IBranchService[];
   date: string | null;
   staff: IStaffAvailability | null;
+  /** When true, staff is intentionally null (first available). */
+  useFirstAvailable?: boolean;
   slotTime: string | null;
   slotEndTime: string | null;
   notes: string;

@@ -35,6 +35,9 @@ import BookProgressHeader from "./components/BookProgressHeader";
 import BookStickyCta from "./components/BookStickyCta";
 import BookBranchStep from "./components/BookBranchStep";
 import BookServicesStep from "./components/BookServicesStep";
+import BookDateStep from "./components/BookDateStep";
+import BookStaffStep from "./components/BookStaffStep";
+import BookPriceStep from "./components/BookPriceStep";
 import {
   clearBookDraft,
   loadBookDraft,
@@ -80,6 +83,7 @@ export default function BookView() {
   );
   const [date, setDate] = useState<string | null>(null);
   const [staff, setStaff] = useState<IStaffAvailability | null>(null);
+  const [useFirstAvailable, setUseFirstAvailable] = useState(false);
   const [slotTime, setSlotTime] = useState<string | null>(null);
   const [slotEndTime, setSlotEndTime] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
@@ -102,6 +106,7 @@ export default function BookView() {
     setSelectedServices(draft.selectedServices ?? []);
     setDate(draft.date);
     setStaff(draft.staff);
+    setUseFirstAvailable(Boolean(draft.useFirstAvailable));
     setSlotTime(draft.slotTime);
     setSlotEndTime(draft.slotEndTime);
     setNotes(draft.notes ?? "");
@@ -120,6 +125,7 @@ export default function BookView() {
       selectedServices,
       date,
       staff,
+      useFirstAvailable,
       slotTime,
       slotEndTime,
       notes,
@@ -132,6 +138,7 @@ export default function BookView() {
     selectedServices,
     date,
     staff,
+    useFirstAvailable,
     slotTime,
     slotEndTime,
     notes,
@@ -192,10 +199,11 @@ export default function BookView() {
   const { data: staffRes, isLoading: staffLoading } =
     useQueryStaffAvailability(branchId, primaryServiceTypeId, date);
 
-  const { data: priceRes, isLoading: priceLoading } = useQueryCalculatePrice(
+  const { data: priceRes, isLoading: priceLoading, isError: priceError, refetch: refetchPrice } =
+    useQueryCalculatePrice(
     branchId,
     serviceTypeIds,
-    staff?.staffPublicId,
+    useFirstAvailable ? null : staff?.staffPublicId,
     step >= 5
   );
 
@@ -204,7 +212,9 @@ export default function BookView() {
       branchId: branchId ?? undefined,
       date: date ?? undefined,
       serviceTypeIds,
-      staffProfilePublicId: staff?.staffPublicId,
+      staffProfilePublicId: useFirstAvailable
+        ? null
+        : staff?.staffPublicId,
       enabled: step >= 6,
     });
 
@@ -220,10 +230,6 @@ export default function BookView() {
   const slots = slotsRes?.data?.slots ?? [];
   const staffProfiles = staffProfilesRes?.data ?? [];
 
-  const resolvedStaffId = staff
-    ? resolveStaffNumericId(staff, staffProfiles)
-    : undefined;
-
   const canGoNext = (): boolean => {
     switch (step) {
       case 1:
@@ -238,7 +244,7 @@ export default function BookView() {
       case 3:
         return !!date;
       case 4:
-        return !!staff;
+        return useFirstAvailable || !!staff;
       case 5:
         return !!price;
       case 6:
@@ -297,6 +303,7 @@ export default function BookView() {
     setSelectedServices([]);
     setDate(null);
     setStaff(null);
+    setUseFirstAvailable(false);
     setSlotTime(null);
     setSlotEndTime(null);
   };
@@ -313,6 +320,7 @@ export default function BookView() {
     });
     setDate(null);
     setStaff(null);
+    setUseFirstAvailable(false);
     setSlotTime(null);
     setSlotEndTime(null);
   };
@@ -332,6 +340,7 @@ export default function BookView() {
       selectedServices,
       date,
       staff,
+      useFirstAvailable,
       slotTime,
       slotEndTime,
       notes,
@@ -353,8 +362,20 @@ export default function BookView() {
       branchId == null ||
       !date ||
       !slotTime ||
-      !staff
+      (!staff && !useFirstAvailable)
     ) {
+      setError("اطلاعات رزرو ناقص است.");
+      return;
+    }
+
+    if (useFirstAvailable && !staff) {
+      setError(
+        "برای «اولین زمان آزاد» هنوز پرسنل از اسلات مشخص نشده است. لطفاً پرسنل را انتخاب کنید یا بعداً دوباره تلاش کنید."
+      );
+      return;
+    }
+
+    if (!staff) {
       setError("اطلاعات رزرو ناقص است.");
       return;
     }
@@ -501,119 +522,52 @@ export default function BookView() {
         )}
 
         {step === 3 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">انتخاب تاریخ</h2>
-            {datesLoading && (
-              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
-            )}
-            <div className="grid grid-cols-3 gap-2">
-              {dates.map((d) => (
-                <button
-                  key={d.date}
-                  type="button"
-                  disabled={!d.isAvailable}
-                  onClick={() => {
-                    setDate(d.date);
-                    setStaff(null);
-                    setSlotTime(null);
-                  }}
-                  className={cn(
-                    "rounded-2xl px-2 py-3 text-center text-xs transition",
-                    !d.isAvailable && "cursor-not-allowed opacity-40",
-                    date === d.date
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-surface text-foreground"
-                  )}
-                >
-                  {formatFaDate(d.date)}
-                </button>
-              ))}
-            </div>
-          </section>
+          <BookDateStep
+            dates={dates}
+            selectedDate={date}
+            isLoading={datesLoading}
+            onSelect={(nextDate) => {
+              setDate(nextDate);
+              setStaff(null);
+              setUseFirstAvailable(false);
+              setSlotTime(null);
+              setSlotEndTime(null);
+            }}
+            onChangeServices={() => setStep(2)}
+          />
         )}
 
         {step === 4 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">انتخاب پرسنل</h2>
-            {staffLoading && (
-              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
-            )}
-            {staffList.map((s) => (
-              <button
-                key={s.staffPublicId}
-                type="button"
-                onClick={() => {
-                  setStaff(s);
-                  setSlotTime(null);
-                }}
-                className={cn(
-                  "rounded-[20px] p-4 text-right transition",
-                  staff?.staffPublicId === s.staffPublicId
-                    ? "bg-primary/10 ring-1 ring-primary"
-                    : "bg-surface"
-                )}
-              >
-                <p className="font-bold text-foreground">{s.fullName}</p>
-                <p className="mt-1 text-xs text-foreground-muted">
-                  {[s.startTime, s.endTime].filter(Boolean).join(" – ") ||
-                    "ساعات کاری اعلام نشده"}
-                </p>
-              </button>
-            ))}
-          </section>
+          <BookStaffStep
+            staffList={staffList}
+            selectedStaffPublicId={staff?.staffPublicId ?? null}
+            useFirstAvailable={useFirstAvailable}
+            isLoading={staffLoading}
+            onSelectFirstAvailable={() => {
+              setUseFirstAvailable(true);
+              setStaff(null);
+              setSlotTime(null);
+              setSlotEndTime(null);
+            }}
+            onSelectStaff={(s) => {
+              setUseFirstAvailable(false);
+              setStaff(s);
+              setSlotTime(null);
+              setSlotEndTime(null);
+            }}
+            onChangeDate={() => setStep(3)}
+          />
         )}
 
         {step === 5 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">پیش‌فاکتور</h2>
-            {priceLoading && (
-              <p className="text-sm text-foreground-muted">در حال محاسبه…</p>
-            )}
-            {price && (
-              <div className="rounded-[24px] bg-surface p-5">
-                <ul className="flex flex-col gap-2">
-                  {price.services.map((line) => (
-                    <li
-                      key={line.serviceTypeId}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="text-foreground">{line.serviceName}</span>
-                      <span className="font-bold text-foreground">
-                        {formatToman(line.price)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="my-4 h-px bg-border" />
-                <div className="flex flex-col gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-foreground-muted">جمع کل</span>
-                    <span className="font-bold">
-                      {formatToman(price.totalPrice)} تومان
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-foreground-muted">پرداخت الان</span>
-                    <span className="font-bold text-primary">
-                      {formatToman(price.amountDueNow)} تومان
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-foreground-muted">
-                      باقی‌مانده در سالن
-                    </span>
-                    <span className="font-bold">
-                      {formatToman(price.remainingAfterDeposit)} تومان
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-foreground-muted">
-                    لغو رایگان تا {price.freeCancellationWindowHours} ساعت قبل
-                    از نوبت
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
+          <BookPriceStep
+            price={price}
+            isLoading={priceLoading}
+            isError={priceError}
+            onRetry={() => {
+              void refetchPrice();
+            }}
+          />
         )}
 
         {step === 6 && (
@@ -668,8 +622,9 @@ export default function BookView() {
               </p>
               <p className="mt-2">
                 <span className="text-foreground-muted">پرسنل: </span>
-                {staff?.fullName}
-                {resolvedStaffId ? ` (#${resolvedStaffId})` : ""}
+                {useFirstAvailable
+                  ? "اولین زمان آزاد"
+                  : staff?.fullName}
               </p>
               <p className="mt-2">
                 <span className="text-foreground-muted">زمان: </span>
