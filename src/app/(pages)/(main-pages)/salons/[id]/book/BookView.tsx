@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Stepper } from "@/shared/components/primitives/stepper/Stepper";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
@@ -32,16 +31,15 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { cn } from "@/shared/utils/className";
-
-const STEPS = [
-  { id: 1, label: "شعبه" },
-  { id: 2, label: "خدمات" },
-  { id: 3, label: "تاریخ" },
-  { id: 4, label: "پرسنل" },
-  { id: 5, label: "پیش‌فاکتور" },
-  { id: 6, label: "ساعت" },
-  { id: 7, label: "تأیید" },
-];
+import BookProgressHeader from "./components/BookProgressHeader";
+import BookStickyCta from "./components/BookStickyCta";
+import BookBranchStep from "./components/BookBranchStep";
+import BookServicesStep from "./components/BookServicesStep";
+import {
+  clearBookDraft,
+  loadBookDraft,
+  saveBookDraft,
+} from "./utils/bookDraft";
 
 function formatFaDate(date: string) {
   try {
@@ -88,13 +86,72 @@ export default function BookView() {
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<number | null>(null);
 
-  // Auto-select single branch
+  const draftReadyRef = useRef(false);
+  const skipBranchHandledRef = useRef(false);
+
+  // Rehydrate draft once per salon
   useEffect(() => {
-    if (branches.length === 1 && branchId == null) {
-      setBranchId(branches[0].id);
-      setBranchName(branches[0].name);
+    if (!salonPublicId || draftReadyRef.current) return;
+    const draft = loadBookDraft(salonPublicId);
+    draftReadyRef.current = true;
+    if (!draft) return;
+
+    setStep(draft.step);
+    setBranchId(draft.branchId);
+    setBranchName(draft.branchName);
+    setSelectedServices(draft.selectedServices ?? []);
+    setDate(draft.date);
+    setStaff(draft.staff);
+    setSlotTime(draft.slotTime);
+    setSlotEndTime(draft.slotEndTime);
+    setNotes(draft.notes ?? "");
+    if (draft.branchId != null || draft.step > 1) {
+      skipBranchHandledRef.current = true;
     }
-  }, [branches, branchId]);
+  }, [salonPublicId]);
+
+  // Persist draft
+  useEffect(() => {
+    if (!salonPublicId || !draftReadyRef.current || createdId != null) return;
+    saveBookDraft(salonPublicId, {
+      step,
+      branchId,
+      branchName,
+      selectedServices,
+      date,
+      staff,
+      slotTime,
+      slotEndTime,
+      notes,
+    });
+  }, [
+    salonPublicId,
+    step,
+    branchId,
+    branchName,
+    selectedServices,
+    date,
+    staff,
+    slotTime,
+    slotEndTime,
+    notes,
+    createdId,
+  ]);
+
+  // Auto-select + auto-skip single branch
+  useEffect(() => {
+    if (!draftReadyRef.current || skipBranchHandledRef.current) return;
+    if (branches.length !== 1) {
+      if (branches.length > 1) skipBranchHandledRef.current = true;
+      return;
+    }
+
+    const only = branches[0];
+    skipBranchHandledRef.current = true;
+    setBranchId(only.id);
+    setBranchName(only.name);
+    setStep((s) => (s === 1 ? 2 : s));
+  }, [branches]);
 
   const { data: branchServicesRes, isLoading: servicesLoading } =
     useQueryBranchServices(branchId);
@@ -226,7 +283,22 @@ export default function BookView() {
       router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
       return;
     }
+    // If single-branch was auto-skipped, back from services goes to salon detail
+    if (step === 2 && branches.length === 1) {
+      router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
+      return;
+    }
     setStep((s) => Math.max(1, s - 1));
+  };
+
+  const selectBranch = (branch: ISalonBranch) => {
+    setBranchId(branch.id);
+    setBranchName(branch.name);
+    setSelectedServices([]);
+    setDate(null);
+    setStaff(null);
+    setSlotTime(null);
+    setSlotEndTime(null);
   };
 
   const toggleService = (svc: IBranchService) => {
@@ -242,6 +314,7 @@ export default function BookView() {
     setDate(null);
     setStaff(null);
     setSlotTime(null);
+    setSlotEndTime(null);
   };
 
   const ensureCustomerContext = async () => {
@@ -250,10 +323,26 @@ export default function BookView() {
     }
   };
 
+  const persistDraftNow = () => {
+    if (!salonPublicId) return;
+    saveBookDraft(salonPublicId, {
+      step,
+      branchId,
+      branchName,
+      selectedServices,
+      date,
+      staff,
+      slotTime,
+      slotEndTime,
+      notes,
+    });
+  };
+
   const handleConfirm = async () => {
     setError("");
 
     if (!isLoggedIn) {
+      persistDraftNow();
       setRedirectUrl(RouteAddress.SALONS.BOOK(salonPublicId!));
       router.push(RouteAddress.AUTH.LOGIN.BASE);
       return;
@@ -278,7 +367,10 @@ export default function BookView() {
       return;
     }
 
-    if (offeringIds.length === 0 || offeringIds.length !== selectedServices.length) {
+    if (
+      offeringIds.length === 0 ||
+      offeringIds.length !== selectedServices.length
+    ) {
       setError("شناسه offering برای برخی خدمات یافت نشد.");
       return;
     }
@@ -295,6 +387,7 @@ export default function BookView() {
           staffId,
         })),
       });
+      clearBookDraft(salonPublicId);
       setCreatedId(res.data);
       setStep(7);
     } catch (e) {
@@ -343,7 +436,7 @@ export default function BookView() {
     return (
       <div className="flex flex-col gap-6 px-safe-area pb-24 pt-4">
         <TopNavigation>رزرو موفق</TopNavigation>
-        <div className="rounded-[24px] bg-surface-tertiary p-6 text-center">
+        <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-lg font-bold text-foreground">نوبت ثبت شد</p>
           <p className="mt-2 text-sm text-foreground-muted">
             شماره نوبت: {createdId}
@@ -367,110 +460,46 @@ export default function BookView() {
     );
   }
 
+  const showBranchChip = Boolean(branchName) && step > 1;
+
   return (
     <div className="flex flex-col pb-28">
-      <TopNavigation>رزرو — {salon.name}</TopNavigation>
+      <TopNavigation>رزرو نوبت</TopNavigation>
+      {salon.name ? (
+        <p className="-mt-1 px-safe-area text-xs text-foreground-muted">
+          {salon.name}
+        </p>
+      ) : null}
 
-      <Stepper
-        steps={STEPS.map((s) => ({
-          ...s,
-          complete: s.id < step,
-        }))}
-        activeStep={step}
-        onStepClick={(id) => {
-          if (id < step) setStep(id);
-        }}
+      <BookProgressHeader
+        step={step}
+        branchChip={showBranchChip ? branchName : null}
       />
 
-      <div className="flex flex-col gap-4 px-safe-area">
+      <div className="mt-4 flex flex-col gap-4 px-safe-area">
         {error && (
           <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
             {error}
           </p>
         )}
 
-        {/* Step 1: Branch */}
         {step === 1 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">انتخاب شعبه</h2>
-            {branches.length === 0 ? (
-              <p className="text-sm text-foreground-muted">
-                شعبه‌ای برای این سالن تعریف نشده است.
-              </p>
-            ) : (
-              branches.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => {
-                    setBranchId(b.id);
-                    setBranchName(b.name);
-                    setSelectedServices([]);
-                    setDate(null);
-                    setStaff(null);
-                    setSlotTime(null);
-                  }}
-                  className={cn(
-                    "rounded-[20px] p-4 text-right transition",
-                    branchId === b.id
-                      ? "bg-primary/15 ring-1 ring-primary"
-                      : "bg-surface-tertiary"
-                  )}
-                >
-                  <p className="font-bold text-foreground">{b.name}</p>
-                  <p className="mt-1 text-xs text-foreground-muted">
-                    {[b.city, b.address].filter(Boolean).join("، ") || "—"}
-                  </p>
-                </button>
-              ))
-            )}
-          </section>
+          <BookBranchStep
+            branches={branches}
+            selectedBranchId={branchId}
+            onSelect={selectBranch}
+          />
         )}
 
-        {/* Step 2: Services */}
         {step === 2 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">انتخاب خدمات</h2>
-            {servicesLoading && (
-              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
-            )}
-            {enrichedServices.map((svc) => {
-              const selected = selectedServices.some(
-                (s) => s.servicePublicId === svc.servicePublicId
-              );
-              return (
-                <button
-                  key={svc.servicePublicId}
-                  type="button"
-                  onClick={() => toggleService(svc)}
-                  className={cn(
-                    "rounded-[20px] p-4 text-right transition",
-                    selected
-                      ? "bg-primary/15 ring-1 ring-primary"
-                      : "bg-surface-tertiary"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-foreground">{svc.name}</p>
-                      <p className="mt-1 text-xs text-foreground-muted">
-                        {svc.durationMinutes} دقیقه
-                        {svc.requiresDeposit
-                          ? ` · بیعانه ${formatToman(svc.depositAmount)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm font-bold text-foreground">
-                      {formatToman(svc.price)}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </section>
+          <BookServicesStep
+            services={enrichedServices}
+            selectedServices={selectedServices}
+            isLoading={servicesLoading}
+            onToggle={toggleService}
+          />
         )}
 
-        {/* Step 3: Date */}
         {step === 3 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-foreground">انتخاب تاریخ</h2>
@@ -493,7 +522,7 @@ export default function BookView() {
                     !d.isAvailable && "cursor-not-allowed opacity-40",
                     date === d.date
                       ? "bg-primary text-primary-foreground"
-                      : "bg-surface-tertiary text-foreground"
+                      : "bg-surface text-foreground"
                   )}
                 >
                   {formatFaDate(d.date)}
@@ -503,7 +532,6 @@ export default function BookView() {
           </section>
         )}
 
-        {/* Step 4: Staff */}
         {step === 4 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-foreground">انتخاب پرسنل</h2>
@@ -521,8 +549,8 @@ export default function BookView() {
                 className={cn(
                   "rounded-[20px] p-4 text-right transition",
                   staff?.staffPublicId === s.staffPublicId
-                    ? "bg-primary/15 ring-1 ring-primary"
-                    : "bg-surface-tertiary"
+                    ? "bg-primary/10 ring-1 ring-primary"
+                    : "bg-surface"
                 )}
               >
                 <p className="font-bold text-foreground">{s.fullName}</p>
@@ -535,7 +563,6 @@ export default function BookView() {
           </section>
         )}
 
-        {/* Step 5: Price preview */}
         {step === 5 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-foreground">پیش‌فاکتور</h2>
@@ -543,7 +570,7 @@ export default function BookView() {
               <p className="text-sm text-foreground-muted">در حال محاسبه…</p>
             )}
             {price && (
-              <div className="rounded-[24px] bg-surface-tertiary p-5">
+              <div className="rounded-[24px] bg-surface p-5">
                 <ul className="flex flex-col gap-2">
                   {price.services.map((line) => (
                     <li
@@ -589,7 +616,6 @@ export default function BookView() {
           </section>
         )}
 
-        {/* Step 6: Slots */}
         {step === 6 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-foreground">انتخاب ساعت</h2>
@@ -614,7 +640,7 @@ export default function BookView() {
                     "rounded-2xl py-3 text-sm font-medium transition",
                     slotTime === slot.time
                       ? "bg-primary text-primary-foreground"
-                      : "bg-surface-tertiary text-foreground"
+                      : "bg-surface text-foreground"
                   )}
                 >
                   {slot.time.slice(0, 5)}
@@ -624,11 +650,10 @@ export default function BookView() {
           </section>
         )}
 
-        {/* Step 7: Confirm */}
         {step === 7 && createdId == null && (
           <section className="flex flex-col gap-4">
             <h2 className="text-base font-bold text-foreground">تأیید رزرو</h2>
-            <div className="rounded-[24px] bg-surface-tertiary p-5 text-sm">
+            <div className="rounded-[24px] bg-surface p-5 text-sm">
               <p>
                 <span className="text-foreground-muted">سالن: </span>
                 {salon.name}
@@ -676,7 +701,7 @@ export default function BookView() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
+                className="rounded-2xl border border-input-border bg-input px-4 py-3 text-foreground outline-none"
                 placeholder="توضیحات برای سالن…"
               />
             </label>
@@ -689,40 +714,15 @@ export default function BookView() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
-        <div className="flex w-full max-w-[600px] gap-3">
-          <button
-            type="button"
-            onClick={goBack}
-            className="flex-1 rounded-full bg-surface-tertiary py-4 text-sm font-bold text-foreground"
-          >
-            بازگشت
-          </button>
-          {step < 7 ? (
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={!canGoNext()}
-              className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
-            >
-              ادامه
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={isCreating}
-              className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
-            >
-              {isCreating
-                ? "در حال ثبت…"
-                : isLoggedIn
-                  ? "ثبت نوبت"
-                  : "ورود و ثبت نوبت"}
-            </button>
-          )}
-        </div>
-      </div>
+      <BookStickyCta
+        step={step}
+        canContinue={canGoNext()}
+        isCreating={isCreating}
+        isLoggedIn={isLoggedIn}
+        onBack={goBack}
+        onContinue={goNext}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }
