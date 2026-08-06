@@ -1,19 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
 import { WarningCircleIcon } from "@phosphor-icons/react";
 import SalonsDetailHero from "./components/salons-details-hero/SalonsDetailHero";
-import SalonsDetailInfo from "./components/salons-details-info/SalonsDetailInfo";
-import SalonsDetailActionButtons from "./components/salons-details-action-buttons/SalonsDetailActionButtons";
+import SalonsDetailIdentity from "./components/salons-details-identity/SalonsDetailIdentity";
+import SalonsDetailTrustRow from "./components/salons-details-trust-row/SalonsDetailTrustRow";
+import SalonsDetailDescription from "./components/salons-details-description/SalonsDetailDescription";
+import SalonsDetailSocialStrip from "./components/salons-details-social-strip/SalonsDetailSocialStrip";
+import SalonsDetailServices from "./components/salons-details-services/SalonsDetailServices";
+import SalonsDetailHours from "./components/salons-details-hours/SalonsDetailHours";
+import SalonsDetailStickyCta from "./components/salons-details-sticky-cta/SalonsDetailStickyCta";
 import SalonReviewsSection from "./components/salon-reviews-section/SalonReviewsSection";
 import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
-import { RouteAddress } from "@/shared/data/routeAddress";
+import { getOpenStatusLabel } from "./utils/workingHours";
+import { useParams } from "next/navigation";
 
 export default function SalonsDetailView() {
   const params = useParams<{ id: string }>();
@@ -49,37 +53,48 @@ export default function SalonsDetailView() {
     );
   }
 
+  const location =
+    [salon.city, salon.address].filter(Boolean).join("، ") || null;
+  const openStatus = getOpenStatusLabel(salon.workingHours);
+
   return (
     <div className="-mt-20 flex flex-col pb-32">
       <TopNavigation>جزئیات</TopNavigation>
       <SalonsDetailHero salon={salon} />
-      <SalonsDetailInfo
-        salon={salon}
-        isFavorite={isFavorite}
-        canFavorite={canToggle}
-        favoritePending={isPending}
-        onToggleFavorite={toggle}
-      />
-      <SalonsDetailActionButtons
-        whatsappNumber={salon.whatsappNumber}
-        phone={salon.phone}
-        websiteUrl={salon.websiteUrl}
-      />
+      <div className="mt-5 flex flex-col">
+        <SalonsDetailIdentity
+          name={salon.name}
+          rating={salon.rating}
+          isFavorite={isFavorite}
+          canFavorite={canToggle}
+          favoritePending={isPending}
+          onToggleFavorite={toggle}
+        />
+        <SalonsDetailTrustRow location={location} openStatus={openStatus} />
+        <SalonsDetailDescription description={salon.description} />
+        <SalonsDetailSocialStrip
+          instagramHandle={salon.instagramHandle}
+          whatsappNumber={salon.whatsappNumber}
+          websiteUrl={salon.websiteUrl}
+        />
+        <SalonsDetailServices services={salon.services} />
+        <SalonsDetailHours workingHours={salon.workingHours} />
 
-      {numericSalonId != null && (
-        <div className="mt-4 px-safe-area">
-          <button
-            type="button"
-            onClick={() => setReportOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-surface-tertiary py-3 text-sm font-medium text-error"
-          >
-            <WarningCircleIcon size={18} />
-            گزارش سالن
-          </button>
-        </div>
-      )}
+        <SalonReviewsSection salonId={numericSalonId} />
 
-      <SalonReviewsSection salonId={numericSalonId} />
+        {numericSalonId != null && (
+          <div className="mt-4 px-safe-area pb-2">
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-[16px] border border-border py-3 text-sm font-medium text-error"
+            >
+              <WarningCircleIcon size={18} />
+              گزارش سالن
+            </button>
+          </div>
+        )}
+      </div>
 
       {numericSalonId != null && (
         <ReportSalonSheet
@@ -89,14 +104,7 @@ export default function SalonsDetailView() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center p-4">
-        <Link
-          href={RouteAddress.SALONS.BOOK(salon.id)}
-          className="block w-full max-w-[600px] rounded-[30px] bg-primary py-4 text-center text-base font-bold text-primary-foreground"
-        >
-          رزرو نوبت
-        </Link>
-      </div>
+      <SalonsDetailStickyCta salonId={salon.id} />
     </div>
   );
 }
