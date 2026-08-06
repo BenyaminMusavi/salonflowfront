@@ -3,6 +3,7 @@
 import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { UploadFile } from "@/shared/components/composites/upload-file";
+import { salonImageSrc } from "@/shared/utils/salonDisplay";
 
 export type MediaSlotState = {
   publicId: string | null;
@@ -139,7 +140,7 @@ export default function MediaSection({
           {gallery.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {gallery.map((item) => {
-                const src = item.previewUrl || item.url;
+                const src = salonImageSrc(item.previewUrl || item.url, "");
                 return (
                   <div
                     key={item.clientKey}
