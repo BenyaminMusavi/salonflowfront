@@ -17,6 +17,7 @@ import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.typ
 import {
   IBranchService,
   ISalonBranch,
+  ISalonBrowseSlot,
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 import {
@@ -25,12 +26,10 @@ import {
   resolveStaffNumericId,
   toBookingStartTime,
 } from "@/services/domains/booking/utils/booking-mappers";
-import { formatToman } from "@/shared/utils/salonDisplay";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
-import { cn } from "@/shared/utils/className";
 import BookProgressHeader from "./components/BookProgressHeader";
 import BookStickyCta from "./components/BookStickyCta";
 import BookBranchStep from "./components/BookBranchStep";
@@ -38,23 +37,15 @@ import BookServicesStep from "./components/BookServicesStep";
 import BookDateStep from "./components/BookDateStep";
 import BookStaffStep from "./components/BookStaffStep";
 import BookPriceStep from "./components/BookPriceStep";
+import BookSlotsStep from "./components/BookSlotsStep";
+import BookConfirmStep from "./components/BookConfirmStep";
+import BookSuccessPanel from "./components/BookSuccessPanel";
 import {
   clearBookDraft,
   loadBookDraft,
   saveBookDraft,
 } from "./utils/bookDraft";
-
-function formatFaDate(date: string) {
-  try {
-    return new Date(`${date}T12:00:00`).toLocaleDateString("fa-IR", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
-  } catch {
-    return date;
-  }
-}
+import { resolveStaffFromSlotResponse } from "./utils/resolveSlotStaff";
 
 export default function BookView() {
   const params = useParams<{ id: string }>();
@@ -84,6 +75,10 @@ export default function BookView() {
   const [date, setDate] = useState<string | null>(null);
   const [staff, setStaff] = useState<IStaffAvailability | null>(null);
   const [useFirstAvailable, setUseFirstAvailable] = useState(false);
+  const [resolvedStaffId, setResolvedStaffId] = useState<number | null>(null);
+  const [resolvedStaffName, setResolvedStaffName] = useState<string | null>(
+    null
+  );
   const [slotTime, setSlotTime] = useState<string | null>(null);
   const [slotEndTime, setSlotEndTime] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
@@ -92,6 +87,13 @@ export default function BookView() {
 
   const draftReadyRef = useRef(false);
   const skipBranchHandledRef = useRef(false);
+
+  const clearSlotAndStaffResolution = () => {
+    setSlotTime(null);
+    setSlotEndTime(null);
+    setResolvedStaffId(null);
+    setResolvedStaffName(null);
+  };
 
   // Rehydrate draft once per salon
   useEffect(() => {
@@ -107,6 +109,10 @@ export default function BookView() {
     setDate(draft.date);
     setStaff(draft.staff);
     setUseFirstAvailable(Boolean(draft.useFirstAvailable));
+    setResolvedStaffId(
+      typeof draft.resolvedStaffId === "number" ? draft.resolvedStaffId : null
+    );
+    setResolvedStaffName(draft.resolvedStaffName ?? null);
     setSlotTime(draft.slotTime);
     setSlotEndTime(draft.slotEndTime);
     setNotes(draft.notes ?? "");
@@ -126,6 +132,8 @@ export default function BookView() {
       date,
       staff,
       useFirstAvailable,
+      resolvedStaffId,
+      resolvedStaffName,
       slotTime,
       slotEndTime,
       notes,
@@ -139,6 +147,8 @@ export default function BookView() {
     date,
     staff,
     useFirstAvailable,
+    resolvedStaffId,
+    resolvedStaffName,
     slotTime,
     slotEndTime,
     notes,
@@ -163,9 +173,7 @@ export default function BookView() {
   const { data: branchServicesRes, isLoading: servicesLoading } =
     useQueryBranchServices(branchId);
 
-  const { data: offeringsRes } = useQuerySalonOfferings(
-    numericSalonId ?? 0
-  );
+  const { data: offeringsRes } = useQuerySalonOfferings(numericSalonId ?? 0);
 
   const enrichedServices = useMemo(() => {
     const raw = branchServicesRes?.data ?? [];
@@ -199,8 +207,12 @@ export default function BookView() {
   const { data: staffRes, isLoading: staffLoading } =
     useQueryStaffAvailability(branchId, primaryServiceTypeId, date);
 
-  const { data: priceRes, isLoading: priceLoading, isError: priceError, refetch: refetchPrice } =
-    useQueryCalculatePrice(
+  const {
+    data: priceRes,
+    isLoading: priceLoading,
+    isError: priceError,
+    refetch: refetchPrice,
+  } = useQueryCalculatePrice(
     branchId,
     serviceTypeIds,
     useFirstAvailable ? null : staff?.staffPublicId,
@@ -227,8 +239,15 @@ export default function BookView() {
   const price = priceRes?.data;
   const dates = datesRes?.data ?? [];
   const staffList = staffRes?.data ?? [];
-  const slots = slotsRes?.data?.slots ?? [];
+  const slotsData = slotsRes?.data;
+  const slots = slotsData?.slots ?? [];
   const staffProfiles = staffProfilesRes?.data ?? [];
+
+  const staffLabel = useFirstAvailable
+    ? resolvedStaffName
+      ? `اولین زمان آزاد · ${resolvedStaffName}`
+      : "اولین زمان آزاد"
+    : staff?.fullName || resolvedStaffName || "—";
 
   const canGoNext = (): boolean => {
     switch (step) {
@@ -248,7 +267,7 @@ export default function BookView() {
       case 5:
         return !!price;
       case 6:
-        return !!slotTime;
+        return !!slotTime && typeof resolvedStaffId === "number";
       default:
         return true;
     }
@@ -276,6 +295,12 @@ export default function BookView() {
         return;
       }
     }
+    if (step === 6 && typeof resolvedStaffId !== "number") {
+      setError(
+        "پرسنل این ساعت مشخص نشد. پرسنل دیگری انتخاب کنید یا دوباره تلاش کنید."
+      );
+      return;
+    }
     if (!canGoNext()) {
       setError("لطفاً این مرحله را تکمیل کنید.");
       return;
@@ -289,7 +314,6 @@ export default function BookView() {
       router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
       return;
     }
-    // If single-branch was auto-skipped, back from services goes to salon detail
     if (step === 2 && branches.length === 1) {
       router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
       return;
@@ -304,8 +328,7 @@ export default function BookView() {
     setDate(null);
     setStaff(null);
     setUseFirstAvailable(false);
-    setSlotTime(null);
-    setSlotEndTime(null);
+    clearSlotAndStaffResolution();
   };
 
   const toggleService = (svc: IBranchService) => {
@@ -321,8 +344,45 @@ export default function BookView() {
     setDate(null);
     setStaff(null);
     setUseFirstAvailable(false);
-    setSlotTime(null);
-    setSlotEndTime(null);
+    clearSlotAndStaffResolution();
+  };
+
+  const selectSlot = (slot: ISalonBrowseSlot) => {
+    setSlotTime(slot.time);
+    setSlotEndTime(slot.endTime);
+    setError("");
+
+    if (useFirstAvailable) {
+      const resolved = resolveStaffFromSlotResponse({
+        slot,
+        slotsData,
+        staffList,
+        staffProfiles,
+      });
+      if (!resolved) {
+        setResolvedStaffId(null);
+        setResolvedStaffName(null);
+        setError(
+          "پرسنل این ساعت از پاسخ سرور مشخص نشد. پرسنل مشخصی انتخاب کنید یا دوباره تلاش کنید."
+        );
+        return;
+      }
+      setResolvedStaffId(resolved.staffId);
+      setResolvedStaffName(resolved.fullName);
+      if (resolved.staff) setStaff(resolved.staff);
+      return;
+    }
+
+    if (staff) {
+      const id = resolveStaffNumericId(staff, staffProfiles);
+      setResolvedStaffId(id ?? null);
+      setResolvedStaffName(staff.fullName);
+      if (!id) {
+        setError(
+          "شناسه عددی پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید."
+        );
+      }
+    }
   };
 
   const ensureCustomerContext = async () => {
@@ -341,6 +401,8 @@ export default function BookView() {
       date,
       staff,
       useFirstAvailable,
+      resolvedStaffId,
+      resolvedStaffName,
       slotTime,
       slotEndTime,
       notes,
@@ -362,29 +424,9 @@ export default function BookView() {
       branchId == null ||
       !date ||
       !slotTime ||
-      (!staff && !useFirstAvailable)
+      typeof resolvedStaffId !== "number"
     ) {
       setError("اطلاعات رزرو ناقص است.");
-      return;
-    }
-
-    if (useFirstAvailable && !staff) {
-      setError(
-        "برای «اولین زمان آزاد» هنوز پرسنل از اسلات مشخص نشده است. لطفاً پرسنل را انتخاب کنید یا بعداً دوباره تلاش کنید."
-      );
-      return;
-    }
-
-    if (!staff) {
-      setError("اطلاعات رزرو ناقص است.");
-      return;
-    }
-
-    const staffId = resolveStaffNumericId(staff, staffProfiles);
-    if (!staffId) {
-      setError(
-        "شناسه عددی پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید یا بعداً تلاش کنید."
-      );
       return;
     }
 
@@ -405,7 +447,7 @@ export default function BookView() {
         notes: notes.trim() || null,
         services: offeringIds.map((offeringId) => ({
           offeringId,
-          staffId,
+          staffId: resolvedStaffId,
         })),
       });
       clearBookDraft(salonPublicId);
@@ -453,31 +495,9 @@ export default function BookView() {
     );
   }
 
-  if (createdId != null && step === 7) {
+  if (createdId != null) {
     return (
-      <div className="flex flex-col gap-6 px-safe-area pb-24 pt-4">
-        <TopNavigation>رزرو موفق</TopNavigation>
-        <div className="rounded-[24px] bg-surface p-6 text-center">
-          <p className="text-lg font-bold text-foreground">نوبت ثبت شد</p>
-          <p className="mt-2 text-sm text-foreground-muted">
-            شماره نوبت: {createdId}
-          </p>
-          <Link
-            href={RouteAddress.RESERVATION.DETAILS(createdId)}
-            className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-          >
-            مشاهده نوبت
-          </Link>
-          <div className="mt-3">
-            <Link
-              href={RouteAddress.RESERVATION.BASE}
-              className="text-sm text-foreground-muted"
-            >
-              همه نوبت‌ها
-            </Link>
-          </div>
-        </div>
-      </div>
+      <BookSuccessPanel bookingId={createdId} salonId={salon.id} />
     );
   }
 
@@ -530,8 +550,7 @@ export default function BookView() {
               setDate(nextDate);
               setStaff(null);
               setUseFirstAvailable(false);
-              setSlotTime(null);
-              setSlotEndTime(null);
+              clearSlotAndStaffResolution();
             }}
             onChangeServices={() => setStep(2)}
           />
@@ -546,14 +565,15 @@ export default function BookView() {
             onSelectFirstAvailable={() => {
               setUseFirstAvailable(true);
               setStaff(null);
-              setSlotTime(null);
-              setSlotEndTime(null);
+              clearSlotAndStaffResolution();
             }}
             onSelectStaff={(s) => {
               setUseFirstAvailable(false);
               setStaff(s);
-              setSlotTime(null);
-              setSlotEndTime(null);
+              clearSlotAndStaffResolution();
+              const id = resolveStaffNumericId(s, staffProfiles);
+              setResolvedStaffId(id ?? null);
+              setResolvedStaffName(s.fullName);
             }}
             onChangeDate={() => setStep(3)}
           />
@@ -571,101 +591,30 @@ export default function BookView() {
         )}
 
         {step === 6 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-foreground">انتخاب ساعت</h2>
-            {slotsLoading && (
-              <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
-            )}
-            {!slotsLoading && slots.length === 0 && (
-              <p className="text-sm text-foreground-muted">
-                اسلات آزادی برای این روز یافت نشد.
-              </p>
-            )}
-            <div className="grid grid-cols-3 gap-2">
-              {slots.map((slot) => (
-                <button
-                  key={`${slot.time}-${slot.endTime}`}
-                  type="button"
-                  onClick={() => {
-                    setSlotTime(slot.time);
-                    setSlotEndTime(slot.endTime);
-                  }}
-                  className={cn(
-                    "rounded-2xl py-3 text-sm font-medium transition",
-                    slotTime === slot.time
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-surface text-foreground"
-                  )}
-                >
-                  {slot.time.slice(0, 5)}
-                </button>
-              ))}
-            </div>
-          </section>
+          <BookSlotsStep
+            slots={slots}
+            selectedTime={slotTime}
+            isLoading={slotsLoading}
+            onSelect={selectSlot}
+            onChangeDate={() => setStep(3)}
+            onChangeStaff={() => setStep(4)}
+          />
         )}
 
-        {step === 7 && createdId == null && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-base font-bold text-foreground">تأیید رزرو</h2>
-            <div className="rounded-[24px] bg-surface p-5 text-sm">
-              <p>
-                <span className="text-foreground-muted">سالن: </span>
-                {salon.name}
-              </p>
-              <p className="mt-2">
-                <span className="text-foreground-muted">شعبه: </span>
-                {branchName}
-              </p>
-              <p className="mt-2">
-                <span className="text-foreground-muted">خدمات: </span>
-                {selectedServices.map((s) => s.name).join("، ")}
-              </p>
-              <p className="mt-2">
-                <span className="text-foreground-muted">پرسنل: </span>
-                {useFirstAvailable
-                  ? "اولین زمان آزاد"
-                  : staff?.fullName}
-              </p>
-              <p className="mt-2">
-                <span className="text-foreground-muted">زمان: </span>
-                {date && formatFaDate(date)} — {slotTime?.slice(0, 5)}
-                {slotEndTime ? ` تا ${slotEndTime.slice(0, 5)}` : ""}
-              </p>
-              {price && (
-                <>
-                  <div className="my-3 h-px bg-border" />
-                  <p>
-                    پرداخت الان:{" "}
-                    <strong>{formatToman(price.amountDueNow)} تومان</strong>
-                  </p>
-                  <p className="mt-1">
-                    باقی‌مانده:{" "}
-                    <strong>
-                      {formatToman(price.remainingAfterDeposit)} تومان
-                    </strong>
-                  </p>
-                  <p className="mt-1 text-xs text-foreground-muted">
-                    لغو رایگان تا {price.freeCancellationWindowHours} ساعت قبل
-                  </p>
-                </>
-              )}
-            </div>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="text-foreground-muted">یادداشت (اختیاری)</span>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                className="rounded-2xl border border-input-border bg-input px-4 py-3 text-foreground outline-none"
-                placeholder="توضیحات برای سالن…"
-              />
-            </label>
-            {!isLoggedIn && (
-              <p className="text-xs text-foreground-muted">
-                برای ثبت نهایی باید وارد حساب کاربری شوید.
-              </p>
-            )}
-          </section>
+        {step === 7 && (
+          <BookConfirmStep
+            salonName={salon.name}
+            branchName={branchName}
+            services={selectedServices}
+            date={date}
+            slotTime={slotTime}
+            slotEndTime={slotEndTime}
+            staffLabel={staffLabel}
+            price={price}
+            notes={notes}
+            onNotesChange={setNotes}
+            isLoggedIn={isLoggedIn}
+          />
         )}
       </div>
 

@@ -15,6 +15,9 @@ export interface IBookWizardDraft {
   staff: IStaffAvailability | null;
   /** When true, staff is intentionally null (first available). */
   useFirstAvailable?: boolean;
+  /** Numeric staff id resolved from slots / profiles for create payload */
+  resolvedStaffId?: number | null;
+  resolvedStaffName?: string | null;
   slotTime: string | null;
   slotEndTime: string | null;
   notes: string;
