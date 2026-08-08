@@ -133,7 +133,10 @@ export default function CatalogView() {
           >
             <option value="">شعبه (اختیاری)</option>
             {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
+              <option
+                key={String(branch.id ?? branch.publicId)}
+                value={branch.id ?? ""}
+              >
                 {branch.name}
               </option>
             ))}

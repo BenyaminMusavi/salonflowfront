@@ -51,40 +51,40 @@ class SalonService {
     );
   }
 
-  async getBranchServices(branchId: number) {
+  async getBranchServices(branchPublicId: string) {
     return await axiosInstance.get<unknown, TBranchServicesEntity>(
-      API_ADDRESS.SALON.BRANCH_SERVICES(branchId)
+      API_ADDRESS.SALON.BRANCH_SERVICES(branchPublicId)
     );
   }
 
-  async getAvailableDates(branchId: number, serviceTypeId: number) {
+  async getAvailableDates(branchPublicId: string, serviceTypePublicId: string) {
     return await axiosInstance.get<unknown, TAvailableDatesEntity>(
-      API_ADDRESS.SALON.BRANCH_AVAILABLE_DATES(branchId),
-      { params: { serviceTypeId } }
+      API_ADDRESS.SALON.BRANCH_AVAILABLE_DATES(branchPublicId),
+      { params: { serviceTypePublicId } }
     );
   }
 
   async getStaffAvailability(
-    branchId: number,
-    serviceTypeId: number,
+    branchPublicId: string,
+    serviceTypePublicId: string,
     date: string
   ) {
     return await axiosInstance.get<unknown, TStaffAvailabilityEntity>(
-      API_ADDRESS.SALON.BRANCH_STAFF_AVAILABILITY(branchId),
-      { params: { serviceTypeId, date } }
+      API_ADDRESS.SALON.BRANCH_STAFF_AVAILABILITY(branchPublicId),
+      { params: { serviceTypePublicId, date } }
     );
   }
 
   async calculatePrice(
-    branchId: number,
-    serviceTypeIds: number[],
+    branchPublicId: string,
+    serviceTypePublicIds: string[],
     staffPublicId?: string | null
   ) {
     return await axiosInstance.get<unknown, TCalculatePriceEntity>(
-      API_ADDRESS.SALON.BRANCH_CALCULATE_PRICE(branchId),
+      API_ADDRESS.SALON.BRANCH_CALCULATE_PRICE(branchPublicId),
       {
         params: {
-          serviceTypeIds,
+          serviceTypePublicIds,
           staffPublicId: staffPublicId || undefined,
         },
         paramsSerializer: { indexes: null },

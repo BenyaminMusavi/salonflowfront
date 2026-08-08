@@ -4,21 +4,22 @@ import salonService from "../salon.service";
 export const CALCULATE_PRICE_QUERY_KEY = "CALCULATE_PRICE_QUERY_KEY";
 
 export const useQueryCalculatePrice = (
-  branchId: number | null,
-  serviceTypeIds: number[],
+  branchPublicId: string | null,
+  serviceTypePublicIds: string[],
   staffPublicId?: string | null,
   enabled = true
 ) => {
-  const ids = [...serviceTypeIds].filter((id) => id > 0).sort((a, b) => a - b);
+  const ids = [...serviceTypePublicIds].filter(Boolean).sort();
 
   return useQuery({
-    queryKey: [CALCULATE_PRICE_QUERY_KEY, branchId, ids, staffPublicId ?? null],
+    queryKey: [
+      CALCULATE_PRICE_QUERY_KEY,
+      branchPublicId,
+      ids,
+      staffPublicId ?? null,
+    ],
     queryFn: () =>
-      salonService.calculatePrice(branchId!, ids, staffPublicId),
-    enabled:
-      enabled &&
-      typeof branchId === "number" &&
-      branchId > 0 &&
-      ids.length > 0,
+      salonService.calculatePrice(branchPublicId!, ids, staffPublicId),
+    enabled: enabled && !!branchPublicId && ids.length > 0,
   });
 };

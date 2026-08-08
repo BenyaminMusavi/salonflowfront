@@ -10,7 +10,6 @@ import { useQueryAvailableDates } from "@/services/domains/salons/hooks/useQuery
 import { useQueryStaffAvailability } from "@/services/domains/salons/hooks/useQueryStaffAvailability";
 import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
-import { useQuerySalonOfferings } from "@/services/domains/salon-offering/hooks/useQuerySalonOfferings";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
 import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
@@ -21,9 +20,7 @@ import {
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 import {
-  enrichBranchServices,
   getApiErrorMessage,
-  resolveStaffNumericId,
   toBookingStartTime,
 } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -64,10 +61,17 @@ export default function BookView() {
   const salon = salonRes?.data;
   const numericSalonId = salon ? resolveNumericSalonId(salon) : undefined;
 
-  const branches: ISalonBranch[] = salon?.branches ?? [];
+  const branches: ISalonBranch[] = useMemo(
+    () =>
+      (salon?.branches ?? []).filter(
+        (b): b is ISalonBranch =>
+          typeof b.publicId === "string" && b.publicId.length > 0
+      ),
+    [salon?.branches]
+  );
 
   const [step, setStep] = useState(1);
-  const [branchId, setBranchId] = useState<number | null>(null);
+  const [branchPublicId, setBranchPublicId] = useState<string | null>(null);
   const [branchName, setBranchName] = useState("");
   const [selectedServices, setSelectedServices] = useState<IBranchService[]>(
     []
@@ -75,7 +79,6 @@ export default function BookView() {
   const [date, setDate] = useState<string | null>(null);
   const [staff, setStaff] = useState<IStaffAvailability | null>(null);
   const [useFirstAvailable, setUseFirstAvailable] = useState(false);
-  const [resolvedStaffId, setResolvedStaffId] = useState<number | null>(null);
   const [resolvedStaffPublicId, setResolvedStaffPublicId] = useState<
     string | null
   >(null);
@@ -94,7 +97,6 @@ export default function BookView() {
   const clearSlotAndStaffResolution = () => {
     setSlotTime(null);
     setSlotEndTime(null);
-    setResolvedStaffId(null);
     setResolvedStaffPublicId(null);
     setResolvedStaffName(null);
   };
@@ -107,15 +109,12 @@ export default function BookView() {
     if (!draft) return;
 
     setStep(draft.step);
-    setBranchId(draft.branchId);
+    setBranchPublicId(draft.branchPublicId);
     setBranchName(draft.branchName);
     setSelectedServices(draft.selectedServices ?? []);
     setDate(draft.date);
     setStaff(draft.staff);
     setUseFirstAvailable(Boolean(draft.useFirstAvailable));
-    setResolvedStaffId(
-      typeof draft.resolvedStaffId === "number" ? draft.resolvedStaffId : null
-    );
     setResolvedStaffPublicId(
       typeof draft.resolvedStaffPublicId === "string"
         ? draft.resolvedStaffPublicId
@@ -125,7 +124,7 @@ export default function BookView() {
     setSlotTime(draft.slotTime);
     setSlotEndTime(draft.slotEndTime);
     setNotes(draft.notes ?? "");
-    if (draft.branchId != null || draft.step > 1) {
+    if (draft.branchPublicId != null || draft.step > 1) {
       skipBranchHandledRef.current = true;
     }
   }, [salonPublicId]);
@@ -135,13 +134,12 @@ export default function BookView() {
     if (!salonPublicId || !draftReadyRef.current || createdId != null) return;
     saveBookDraft(salonPublicId, {
       step,
-      branchId,
+      branchPublicId,
       branchName,
       selectedServices,
       date,
       staff,
       useFirstAvailable,
-      resolvedStaffId,
       resolvedStaffPublicId,
       resolvedStaffName,
       slotTime,
@@ -151,13 +149,12 @@ export default function BookView() {
   }, [
     salonPublicId,
     step,
-    branchId,
+    branchPublicId,
     branchName,
     selectedServices,
     date,
     staff,
     useFirstAvailable,
-    resolvedStaffId,
     resolvedStaffPublicId,
     resolvedStaffName,
     slotTime,
@@ -176,69 +173,47 @@ export default function BookView() {
 
     const only = branches[0];
     skipBranchHandledRef.current = true;
-    setBranchId(only.id);
+    setBranchPublicId(only.publicId);
     setBranchName(only.name);
     setStep((s) => (s === 1 ? 2 : s));
   }, [branches]);
 
   const { data: branchServicesRes, isLoading: servicesLoading } =
-    useQueryBranchServices(branchId);
+    useQueryBranchServices(branchPublicId);
 
-  const { data: offeringsRes } = useQuerySalonOfferings(numericSalonId ?? 0);
-
-  const enrichedServices = useMemo(() => {
+  const branchServices = useMemo(() => {
     const raw = branchServicesRes?.data ?? [];
-    const offerings = offeringsRes?.data ?? [];
-    return enrichBranchServices(raw, offerings);
-  }, [branchServicesRes?.data, offeringsRes?.data]);
-
-  const serviceTypeIds = useMemo(
-    () =>
-      selectedServices
-        .map((s) => s.serviceTypeId)
-        .filter((id): id is number => typeof id === "number" && id > 0),
-    [selectedServices]
-  );
-
-  const offeringIds = useMemo(
-    () =>
-      selectedServices
-        .map((s) => s.offeringId)
-        .filter((id): id is number => typeof id === "number" && id > 0),
-    [selectedServices]
-  );
+    return raw.filter(
+      (s) =>
+        typeof s.offeringPublicId === "string" &&
+        s.offeringPublicId.length > 0 &&
+        typeof s.servicePublicId === "string" &&
+        s.servicePublicId.length > 0
+    );
+  }, [branchServicesRes?.data]);
 
   const offeringPublicIds = useMemo(
-    () =>
-      selectedServices
-        .map((s) => s.offeringPublicId)
-        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    () => selectedServices.map((s) => s.offeringPublicId).filter(Boolean),
     [selectedServices]
   );
-
-  const branchPublicId = useMemo(() => {
-    if (branchId == null) return null;
-    const branch = branches.find((b) => b.id === branchId);
-    return branch?.publicId ?? null;
-  }, [branches, branchId]);
 
   const serviceTypePublicIds = useMemo(
-    () =>
-      selectedServices
-        .map((s) => s.servicePublicId)
-        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    () => selectedServices.map((s) => s.servicePublicId).filter(Boolean),
     [selectedServices]
   );
 
-  const primaryServiceTypeId = serviceTypeIds[0] ?? null;
+  const primaryServiceTypePublicId = serviceTypePublicIds[0] ?? null;
 
   const { data: datesRes, isLoading: datesLoading } = useQueryAvailableDates(
-    branchId,
-    primaryServiceTypeId
+    branchPublicId,
+    primaryServiceTypePublicId
   );
 
-  const { data: staffRes, isLoading: staffLoading } =
-    useQueryStaffAvailability(branchId, primaryServiceTypeId, date);
+  const { data: staffRes, isLoading: staffLoading } = useQueryStaffAvailability(
+    branchPublicId,
+    primaryServiceTypePublicId,
+    date
+  );
 
   const {
     data: priceRes,
@@ -246,8 +221,8 @@ export default function BookView() {
     isError: priceError,
     refetch: refetchPrice,
   } = useQueryCalculatePrice(
-    branchId,
-    serviceTypeIds,
+    branchPublicId,
+    serviceTypePublicIds,
     useFirstAvailable ? null : staff?.staffPublicId,
     step >= 5
   );
@@ -257,16 +232,14 @@ export default function BookView() {
       branchPublicId: branchPublicId ?? undefined,
       date: date ?? undefined,
       serviceTypePublicIds,
-      staffProfilePublicId: useFirstAvailable
-        ? null
-        : staff?.staffPublicId,
+      staffProfilePublicId: useFirstAvailable ? null : staff?.staffPublicId,
       enabled: step >= 6,
     });
 
   const { data: staffProfilesRes } = useQueryStaffForOfferings(
     salonPublicId,
-    offeringIds,
-    { enabled: offeringIds.length > 0 && step >= 4 }
+    offeringPublicIds,
+    { enabled: offeringPublicIds.length > 0 && step >= 4 }
   );
 
   const price = priceRes?.data;
@@ -285,12 +258,12 @@ export default function BookView() {
   const canGoNext = (): boolean => {
     switch (step) {
       case 1:
-        return branchId != null;
+        return !!branchPublicId;
       case 2:
         return (
           selectedServices.length > 0 &&
           selectedServices.every(
-            (s) => typeof s.serviceTypeId === "number" && s.serviceTypeId > 0
+            (s) => !!s.offeringPublicId && !!s.servicePublicId
           )
         );
       case 3:
@@ -309,12 +282,8 @@ export default function BookView() {
   const goNext = () => {
     setError("");
     if (step === 2) {
-      const missingType = selectedServices.some(
-        (s) => typeof s.serviceTypeId !== "number"
-      );
-      const missingOffering = selectedServices.some(
-        (s) => typeof s.offeringId !== "number"
-      );
+      const missingType = selectedServices.some((s) => !s.servicePublicId);
+      const missingOffering = selectedServices.some((s) => !s.offeringPublicId);
       if (missingType) {
         setError(
           "شناسه نوع سرویس برای تاریخ‌ها در دسترس نیست. لطفاً بعداً دوباره تلاش کنید."
@@ -324,15 +293,6 @@ export default function BookView() {
       if (missingOffering) {
         setError(
           "شناسه offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
-        );
-        return;
-      }
-      const missingOfferingPublic = selectedServices.some(
-        (s) => !s.offeringPublicId
-      );
-      if (missingOfferingPublic) {
-        setError(
-          "شناسه عمومی offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
         );
         return;
       }
@@ -364,7 +324,7 @@ export default function BookView() {
   };
 
   const selectBranch = (branch: ISalonBranch) => {
-    setBranchId(branch.id);
+    setBranchPublicId(branch.publicId);
     setBranchName(branch.name);
     setSelectedServices([]);
     setDate(null);
@@ -376,10 +336,10 @@ export default function BookView() {
   const toggleService = (svc: IBranchService) => {
     setSelectedServices((prev) => {
       const exists = prev.some(
-        (s) => s.servicePublicId === svc.servicePublicId
+        (s) => s.offeringPublicId === svc.offeringPublicId
       );
       if (exists) {
-        return prev.filter((s) => s.servicePublicId !== svc.servicePublicId);
+        return prev.filter((s) => s.offeringPublicId !== svc.offeringPublicId);
       }
       return [...prev, svc];
     });
@@ -402,7 +362,6 @@ export default function BookView() {
         staffProfiles,
       });
       if (!resolved) {
-        setResolvedStaffId(null);
         setResolvedStaffPublicId(null);
         setResolvedStaffName(null);
         setError(
@@ -410,7 +369,6 @@ export default function BookView() {
         );
         return;
       }
-      setResolvedStaffId(resolved.staffId ?? null);
       setResolvedStaffPublicId(resolved.staffPublicId);
       setResolvedStaffName(resolved.fullName);
       if (resolved.staff) setStaff(resolved.staff);
@@ -418,14 +376,10 @@ export default function BookView() {
     }
 
     if (staff) {
-      const id = resolveStaffNumericId(staff, staffProfiles);
-      setResolvedStaffId(id ?? null);
       setResolvedStaffPublicId(staff.staffPublicId);
       setResolvedStaffName(staff.fullName);
       if (!staff.staffPublicId) {
-        setError(
-          "شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید."
-        );
+        setError("شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید.");
       }
     }
   };
@@ -440,13 +394,12 @@ export default function BookView() {
     if (!salonPublicId) return;
     saveBookDraft(salonPublicId, {
       step,
-      branchId,
+      branchPublicId,
       branchName,
       selectedServices,
       date,
       staff,
       useFirstAvailable,
-      resolvedStaffId,
       resolvedStaffPublicId,
       resolvedStaffName,
       slotTime,
@@ -542,9 +495,7 @@ export default function BookView() {
   }
 
   if (createdId != null) {
-    return (
-      <BookSuccessPanel bookingId={createdId} salonId={salon.id} />
-    );
+    return <BookSuccessPanel bookingId={createdId} salonId={salon.id} />;
   }
 
   const showBranchChip = Boolean(branchName) && step > 1;
@@ -573,14 +524,14 @@ export default function BookView() {
         {step === 1 && (
           <BookBranchStep
             branches={branches}
-            selectedBranchId={branchId}
+            selectedBranchPublicId={branchPublicId}
             onSelect={selectBranch}
           />
         )}
 
         {step === 2 && (
           <BookServicesStep
-            services={enrichedServices}
+            services={branchServices}
             selectedServices={selectedServices}
             isLoading={servicesLoading}
             onToggle={toggleService}
@@ -617,8 +568,6 @@ export default function BookView() {
               setUseFirstAvailable(false);
               setStaff(s);
               clearSlotAndStaffResolution();
-              const id = resolveStaffNumericId(s, staffProfiles);
-              setResolvedStaffId(id ?? null);
               setResolvedStaffPublicId(s.staffPublicId);
               setResolvedStaffName(s.fullName);
             }}

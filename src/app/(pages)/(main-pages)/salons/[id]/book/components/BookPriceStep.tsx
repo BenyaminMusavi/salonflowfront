@@ -51,7 +51,7 @@ export default function BookPriceStep({
           <ul className="flex flex-col gap-2.5">
             {price.services.map((line) => (
               <li
-                key={line.serviceTypeId}
+                key={line.serviceTypePublicId || line.serviceTypeId || line.serviceName}
                 className="flex items-center justify-between gap-3 text-sm"
               >
                 <span className="text-foreground">{line.serviceName}</span>

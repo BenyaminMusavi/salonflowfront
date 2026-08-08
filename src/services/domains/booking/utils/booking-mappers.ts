@@ -1,34 +1,43 @@
-import { IBranchService } from "@/services/domains/salons/types/booking-browse.type";
-import { ISalonOffering } from "@/services/domains/salon-offering/types/salon-offering-type";
 import { IStaffAvailability } from "@/services/domains/salons/types/booking-browse.type";
 
-/** Enrich branch services with offering ids from salon offerings catalog. */
-export function enrichBranchServices(
-  services: IBranchService[],
-  offerings: ISalonOffering[]
-): IBranchService[] {
-  return services.map((svc) => {
-    if (svc.offeringPublicId && svc.offeringId && svc.serviceTypeId) return svc;
+export function resolveStaffPublicId(
+  staff: IStaffAvailability,
+  staffProfiles: Array<{
+    id?: number;
+    staffPublicId?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    fullName?: string | null;
+    publicId?: string | null;
+  }>
+): string | undefined {
+  if (staff.staffPublicId) return staff.staffPublicId;
 
-    const byName = offerings.find(
-      (o) =>
-        o.serviceName?.trim() === svc.name?.trim() ||
-        (svc.serviceTypeId != null && o.serviceTypeId === svc.serviceTypeId)
-    );
+  const byPublic = staffProfiles.find(
+    (p) =>
+      (p.staffPublicId && p.staffPublicId === staff.staffPublicId) ||
+      (p.publicId && p.publicId === staff.staffPublicId)
+  );
+  if (byPublic?.staffPublicId) return byPublic.staffPublicId;
+  if (byPublic?.publicId) return byPublic.publicId;
 
-    return {
-      ...svc,
-      offeringPublicId: svc.offeringPublicId ?? null,
-      offeringId: svc.offeringId ?? byName?.id ?? null,
-      serviceTypeId: svc.serviceTypeId ?? byName?.serviceTypeId ?? null,
-    };
+  const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+  const target = normalize(staff.fullName);
+
+  const byName = staffProfiles.find((p) => {
+    const full =
+      p.fullName || [p.firstName, p.lastName].filter(Boolean).join(" ");
+    return normalize(full) === target;
   });
+
+  return byName?.staffPublicId ?? byName?.publicId ?? undefined;
 }
 
+/** @deprecated Prefer resolveStaffPublicId */
 export function resolveStaffNumericId(
   staff: IStaffAvailability,
   staffProfiles: Array<{
-    id: number;
+    id?: number;
     firstName?: string | null;
     lastName?: string | null;
     fullName?: string | null;
@@ -41,19 +50,18 @@ export function resolveStaffNumericId(
   const byPublic = staffProfiles.find(
     (p) => p.publicId && p.publicId === staff.staffPublicId
   );
-  if (byPublic) return byPublic.id;
+  if (typeof byPublic?.id === "number") return byPublic.id;
 
   const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
   const target = normalize(staff.fullName);
 
   const byName = staffProfiles.find((p) => {
     const full =
-      p.fullName ||
-      [p.firstName, p.lastName].filter(Boolean).join(" ");
+      p.fullName || [p.firstName, p.lastName].filter(Boolean).join(" ");
     return normalize(full) === target;
   });
 
-  return byName?.id;
+  return typeof byName?.id === "number" ? byName.id : undefined;
 }
 
 export function toBookingStartTime(date: string, time: string): string {

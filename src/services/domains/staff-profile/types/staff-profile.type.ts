@@ -1,7 +1,9 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
 export interface IStaffProfile {
-  id: number;
+  /** Prefer staffPublicId when API sends it */
+  staffPublicId?: string | null;
+  id?: number;
   firstName?: string | null;
   lastName?: string | null;
   fullName?: string | null;

@@ -1,17 +1,22 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
+/** Salon branch from public detail — identify by publicId (Guid). */
 export interface ISalonBranch {
-  id: number;
-  publicId?: string | null;
+  publicId: string;
   name: string;
   city?: string | null;
   address?: string | null;
   phone?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   genderType?: number | string | null;
+  /** @deprecated Legacy numeric id if API still sends it */
+  id?: number | null;
 }
 
-/** Branch catalog line — prefer Guid public ids for customer booking. */
+/** Branch catalog line — Guid-first for customer booking. */
 export interface IBranchService {
+  offeringPublicId: string;
   servicePublicId: string;
   name: string;
   description?: string | null;
@@ -20,12 +25,6 @@ export interface IBranchService {
   price: number;
   requiresDeposit: boolean;
   depositAmount?: number | null;
-  /** ServiceOffering.PublicId — required for create/slots */
-  offeringPublicId?: string | null;
-  /** @deprecated Prefer offeringPublicId */
-  offeringId?: number | null;
-  /** ServiceType.Id (long) — legacy browse until Guid migration */
-  serviceTypeId?: number | null;
 }
 
 export interface IAvailableDate {
@@ -39,17 +38,19 @@ export interface IStaffAvailability {
   profileImageUrl?: string | null;
   startTime?: string | null;
   endTime?: string | null;
-  /** StaffMember.Id when API includes it */
+  /** @deprecated Prefer staffPublicId */
   staffId?: number | null;
   staffMemberId?: number | null;
 }
 
 export interface IPriceLine {
-  serviceTypeId: number;
+  serviceTypePublicId: string;
   serviceName: string;
   price: number;
   requiresDeposit: boolean;
   depositAmount?: number | null;
+  /** @deprecated Prefer serviceTypePublicId */
+  serviceTypeId?: number | null;
 }
 
 export interface ICalculatePriceResult {

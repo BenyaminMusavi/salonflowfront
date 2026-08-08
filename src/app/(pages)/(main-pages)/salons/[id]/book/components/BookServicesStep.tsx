@@ -47,11 +47,11 @@ export default function BookServicesStep({
         <ul className="flex flex-col gap-2">
           {services.map((svc) => {
             const selected = selectedServices.some(
-              (s) => s.servicePublicId === svc.servicePublicId
+              (s) => s.offeringPublicId === svc.offeringPublicId
             );
 
             return (
-              <li key={svc.servicePublicId}>
+              <li key={svc.offeringPublicId}>
                 <button
                   type="button"
                   onClick={() => onToggle(svc)}

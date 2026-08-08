@@ -4,17 +4,13 @@ import salonService from "../salon.service";
 export const AVAILABLE_DATES_QUERY_KEY = "AVAILABLE_DATES_QUERY_KEY";
 
 export const useQueryAvailableDates = (
-  branchId: number | null,
-  serviceTypeId: number | null
+  branchPublicId: string | null,
+  serviceTypePublicId: string | null
 ) => {
   return useQuery({
-    queryKey: [AVAILABLE_DATES_QUERY_KEY, branchId, serviceTypeId],
+    queryKey: [AVAILABLE_DATES_QUERY_KEY, branchPublicId, serviceTypePublicId],
     queryFn: () =>
-      salonService.getAvailableDates(branchId!, serviceTypeId!),
-    enabled:
-      typeof branchId === "number" &&
-      branchId > 0 &&
-      typeof serviceTypeId === "number" &&
-      serviceTypeId > 0,
+      salonService.getAvailableDates(branchPublicId!, serviceTypePublicId!),
+    enabled: !!branchPublicId && !!serviceTypePublicId,
   });
 };

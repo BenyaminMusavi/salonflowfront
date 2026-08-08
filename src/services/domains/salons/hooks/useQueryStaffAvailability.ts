@@ -4,19 +4,23 @@ import salonService from "../salon.service";
 export const STAFF_AVAILABILITY_QUERY_KEY = "STAFF_AVAILABILITY_QUERY_KEY";
 
 export const useQueryStaffAvailability = (
-  branchId: number | null,
-  serviceTypeId: number | null,
+  branchPublicId: string | null,
+  serviceTypePublicId: string | null,
   date: string | null
 ) => {
   return useQuery({
-    queryKey: [STAFF_AVAILABILITY_QUERY_KEY, branchId, serviceTypeId, date],
+    queryKey: [
+      STAFF_AVAILABILITY_QUERY_KEY,
+      branchPublicId,
+      serviceTypePublicId,
+      date,
+    ],
     queryFn: () =>
-      salonService.getStaffAvailability(branchId!, serviceTypeId!, date!),
-    enabled:
-      typeof branchId === "number" &&
-      branchId > 0 &&
-      typeof serviceTypeId === "number" &&
-      serviceTypeId > 0 &&
-      !!date,
+      salonService.getStaffAvailability(
+        branchPublicId!,
+        serviceTypePublicId!,
+        date!
+      ),
+    enabled: !!branchPublicId && !!serviceTypePublicId && !!date,
   });
 };

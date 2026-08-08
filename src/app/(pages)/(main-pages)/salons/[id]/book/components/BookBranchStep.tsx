@@ -5,13 +5,13 @@ import { cn } from "@/shared/utils/className";
 
 interface BookBranchStepProps {
   branches: ISalonBranch[];
-  selectedBranchId: number | null;
+  selectedBranchPublicId: string | null;
   onSelect: (branch: ISalonBranch) => void;
 }
 
 export default function BookBranchStep({
   branches,
-  selectedBranchId,
+  selectedBranchPublicId,
   onSelect,
 }: BookBranchStepProps) {
   return (
@@ -26,12 +26,12 @@ export default function BookBranchStep({
       ) : (
         <ul className="flex flex-col gap-2">
           {branches.map((branch) => {
-            const selected = selectedBranchId === branch.id;
+            const selected = selectedBranchPublicId === branch.publicId;
             const location =
               [branch.city, branch.address].filter(Boolean).join("، ") || null;
 
             return (
-              <li key={branch.id}>
+              <li key={branch.publicId}>
                 <button
                   type="button"
                   onClick={() => onSelect(branch)}

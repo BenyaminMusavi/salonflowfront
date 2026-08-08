@@ -3,20 +3,18 @@ import {
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 
-const DRAFT_VERSION = 1;
+const DRAFT_VERSION = 2;
 
 export interface IBookWizardDraft {
   version: number;
   step: number;
-  branchId: number | null;
+  branchPublicId: string | null;
   branchName: string;
   selectedServices: IBranchService[];
   date: string | null;
   staff: IStaffAvailability | null;
   /** When true, staff is intentionally null (first available). */
   useFirstAvailable?: boolean;
-  /** Numeric staff id resolved from slots / profiles (legacy; prefer resolvedStaffPublicId) */
-  resolvedStaffId?: number | null;
   /** StaffMember.PublicId for create payload */
   resolvedStaffPublicId?: string | null;
   resolvedStaffName?: string | null;

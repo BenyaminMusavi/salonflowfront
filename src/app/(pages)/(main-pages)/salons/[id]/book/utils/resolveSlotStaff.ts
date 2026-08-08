@@ -3,11 +3,8 @@ import {
   ISalonBrowseSlot,
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
-import { resolveStaffNumericId } from "@/services/domains/booking/utils/booking-mappers";
 
 export interface IResolvedSlotStaff {
-  /** Legacy numeric id when available */
-  staffId?: number;
   fullName: string;
   staffPublicId: string;
   /** Staff object when matched from availability list */
@@ -15,7 +12,8 @@ export interface IResolvedSlotStaff {
 }
 
 type StaffProfile = {
-  id: number;
+  id?: number;
+  staffPublicId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   fullName?: string | null;
@@ -30,6 +28,10 @@ function profileDisplayName(p: StaffProfile): string {
   );
 }
 
+function profilePublicId(p: StaffProfile): string | null {
+  return p.staffPublicId || p.publicId || null;
+}
+
 /**
  * Resolve staffPublicId + display name from salon browse slots response
  * (response-level or per-slot assignment), used especially for «اولین زمان آزاد».
@@ -41,6 +43,37 @@ export function resolveStaffFromSlotResponse(params: {
   staffProfiles: StaffProfile[];
 }): IResolvedSlotStaff | null {
   const { slot, slotsData, staffList, staffProfiles } = params;
+
+  const publicId =
+    slot.staffProfilePublicId || slotsData?.staffProfilePublicId || null;
+
+  if (publicId) {
+    const fromList = staffList.find((s) => s.staffPublicId === publicId);
+    if (fromList) {
+      return {
+        fullName: fromList.fullName,
+        staffPublicId: fromList.staffPublicId,
+        staff: fromList,
+      };
+    }
+
+    const fromProfile = staffProfiles.find(
+      (p) => profilePublicId(p) === publicId
+    );
+    if (fromProfile) {
+      return {
+        fullName: profileDisplayName(fromProfile),
+        staffPublicId: profilePublicId(fromProfile)!,
+        staff: null,
+      };
+    }
+
+    return {
+      fullName: "پرسنل اختصاص‌یافته",
+      staffPublicId: publicId,
+      staff: null,
+    };
+  }
 
   const numericId =
     (typeof slot.staffId === "number" && slot.staffId > 0
@@ -57,66 +90,28 @@ export function resolveStaffFromSlotResponse(params: {
       ? slotsData.staffProfileId
       : null);
 
-  const publicId =
-    slot.staffProfilePublicId ||
-    slotsData?.staffProfilePublicId ||
-    null;
-
   if (numericId != null) {
     const fromList = staffList.find(
-      (s) =>
-        s.staffId === numericId ||
-        s.staffMemberId === numericId ||
-        (publicId != null && s.staffPublicId === publicId)
+      (s) => s.staffId === numericId || s.staffMemberId === numericId
     );
-    if (fromList) {
+    if (fromList?.staffPublicId) {
       return {
-        staffId: numericId,
         fullName: fromList.fullName,
         staffPublicId: fromList.staffPublicId,
         staff: fromList,
       };
     }
     const fromProfile = staffProfiles.find((p) => p.id === numericId);
-    const resolvedPublicId = fromProfile?.publicId ?? publicId;
-    if (!resolvedPublicId) return null;
-    return {
-      staffId: numericId,
-      fullName: fromProfile
-        ? profileDisplayName(fromProfile)
-        : "پرسنل اختصاص‌یافته",
-      staffPublicId: resolvedPublicId,
-      staff: fromList ?? null,
-    };
-  }
-
-  if (publicId) {
-    const fromList = staffList.find((s) => s.staffPublicId === publicId);
-    if (fromList) {
-      const id = resolveStaffNumericId(fromList, staffProfiles);
+    const resolvedPublicId = fromProfile ? profilePublicId(fromProfile) : null;
+    if (resolvedPublicId) {
       return {
-        staffId: id,
-        fullName: fromList.fullName,
-        staffPublicId: fromList.staffPublicId,
-        staff: fromList,
+        fullName: fromProfile
+          ? profileDisplayName(fromProfile)
+          : "پرسنل اختصاص‌یافته",
+        staffPublicId: resolvedPublicId,
+        staff: fromList ?? null,
       };
     }
-
-    const fromProfile = staffProfiles.find((p) => p.publicId === publicId);
-    if (fromProfile?.publicId) {
-      return {
-        staffId: fromProfile.id,
-        fullName: profileDisplayName(fromProfile),
-        staffPublicId: fromProfile.publicId,
-        staff: null,
-      };
-    }
-
-    return {
-      fullName: "پرسنل اختصاص‌یافته",
-      staffPublicId: publicId,
-      staff: null,
-    };
   }
 
   return null;

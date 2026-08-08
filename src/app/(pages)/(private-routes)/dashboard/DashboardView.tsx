@@ -169,7 +169,10 @@ export default function DashboardView() {
           >
             <option value="">انتخاب شعبه</option>
             {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
+              <option
+                key={String(branch.id ?? branch.publicId)}
+                value={branch.id ?? ""}
+              >
                 {branch.name}
               </option>
             ))}
