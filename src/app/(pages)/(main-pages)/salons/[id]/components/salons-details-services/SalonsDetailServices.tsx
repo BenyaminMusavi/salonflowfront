@@ -15,9 +15,9 @@ export default function SalonsDetailServices({
     <div className="mt-6 px-safe-area">
       <h2 className="mb-3 text-base font-bold text-foreground">خدمات</h2>
       <div className="no-scrollbar -mx-safe-area flex gap-2 overflow-x-auto px-safe-area">
-        {services.map((service) => (
+        {services.map((service, index) => (
           <span
-            key={service.id}
+            key={service.offeringPublicId || service.id || `${service.name}-${index}`}
             className="shrink-0 rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs font-medium text-foreground"
           >
             {service.name}

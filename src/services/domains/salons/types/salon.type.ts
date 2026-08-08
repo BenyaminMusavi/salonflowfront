@@ -8,9 +8,11 @@ export interface ISalonGalleryItem {
 }
 
 export interface ISalonServiceSummary {
-  id: string;
   name: string;
+  /** ServiceOffering.PublicId from GET /api/salons/{id} */
   offeringPublicId?: string | null;
+  /** @deprecated Prefer offeringPublicId */
+  id?: string | null;
 }
 
 export interface ISalonWorkingHour {
