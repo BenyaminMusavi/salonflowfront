@@ -6,9 +6,10 @@ import {
 import { resolveStaffNumericId } from "@/services/domains/booking/utils/booking-mappers";
 
 export interface IResolvedSlotStaff {
-  staffId: number;
+  /** Legacy numeric id when available */
+  staffId?: number;
   fullName: string;
-  staffPublicId?: string | null;
+  staffPublicId: string;
   /** Staff object when matched from availability list */
   staff?: IStaffAvailability | null;
 }
@@ -30,7 +31,7 @@ function profileDisplayName(p: StaffProfile): string {
 }
 
 /**
- * Resolve numeric staffId + display name from salon browse slots response
+ * Resolve staffPublicId + display name from salon browse slots response
  * (response-level or per-slot assignment), used especially for «اولین زمان آزاد».
  */
 export function resolveStaffFromSlotResponse(params: {
@@ -77,12 +78,14 @@ export function resolveStaffFromSlotResponse(params: {
       };
     }
     const fromProfile = staffProfiles.find((p) => p.id === numericId);
+    const resolvedPublicId = fromProfile?.publicId ?? publicId;
+    if (!resolvedPublicId) return null;
     return {
       staffId: numericId,
       fullName: fromProfile
         ? profileDisplayName(fromProfile)
         : "پرسنل اختصاص‌یافته",
-      staffPublicId: fromProfile?.publicId ?? publicId,
+      staffPublicId: resolvedPublicId,
       staff: fromList ?? null,
     };
   }
@@ -91,18 +94,16 @@ export function resolveStaffFromSlotResponse(params: {
     const fromList = staffList.find((s) => s.staffPublicId === publicId);
     if (fromList) {
       const id = resolveStaffNumericId(fromList, staffProfiles);
-      if (id) {
-        return {
-          staffId: id,
-          fullName: fromList.fullName,
-          staffPublicId: fromList.staffPublicId,
-          staff: fromList,
-        };
-      }
+      return {
+        staffId: id,
+        fullName: fromList.fullName,
+        staffPublicId: fromList.staffPublicId,
+        staff: fromList,
+      };
     }
 
     const fromProfile = staffProfiles.find((p) => p.publicId === publicId);
-    if (fromProfile) {
+    if (fromProfile?.publicId) {
       return {
         staffId: fromProfile.id,
         fullName: profileDisplayName(fromProfile),
@@ -110,6 +111,12 @@ export function resolveStaffFromSlotResponse(params: {
         staff: null,
       };
     }
+
+    return {
+      fullName: "پرسنل اختصاص‌یافته",
+      staffPublicId: publicId,
+      staff: null,
+    };
   }
 
   return null;

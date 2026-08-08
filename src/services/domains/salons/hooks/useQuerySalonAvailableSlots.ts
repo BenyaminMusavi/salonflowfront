@@ -9,30 +9,29 @@ export const useQuerySalonAvailableSlots = (
     enabled?: boolean;
   }
 ) => {
-  const serviceTypeIds = [...(params.serviceTypeIds ?? [])]
-    .filter((id) => id > 0)
-    .sort((a, b) => a - b);
+  const serviceTypePublicIds = [...(params.serviceTypePublicIds ?? [])]
+    .filter(Boolean)
+    .sort();
 
   const enabled =
     params.enabled !== false &&
-    typeof params.branchId === "number" &&
-    params.branchId > 0 &&
+    !!params.branchPublicId &&
     !!params.date &&
-    serviceTypeIds.length > 0;
+    serviceTypePublicIds.length > 0;
 
   return useQuery({
     queryKey: [
       SALON_AVAILABLE_SLOTS_QUERY_KEY,
-      params.branchId,
+      params.branchPublicId,
       params.date,
-      serviceTypeIds,
+      serviceTypePublicIds,
       params.staffProfilePublicId ?? null,
     ],
     queryFn: () =>
       salonService.getAvailableSlots({
-        branchId: params.branchId!,
+        branchPublicId: params.branchPublicId!,
         date: params.date!,
-        serviceTypeIds,
+        serviceTypePublicIds,
         staffProfilePublicId: params.staffProfilePublicId,
       }),
     enabled,

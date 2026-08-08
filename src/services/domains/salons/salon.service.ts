@@ -97,9 +97,9 @@ class SalonService {
       API_ADDRESS.SALON.AVAILABLE_SLOTS,
       {
         params: {
-          branchId: params.branchId,
+          branchPublicId: params.branchPublicId,
           date: params.date,
-          serviceTypeIds: params.serviceTypeIds,
+          serviceTypePublicIds: params.serviceTypePublicIds,
           staffProfilePublicId: params.staffProfilePublicId || undefined,
         },
         paramsSerializer: { indexes: null },

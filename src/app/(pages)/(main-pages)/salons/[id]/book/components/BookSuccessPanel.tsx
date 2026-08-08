@@ -6,7 +6,7 @@ import TopNavigation from "@/shared/components/composites/layout/top-navigation/
 import { RouteAddress } from "@/shared/data/routeAddress";
 
 interface BookSuccessPanelProps {
-  bookingId: number;
+  bookingId: string;
   salonId: string;
 }
 
@@ -25,7 +25,7 @@ export default function BookSuccessPanel({
           نوبت شما با موفقیت ثبت شد
         </p>
         <p className="mt-2 text-sm text-foreground-muted">
-          شماره نوبت: {bookingId.toLocaleString("fa-IR")}
+          شناسه نوبت: {bookingId}
         </p>
         <Link
           href={RouteAddress.RESERVATION.DETAILS(bookingId)}

@@ -76,6 +76,9 @@ export default function BookView() {
   const [staff, setStaff] = useState<IStaffAvailability | null>(null);
   const [useFirstAvailable, setUseFirstAvailable] = useState(false);
   const [resolvedStaffId, setResolvedStaffId] = useState<number | null>(null);
+  const [resolvedStaffPublicId, setResolvedStaffPublicId] = useState<
+    string | null
+  >(null);
   const [resolvedStaffName, setResolvedStaffName] = useState<string | null>(
     null
   );
@@ -83,7 +86,7 @@ export default function BookView() {
   const [slotEndTime, setSlotEndTime] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
-  const [createdId, setCreatedId] = useState<number | null>(null);
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const draftReadyRef = useRef(false);
   const skipBranchHandledRef = useRef(false);
@@ -92,6 +95,7 @@ export default function BookView() {
     setSlotTime(null);
     setSlotEndTime(null);
     setResolvedStaffId(null);
+    setResolvedStaffPublicId(null);
     setResolvedStaffName(null);
   };
 
@@ -111,6 +115,11 @@ export default function BookView() {
     setUseFirstAvailable(Boolean(draft.useFirstAvailable));
     setResolvedStaffId(
       typeof draft.resolvedStaffId === "number" ? draft.resolvedStaffId : null
+    );
+    setResolvedStaffPublicId(
+      typeof draft.resolvedStaffPublicId === "string"
+        ? draft.resolvedStaffPublicId
+        : null
     );
     setResolvedStaffName(draft.resolvedStaffName ?? null);
     setSlotTime(draft.slotTime);
@@ -133,6 +142,7 @@ export default function BookView() {
       staff,
       useFirstAvailable,
       resolvedStaffId,
+      resolvedStaffPublicId,
       resolvedStaffName,
       slotTime,
       slotEndTime,
@@ -148,6 +158,7 @@ export default function BookView() {
     staff,
     useFirstAvailable,
     resolvedStaffId,
+    resolvedStaffPublicId,
     resolvedStaffName,
     slotTime,
     slotEndTime,
@@ -197,6 +208,28 @@ export default function BookView() {
     [selectedServices]
   );
 
+  const offeringPublicIds = useMemo(
+    () =>
+      selectedServices
+        .map((s) => s.offeringPublicId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    [selectedServices]
+  );
+
+  const branchPublicId = useMemo(() => {
+    if (branchId == null) return null;
+    const branch = branches.find((b) => b.id === branchId);
+    return branch?.publicId ?? null;
+  }, [branches, branchId]);
+
+  const serviceTypePublicIds = useMemo(
+    () =>
+      selectedServices
+        .map((s) => s.servicePublicId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    [selectedServices]
+  );
+
   const primaryServiceTypeId = serviceTypeIds[0] ?? null;
 
   const { data: datesRes, isLoading: datesLoading } = useQueryAvailableDates(
@@ -221,9 +254,9 @@ export default function BookView() {
 
   const { data: slotsRes, isLoading: slotsLoading } =
     useQuerySalonAvailableSlots({
-      branchId: branchId ?? undefined,
+      branchPublicId: branchPublicId ?? undefined,
       date: date ?? undefined,
-      serviceTypeIds,
+      serviceTypePublicIds,
       staffProfilePublicId: useFirstAvailable
         ? null
         : staff?.staffPublicId,
@@ -267,7 +300,7 @@ export default function BookView() {
       case 5:
         return !!price;
       case 6:
-        return !!slotTime && typeof resolvedStaffId === "number";
+        return !!slotTime && !!resolvedStaffPublicId;
       default:
         return true;
     }
@@ -294,8 +327,17 @@ export default function BookView() {
         );
         return;
       }
+      const missingOfferingPublic = selectedServices.some(
+        (s) => !s.offeringPublicId
+      );
+      if (missingOfferingPublic) {
+        setError(
+          "شناسه عمومی offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
+        );
+        return;
+      }
     }
-    if (step === 6 && typeof resolvedStaffId !== "number") {
+    if (step === 6 && !resolvedStaffPublicId) {
       setError(
         "پرسنل این ساعت مشخص نشد. پرسنل دیگری انتخاب کنید یا دوباره تلاش کنید."
       );
@@ -361,13 +403,15 @@ export default function BookView() {
       });
       if (!resolved) {
         setResolvedStaffId(null);
+        setResolvedStaffPublicId(null);
         setResolvedStaffName(null);
         setError(
           "پرسنل این ساعت از پاسخ سرور مشخص نشد. پرسنل مشخصی انتخاب کنید یا دوباره تلاش کنید."
         );
         return;
       }
-      setResolvedStaffId(resolved.staffId);
+      setResolvedStaffId(resolved.staffId ?? null);
+      setResolvedStaffPublicId(resolved.staffPublicId);
       setResolvedStaffName(resolved.fullName);
       if (resolved.staff) setStaff(resolved.staff);
       return;
@@ -376,10 +420,11 @@ export default function BookView() {
     if (staff) {
       const id = resolveStaffNumericId(staff, staffProfiles);
       setResolvedStaffId(id ?? null);
+      setResolvedStaffPublicId(staff.staffPublicId);
       setResolvedStaffName(staff.fullName);
-      if (!id) {
+      if (!staff.staffPublicId) {
         setError(
-          "شناسه عددی پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید."
+          "شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید."
         );
       }
     }
@@ -402,6 +447,7 @@ export default function BookView() {
       staff,
       useFirstAvailable,
       resolvedStaffId,
+      resolvedStaffPublicId,
       resolvedStaffName,
       slotTime,
       slotEndTime,
@@ -420,19 +466,19 @@ export default function BookView() {
     }
 
     if (
-      numericSalonId == null ||
-      branchId == null ||
+      !salonPublicId ||
+      !branchPublicId ||
       !date ||
       !slotTime ||
-      typeof resolvedStaffId !== "number"
+      !resolvedStaffPublicId
     ) {
       setError("اطلاعات رزرو ناقص است.");
       return;
     }
 
     if (
-      offeringIds.length === 0 ||
-      offeringIds.length !== selectedServices.length
+      offeringPublicIds.length === 0 ||
+      offeringPublicIds.length !== selectedServices.length
     ) {
       setError("شناسه offering برای برخی خدمات یافت نشد.");
       return;
@@ -441,13 +487,13 @@ export default function BookView() {
     try {
       await ensureCustomerContext();
       const res = await createBooking({
-        salonId: numericSalonId,
-        branchId,
+        salonPublicId,
+        branchPublicId,
         startTime: toBookingStartTime(date, slotTime),
         notes: notes.trim() || null,
-        services: offeringIds.map((offeringId) => ({
-          offeringId,
-          staffId: resolvedStaffId,
+        services: offeringPublicIds.map((offeringPublicId) => ({
+          offeringPublicId,
+          staffPublicId: resolvedStaffPublicId,
         })),
       });
       clearBookDraft(salonPublicId);
@@ -573,6 +619,7 @@ export default function BookView() {
               clearSlotAndStaffResolution();
               const id = resolveStaffNumericId(s, staffProfiles);
               setResolvedStaffId(id ?? null);
+              setResolvedStaffPublicId(s.staffPublicId);
               setResolvedStaffName(s.fullName);
             }}
             onChangeDate={() => setStep(3)}

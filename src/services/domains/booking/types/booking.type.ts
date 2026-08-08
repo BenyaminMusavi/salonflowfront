@@ -3,32 +3,33 @@ import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 export interface TimeSlotDto {
   start: string;
   end: string;
-  staffProfileId?: number;
+  staffPublicId?: string | null;
   isAvailable: boolean;
 }
 
 export interface GetAvailableSlotsRequest {
-  salonId: string | number;
-  branchId: number;
-  staffId?: number | null;
-  offeringIds: number[];
+  salonPublicId: string;
+  branchPublicId: string;
+  staffPublicId?: string | null;
+  offeringPublicIds: string[];
   date: string;
 }
 
 export interface CreateBookingServiceLine {
-  offeringId: number;
-  staffId: number;
+  offeringPublicId: string;
+  staffPublicId: string;
 }
 
 export interface CreateBookingRequest {
-  salonId: number;
-  branchId?: number | null;
+  salonPublicId: string;
+  branchPublicId?: string | null;
   startTime: string;
   notes?: string | null;
   services: CreateBookingServiceLine[];
 }
 
 export type AvailableSlotsResponse = TimeSlotDto[];
-export type CreateBookingResponse = number;
+/** Appointment.PublicId (Guid) */
+export type CreateBookingResponse = string;
 
 export type TCreateBookingEntity = TResponse<CreateBookingResponse>;

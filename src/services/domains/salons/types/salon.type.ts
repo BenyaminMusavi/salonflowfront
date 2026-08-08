@@ -10,6 +10,7 @@ export interface ISalonGalleryItem {
 export interface ISalonServiceSummary {
   id: string;
   name: string;
+  offeringPublicId?: string | null;
 }
 
 export interface ISalonWorkingHour {

@@ -2,13 +2,13 @@ import { IBranchService } from "@/services/domains/salons/types/booking-browse.t
 import { ISalonOffering } from "@/services/domains/salon-offering/types/salon-offering-type";
 import { IStaffAvailability } from "@/services/domains/salons/types/booking-browse.type";
 
-/** Enrich branch services with offeringId/serviceTypeId from salon offerings catalog. */
+/** Enrich branch services with offering ids from salon offerings catalog. */
 export function enrichBranchServices(
   services: IBranchService[],
   offerings: ISalonOffering[]
 ): IBranchService[] {
   return services.map((svc) => {
-    if (svc.offeringId && svc.serviceTypeId) return svc;
+    if (svc.offeringPublicId && svc.offeringId && svc.serviceTypeId) return svc;
 
     const byName = offerings.find(
       (o) =>
@@ -18,6 +18,7 @@ export function enrichBranchServices(
 
     return {
       ...svc,
+      offeringPublicId: svc.offeringPublicId ?? null,
       offeringId: svc.offeringId ?? byName?.id ?? null,
       serviceTypeId: svc.serviceTypeId ?? byName?.serviceTypeId ?? null,
     };

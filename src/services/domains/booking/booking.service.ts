@@ -12,10 +12,10 @@ class BookingService {
   async getAvailableSlots(params: GetAvailableSlotsRequest) {
     return await axiosInstance.get(API_ADDRESS.BOOKING.SLOTS, {
       params: {
-        salonId: params.salonId,
-        branchId: params.branchId,
-        staffId: params.staffId ?? undefined,
-        offeringIds: params.offeringIds,
+        salonPublicId: params.salonPublicId,
+        branchPublicId: params.branchPublicId,
+        staffPublicId: params.staffPublicId ?? undefined,
+        offeringPublicIds: params.offeringPublicIds,
         date: params.date.split("T")[0],
       },
       paramsSerializer: {
@@ -28,8 +28,8 @@ class BookingService {
     return await axiosInstance.post<unknown, TCreateBookingEntity>(
       API_ADDRESS.BOOKING.CREATE,
       {
-        salonId: request.salonId,
-        branchId: request.branchId ?? undefined,
+        salonPublicId: request.salonPublicId,
+        branchPublicId: request.branchPublicId ?? undefined,
         startTime: request.startTime,
         notes: request.notes ?? undefined,
         services: request.services,

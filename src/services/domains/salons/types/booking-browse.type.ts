@@ -10,7 +10,7 @@ export interface ISalonBranch {
   genderType?: number | string | null;
 }
 
-/** Branch catalog line — prefer offeringId/serviceTypeId when API sends them. */
+/** Branch catalog line — prefer Guid public ids for customer booking. */
 export interface IBranchService {
   servicePublicId: string;
   name: string;
@@ -20,9 +20,11 @@ export interface IBranchService {
   price: number;
   requiresDeposit: boolean;
   depositAmount?: number | null;
-  /** ServiceOffering.Id (long) — required for create */
+  /** ServiceOffering.PublicId — required for create/slots */
+  offeringPublicId?: string | null;
+  /** @deprecated Prefer offeringPublicId */
   offeringId?: number | null;
-  /** ServiceType.Id (long) — required for dates/price/slots */
+  /** ServiceType.Id (long) — legacy browse until Guid migration */
   serviceTypeId?: number | null;
 }
 
@@ -77,9 +79,9 @@ export interface ISalonAvailableSlots {
 }
 
 export interface IGetSalonAvailableSlotsParams {
-  branchId: number;
+  branchPublicId: string;
   date: string;
-  serviceTypeIds: number[];
+  serviceTypePublicIds: string[];
   staffProfilePublicId?: string | null;
 }
 
