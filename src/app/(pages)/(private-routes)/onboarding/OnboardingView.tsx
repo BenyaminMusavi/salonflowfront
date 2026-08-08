@@ -269,11 +269,16 @@ export default function OnboardingView() {
 
   const addStaff = () => {
     const firstBranch = draft.branches[0]?.publicId;
+    const offeringPublicIds = draft.services
+      .map((s) => s.publicId)
+      .filter((id): id is string => Boolean(id))
+      .map(String);
     const member: IOnboardingStaff = {
       publicId: null,
       branchPublicId: firstBranch ? String(firstBranch) : "",
       isCreator: draft.staff.length === 0,
       phoneNumber: null,
+      offeringPublicIds,
     };
     draft.setStaff([...draft.staff, member]);
   };

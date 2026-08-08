@@ -17,6 +17,21 @@ const defaultSchedule = (): IScheduleDay[] =>
     endTime: dayOfWeek === 5 ? null : "18:00:00",
   }));
 
+/** Persisted drafts may lack offeringPublicIds; treat missing as []. */
+export function normalizeOnboardingStaff(
+  staff: Partial<IOnboardingStaff>[]
+): IOnboardingStaff[] {
+  return staff.map((s) => ({
+    publicId: s.publicId ?? null,
+    branchPublicId: s.branchPublicId ?? "",
+    isCreator: Boolean(s.isCreator),
+    phoneNumber: s.phoneNumber ?? null,
+    offeringPublicIds: Array.isArray(s.offeringPublicIds)
+      ? s.offeringPublicIds.map(String).filter(Boolean)
+      : [],
+  }));
+}
+
 interface IOnboardingDraftState {
   salonPublicId: string | null;
   step: number;
@@ -65,13 +80,21 @@ export const useOnboardingDraftStore = create<IOnboardingDraftState>()(
         set((s) => ({ basicInfo: { ...s.basicInfo, ...info } })),
       setBranches: (branches) => set({ branches }),
       setServices: (services) => set({ services }),
-      setStaff: (staff) => set({ staff }),
+      setStaff: (staff) => set({ staff: normalizeOnboardingStaff(staff) }),
       setSchedule: (schedule) => set({ schedule }),
       reset: () => set({ ...initial, schedule: defaultSchedule() }),
     }),
     {
       name: "salon_flow_onboarding_draft",
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<IOnboardingDraftState>;
+        return {
+          ...current,
+          ...p,
+          staff: normalizeOnboardingStaff(p.staff ?? current.staff ?? []),
+        };
+      },
     }
   )
 );

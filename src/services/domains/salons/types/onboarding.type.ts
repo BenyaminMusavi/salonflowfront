@@ -37,6 +37,8 @@ export interface IOnboardingStaff {
   branchPublicId: string;
   isCreator: boolean;
   phoneNumber?: string | null;
+  /** ServiceOffering publicIds from save-services; required (≥1) on save-staff. */
+  offeringPublicIds: string[];
 }
 
 export interface IScheduleDay {
