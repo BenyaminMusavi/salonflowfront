@@ -84,8 +84,9 @@ export const API_ADDRESS = {
 
   APPOINTMENTS: {
     ME: "/api/appointments/me",
-    ME_BY_ID: (id: number) => `/api/appointments/me/${id}`,
-    CANCEL: (id: number) => `/api/appointments/${id}/cancel`,
+    ME_BY_ID: (appointmentPublicId: string) =>
+      `/api/appointments/me/${appointmentPublicId}`,
+    CANCEL: (id: string | number) => `/api/appointments/${id}/cancel`,
     SALON_LIST: "/api/appointments",
     CREATE: "/api/appointments",
     QUICK_BOOK: "/api/appointments/quick-book",

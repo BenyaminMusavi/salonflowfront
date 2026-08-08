@@ -16,7 +16,7 @@ export const useMutateCreateReview = () => {
     mutationFn: (body: ICreateReviewRequest) => reviewsService.create(body),
     onSuccess: (res, variables) => {
       const review = res.data;
-      setForAppointment(variables.appointmentId, {
+      setForAppointment(String(variables.appointmentId), {
         reviewId: review.id,
         moderationStatus: review.moderationStatus,
         rating: review.rating,
@@ -39,14 +39,14 @@ export const useMutateEditReview = () => {
     }: {
       id: number;
       body: IEditReviewRequest;
-      appointmentId?: number;
+      appointmentId?: string | number;
     }) => reviewsService.edit(id, body),
     onSuccess: (res, variables) => {
       const review = res.data;
       queryClient.setQueryData([REVIEW_BY_ID_QUERY_KEY, review.id], res);
       queryClient.invalidateQueries({ queryKey: [SALON_REVIEWS_QUERY_KEY] });
-      if (variables.appointmentId) {
-        setForAppointment(variables.appointmentId, {
+      if (variables.appointmentId != null) {
+        setForAppointment(String(variables.appointmentId), {
           reviewId: review.id,
           moderationStatus: review.moderationStatus,
           rating: review.rating,
@@ -56,7 +56,7 @@ export const useMutateEditReview = () => {
           ([, v]) => v.reviewId === review.id
         );
         if (entry) {
-          setForAppointment(Number(entry[0]), {
+          setForAppointment(entry[0], {
             reviewId: review.id,
             moderationStatus: review.moderationStatus,
             rating: review.rating,

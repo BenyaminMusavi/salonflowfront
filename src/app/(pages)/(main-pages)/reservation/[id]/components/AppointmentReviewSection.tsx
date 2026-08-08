@@ -15,7 +15,8 @@ import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-map
 import { cn } from "@/shared/utils/className";
 
 interface AppointmentReviewSectionProps {
-  appointmentId: number;
+  /** Appointment.PublicId (Guid) — local store key; review create may still expect long until reviews API is Guid-migrated */
+  appointmentId: string;
   status: number;
 }
 

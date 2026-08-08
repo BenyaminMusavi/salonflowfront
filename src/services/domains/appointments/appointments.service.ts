@@ -19,14 +19,14 @@ class AppointmentsService {
     );
   }
 
-  async getMineById(id: number) {
+  async getMineById(appointmentPublicId: string) {
     return await axiosInstance.get<unknown, TMyAppointmentDetailEntity>(
-      API_ADDRESS.APPOINTMENTS.ME_BY_ID(id)
+      API_ADDRESS.APPOINTMENTS.ME_BY_ID(appointmentPublicId)
     );
   }
 
   /** Success: 204 No Content */
-  async cancel(id: number, body: ICancelAppointmentRequest) {
+  async cancel(id: string | number, body: ICancelAppointmentRequest) {
     return await axiosInstance.post<unknown, void>(
       API_ADDRESS.APPOINTMENTS.CANCEL(id),
       body

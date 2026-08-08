@@ -4,12 +4,14 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 
 export const MY_APPOINTMENT_DETAIL_QUERY_KEY = "MY_APPOINTMENT_DETAIL_QUERY_KEY";
 
-export const useQueryMyAppointmentById = (id: number | undefined) => {
+export const useQueryMyAppointmentById = (
+  appointmentPublicId: string | undefined
+) => {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
 
   return useQuery({
-    queryKey: [MY_APPOINTMENT_DETAIL_QUERY_KEY, id],
-    queryFn: () => appointmentsService.getMineById(id!),
-    enabled: isLoggedIn && typeof id === "number" && id > 0,
+    queryKey: [MY_APPOINTMENT_DETAIL_QUERY_KEY, appointmentPublicId],
+    queryFn: () => appointmentsService.getMineById(appointmentPublicId!),
+    enabled: isLoggedIn && !!appointmentPublicId,
   });
 };

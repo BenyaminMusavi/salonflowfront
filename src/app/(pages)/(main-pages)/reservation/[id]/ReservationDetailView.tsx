@@ -23,13 +23,13 @@ import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export default function ReservationDetailView() {
   const params = useParams<{ id: string }>();
-  const id = Number(params?.id);
+  const appointmentPublicId = params?.id;
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
   const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
 
   const { data, isLoading, isError } = useQueryMyAppointmentById(
-    Number.isFinite(id) ? id : undefined
+    appointmentPublicId
   );
   const { mutateAsync: cancel, isPending: isCancelling } =
     useMutateCancelAppointment();
@@ -49,7 +49,11 @@ export default function ReservationDetailView() {
         <button
           type="button"
           onClick={() => {
-            setRedirectUrl(RouteAddress.RESERVATION.DETAILS(id));
+            if (appointmentPublicId) {
+              setRedirectUrl(
+                RouteAddress.RESERVATION.DETAILS(appointmentPublicId)
+              );
+            }
             router.push(RouteAddress.AUTH.LOGIN.BASE);
           }}
           className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
@@ -81,9 +85,7 @@ export default function ReservationDetailView() {
     );
   }
 
-  const status = cancelled
-    ? 3
-    : appointment.status;
+  const status = cancelled ? 3 : appointment.status;
   const freeCancel = isWithinFreeCancellationWindow(appointment.startTime);
   const canCancel = canCustomerCancel(appointment.status) && !cancelled;
 
@@ -140,7 +142,7 @@ export default function ReservationDetailView() {
         <ul className="flex flex-col gap-3">
           {appointment.services?.map((svc) => (
             <li
-              key={svc.id}
+              key={`${svc.offeringPublicId}-${svc.staffPublicId}`}
               className="flex items-start justify-between gap-3 text-sm"
             >
               <div>

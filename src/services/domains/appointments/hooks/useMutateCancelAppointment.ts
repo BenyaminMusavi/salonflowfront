@@ -12,7 +12,7 @@ export const useMutateCancelAppointment = () => {
       id,
       reason,
     }: {
-      id: number;
+      id: string | number;
       reason: string;
     } & Partial<ICancelAppointmentRequest>) =>
       appointmentsService.cancel(id, { reason }),

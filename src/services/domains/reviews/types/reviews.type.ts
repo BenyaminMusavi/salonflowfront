@@ -23,7 +23,8 @@ export interface IReview {
 }
 
 export interface ICreateReviewRequest {
-  appointmentId: number;
+  /** Prefer long when available; Guid may be sent after appointments Guid migration */
+  appointmentId: string | number;
   targetType?: ReviewTargetType | number;
   staffMemberId?: number | null;
   rating: number;

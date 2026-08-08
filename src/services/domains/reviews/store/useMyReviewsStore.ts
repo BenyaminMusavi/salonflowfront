@@ -11,11 +11,11 @@ export interface IStoredAppointmentReview {
 interface IMyReviewsState {
   byAppointmentId: Record<string, IStoredAppointmentReview>;
   setForAppointment: (
-    appointmentId: number,
+    appointmentId: string,
     review: IStoredAppointmentReview
   ) => void;
   getForAppointment: (
-    appointmentId: number
+    appointmentId: string
   ) => IStoredAppointmentReview | undefined;
   clear: () => void;
 }

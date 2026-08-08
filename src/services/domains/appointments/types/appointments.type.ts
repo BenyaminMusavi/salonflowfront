@@ -3,7 +3,8 @@ import { TPagedResult } from "@/services/common/data-types/SharedDataTypes";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export interface IMyAppointmentListItem {
-  id: number;
+  /** Appointment.PublicId (Guid) */
+  id: string;
   startTime: string;
   endTime: string;
   status: AppointmentStatus | number;
@@ -12,7 +13,8 @@ export interface IMyAppointmentListItem {
 }
 
 export interface IMyAppointmentService {
-  id: number;
+  offeringPublicId: string;
+  staffPublicId: string;
   name: string;
   durationMinutes: number;
   price: number;
@@ -20,7 +22,8 @@ export interface IMyAppointmentService {
 }
 
 export interface IMyAppointmentDetail {
-  id: number;
+  /** Appointment.PublicId (Guid) */
+  id: string;
   startTime: string;
   endTime: string;
   status: AppointmentStatus | number;
