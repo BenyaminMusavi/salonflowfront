@@ -65,17 +65,16 @@ export interface ICalculatePriceResult {
 export interface ISalonBrowseSlot {
   time: string;
   endTime: string;
-  /** Present when API assigns staff per slot */
+  /** Assigned staff Guid (booking/slots or browse) */
+  staffPublicId?: string | null;
+  /** Browse alias for assigned staff Guid */
   staffProfilePublicId?: string | null;
-  staffId?: number | null;
-  staffProfileId?: number | null;
 }
 
 export interface ISalonAvailableSlots {
   /** Assigned staff when request used first-available (null staff) */
+  staffPublicId?: string | null;
   staffProfilePublicId?: string | null;
-  staffId?: number | null;
-  staffProfileId?: number | null;
   slots: ISalonBrowseSlot[];
 }
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
@@ -12,7 +11,6 @@ import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQuery
 import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
-import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
 import {
   IBranchService,
   ISalonBranch,
@@ -59,7 +57,6 @@ export default function BookView() {
   const { data: salonRes, isLoading: salonLoading } =
     useQuerySalonById(salonPublicId);
   const salon = salonRes?.data;
-  const numericSalonId = salon ? resolveNumericSalonId(salon) : undefined;
 
   const branches: ISalonBranch[] = useMemo(
     () =>
@@ -361,7 +358,7 @@ export default function BookView() {
         staffList,
         staffProfiles,
       });
-      if (!resolved) {
+      if (!resolved?.staffPublicId) {
         setResolvedStaffPublicId(null);
         setResolvedStaffName(null);
         setError(
@@ -375,13 +372,15 @@ export default function BookView() {
       return;
     }
 
-    if (staff) {
+    if (staff?.staffPublicId) {
       setResolvedStaffPublicId(staff.staffPublicId);
       setResolvedStaffName(staff.fullName);
-      if (!staff.staffPublicId) {
-        setError("شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید.");
-      }
+      return;
     }
+
+    setResolvedStaffPublicId(null);
+    setResolvedStaffName(null);
+    setError("شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید.");
   };
 
   const ensureCustomerContext = async () => {
@@ -478,24 +477,13 @@ export default function BookView() {
     );
   }
 
-  if (numericSalonId == null) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-safe-area text-center">
-        <p className="text-sm text-error">
-          شناسه عددی سالن برای ثبت رزرو در پاسخ جزئیات موجود نیست.
-        </p>
-        <Link
-          href={RouteAddress.SALONS.DETAILS(salon.id)}
-          className="text-sm text-primary"
-        >
-          بازگشت به جزئیات
-        </Link>
-      </div>
-    );
-  }
-
   if (createdId != null) {
-    return <BookSuccessPanel bookingId={createdId} salonId={salon.id} />;
+    return (
+      <BookSuccessPanel
+        bookingId={createdId}
+        salonId={salonPublicId ?? salon.id}
+      />
+    );
   }
 
   const showBranchChip = Boolean(branchName) && step > 1;
