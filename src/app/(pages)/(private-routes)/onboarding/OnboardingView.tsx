@@ -22,6 +22,7 @@ import {
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { formatToman } from "@/shared/utils/salonDisplay";
 import { GenderType } from "@/services/common/enums/domain-enums";
 
 const STEPS = [
@@ -36,6 +37,40 @@ const STEPS = [
 
 function isBranchComplete(b: IOnboardingBranch) {
   return Boolean(b.name.trim() && b.city.trim() && b.address.trim());
+}
+
+function offeringIdsFromServices(services: IOnboardingService[]): string[] {
+  return services
+    .map((s) => s.publicId)
+    .filter((id): id is string => Boolean(id))
+    .map(String);
+}
+
+/** Drop staff offering ids that are no longer in the saved services list. */
+function pruneStaffOfferings(
+  staff: IOnboardingStaff[],
+  services: IOnboardingService[]
+): IOnboardingStaff[] {
+  const valid = new Set(offeringIdsFromServices(services));
+  return staff.map((s) => ({
+    ...s,
+    offeringPublicIds: (s.offeringPublicIds ?? [])
+      .map(String)
+      .filter((id) => valid.has(id)),
+  }));
+}
+
+function staffOfferingsNeedPrune(
+  staff: IOnboardingStaff[],
+  pruned: IOnboardingStaff[]
+): boolean {
+  return staff.some((s, i) => {
+    const next = pruned[i]?.offeringPublicIds ?? [];
+    const prev = s.offeringPublicIds ?? [];
+    return (
+      prev.length !== next.length || prev.some((id, j) => id !== next[j])
+    );
+  });
 }
 
 /** Remap staff branchPublicId when save-branches replaces temp/local IDs with server Guids. */
@@ -108,6 +143,15 @@ export default function OnboardingView() {
   ]);
 
   const step = draft.step;
+
+  useEffect(() => {
+    if (step !== 4) return;
+    const { staff, services, setStaff } = useOnboardingDraftStore.getState();
+    const pruned = pruneStaffOfferings(staff, services);
+    if (staffOfferingsNeedPrune(staff, pruned)) {
+      setStaff(pruned);
+    }
+  }, [step, draft.services]);
 
   const ensureSalonPublicId = async () => {
     if (draft.salonPublicId) return draft.salonPublicId;
@@ -182,6 +226,11 @@ export default function OnboardingView() {
           throw new Error("لیست خدمات از سرور دریافت نشد.");
         }
         draft.setServices(saved);
+        const pruned = pruneStaffOfferings(
+          useOnboardingDraftStore.getState().staff,
+          saved
+        );
+        draft.setStaff(pruned);
         draft.setStep(4);
         return;
       }
@@ -190,13 +239,21 @@ export default function OnboardingView() {
         if (draft.staff.length === 0) {
           throw new Error("حداقل یک عضو پرسنل اضافه کنید.");
         }
-        for (const s of draft.staff) {
+        if (offeringIdsFromServices(draft.services).length === 0) {
+          throw new Error("ابتدا در مرحله خدمات، حداقل یک خدمت ذخیره کنید.");
+        }
+        const pruned = pruneStaffOfferings(draft.staff, draft.services);
+        draft.setStaff(pruned);
+        for (const s of pruned) {
           if (!s.branchPublicId) throw new Error("شعبه هر پرسنل را مشخص کنید.");
           if (!s.isCreator && !s.phoneNumber?.trim()) {
             throw new Error("شماره موبایل برای پرسنل غیرمالک الزامی است.");
           }
+          if (s.offeringPublicIds.length < 1) {
+            throw new Error("برای هر پرسنل حداقل یک خدمت انتخاب کنید.");
+          }
         }
-        await salonService.saveStaff(salonPublicId, draft.staff);
+        await salonService.saveStaff(salonPublicId, pruned);
         draft.setStep(5);
         return;
       }
@@ -269,18 +326,26 @@ export default function OnboardingView() {
 
   const addStaff = () => {
     const firstBranch = draft.branches[0]?.publicId;
-    const offeringPublicIds = draft.services
-      .map((s) => s.publicId)
-      .filter((id): id is string => Boolean(id))
-      .map(String);
     const member: IOnboardingStaff = {
       publicId: null,
       branchPublicId: firstBranch ? String(firstBranch) : "",
       isCreator: draft.staff.length === 0,
       phoneNumber: null,
-      offeringPublicIds,
+      offeringPublicIds: offeringIdsFromServices(draft.services),
     };
     draft.setStaff([...draft.staff, member]);
+  };
+
+  const toggleStaffOffering = (staffIdx: number, offeringPublicId: string) => {
+    const id = String(offeringPublicId);
+    const next = [...draft.staff];
+    const member = next[staffIdx];
+    if (!member) return;
+    const selected = new Set(member.offeringPublicIds.map(String));
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    next[staffIdx] = { ...member, offeringPublicIds: [...selected] };
+    draft.setStaff(next);
   };
 
   if (gateBlocked) {
@@ -638,6 +703,50 @@ export default function OnboardingView() {
                     className={fieldClass}
                   />
                 )}
+                <div className="flex flex-col gap-2 border-t border-border pt-2">
+                  <p className="text-sm font-bold">خدمات این پرسنل</p>
+                  <p className="text-xs text-foreground-muted">حداقل یک خدمت</p>
+                  {offeringIdsFromServices(draft.services).length === 0 ? (
+                    <p className="text-xs text-error">
+                      ابتدا در مرحله خدمات، خدمات را ذخیره کنید.
+                    </p>
+                  ) : (
+                    draft.services
+                      .filter((svc) => Boolean(svc.publicId))
+                      .map((svc) => {
+                        const oid = String(svc.publicId);
+                        const typeName =
+                          serviceTypes.find(
+                            (t) =>
+                              String(t.id) === String(svc.serviceTypePublicId)
+                          )?.name ?? "خدمت";
+                        return (
+                          <label
+                            key={oid}
+                            className="flex items-start gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-0.5"
+                              checked={s.offeringPublicIds
+                                .map(String)
+                                .includes(oid)}
+                              onChange={() => toggleStaffOffering(idx, oid)}
+                            />
+                            <span>
+                              <span className="block text-foreground">
+                                {typeName}
+                              </span>
+                              <span className="block text-xs text-foreground-muted">
+                                {formatToman(svc.basePrice)} تومان ·{" "}
+                                {svc.durationMinutes} دقیقه
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() =>
