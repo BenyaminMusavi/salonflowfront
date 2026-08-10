@@ -3,8 +3,14 @@
 import { ISalonBrowseSlot } from "@/services/domains/salons/types/booking-browse.type";
 import { cn } from "@/shared/utils/className";
 
-function formatSlotLabel(time: string) {
+function formatSlotTime(time: string) {
   return time.length >= 5 ? time.slice(0, 5) : time;
+}
+
+function formatSlotLabel(slot: ISalonBrowseSlot) {
+  const start = formatSlotTime(slot.time);
+  const end = slot.endTime ? formatSlotTime(slot.endTime) : null;
+  return end ? `${start} – ${end}` : start;
 }
 
 interface BookSlotsStepProps {
@@ -73,7 +79,7 @@ export default function BookSlotsStep({
       {!isLoading && slots.length > 0 ? (
         <div className="grid grid-cols-3 gap-2">
           {slots.map((slot) => {
-            const label = formatSlotLabel(slot.time);
+            const label = formatSlotLabel(slot);
             const selected = selectedTime === slot.time;
             return (
               <button
@@ -81,7 +87,7 @@ export default function BookSlotsStep({
                 type="button"
                 onClick={() => onSelect(slot)}
                 className={cn(
-                  "rounded-2xl py-3 text-sm font-medium transition",
+                  "rounded-2xl px-1 py-3 text-xs font-medium transition sm:text-sm",
                   selected
                     ? "bg-primary text-primary-foreground"
                     : "bg-surface text-foreground hover:bg-surface-hover"

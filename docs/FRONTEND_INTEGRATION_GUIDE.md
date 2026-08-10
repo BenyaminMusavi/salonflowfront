@@ -230,7 +230,25 @@
 
 **جزئیات سالن:** `GET /api/salons/{id}` — `id` = Guid عمومی سالن. همان شرط کاتالوگ: `SalonApproval=Approved` و `TrustStatus=Active`؛ وگرنه یافت نشد.
 
-فیلدهای مهم `data`: `name`, `description`, لینک‌های اینستاگرام/واتساپ/وبسایت، `coverImageUrl`, `imageUrl`, `gallery[]`, `services[]` (`id` Guid + `name`), `workingHours[]` (`dayName`, `start`, `end`, `isOff`).
+فیلدهای مهم `data`: `name`, `description`, لینک‌های اینستاگرام/واتساپ/وبسایت، `coverImageUrl`, `imageUrl`, `gallery[]`, `branches[]`, `services[]`, `workingHours[]` (`dayName`, `start`, `end`, `isOff`).
+
+`branches[]` (فقط شعبه‌های فعال):
+
+| فیلد | نوع | توضیح |
+|------|-----|--------|
+| `publicId` | Guid | شناسهٔ عمومی شعبه (برای گام‌های بعدی رزرو) |
+| `name` | string | |
+| `city` | string | |
+| `address` / `phone` | string? | |
+| `latitude` / `longitude` | number? | |
+| `genderType` | number | |
+
+`services[]` (سطح سالن — خلاصه):
+
+| فیلد | نوع | توضیح |
+|------|-----|--------|
+| `offeringPublicId` | Guid | PublicId مربوط به **ServiceOffering** (نه ServiceType) |
+| `name` | string | نام نوع سرویس |
 
 **علاقه‌مندی‌ها (نیاز به JWT مشتری)**
 
@@ -257,11 +275,12 @@
 
 #### گام ۱ — خدمات شعبه
 
-`GET /api/salons/branches/{branchId}/services` — Public
+`GET /api/salons/branches/{branchPublicId}/services` — Public (`branchPublicId` = Guid)
 
 ```json
 [
   {
+    "offeringPublicId": "…",
     "servicePublicId": "…",
     "name": "کوتاهی",
     "description": null,
@@ -276,12 +295,13 @@
 
 | فیلد | نوع | نکته |
 |------|-----|------|
-| `servicePublicId` | Guid | PublicId نوع سرویس (`ServiceType`) |
+| `offeringPublicId` | Guid | PublicId مربوط به **ServiceOffering** (برای create/slots) |
+| `servicePublicId` | Guid | PublicId نوع سرویس (`ServiceType`) — نمایش/فیلتر |
 | `price` / `deposit*` | number | قیمت پایهٔ offering حل‌شده |
 
 #### گام ۲ — تقویم ۳۰ روزه
 
-`GET /api/salons/branches/{branchId}/available-dates?serviceTypeId={long}` — Public
+`GET /api/salons/branches/{branchPublicId}/available-dates?serviceTypePublicId={guid}` — Public
 
 ```json
 [
@@ -290,11 +310,11 @@
 ]
 ```
 
-روزهای `isAvailable=false` را در UI خاکستری/غیرفعال کنید.
+روزهای `isAvailable=false` را در UI خاکستری/غیرفعال کنید. از `servicePublicId` پاسخ خدمات شعبه به‌عنوان `serviceTypePublicId` استفاده کنید.
 
 #### گام ۳ — پرسنل فعال در آن روز
 
-`GET /api/salons/branches/{branchId}/staff-availability?serviceTypeId={long}&date=2026-08-01` — Public
+`GET /api/salons/branches/{branchPublicId}/staff-availability?serviceTypePublicId={guid}&date=2026-08-01` — Public
 
 ```json
 [
@@ -310,7 +330,7 @@
 
 #### گام ۴ — محاسبه قیمت و بیعانه (پیش‌فاکتور)
 
-`GET /api/salons/branches/{branchId}/calculate-price?serviceTypeIds=5&serviceTypeIds=8&staffPublicId={guid?}` — Public
+`GET /api/salons/branches/{branchPublicId}/calculate-price?serviceTypePublicIds={guid}&serviceTypePublicIds={guid}&staffPublicId={guid?}` — Public
 
 اولویت قیمت: **پرسنل → شعبه → استاندارد سالن**.
 
@@ -318,7 +338,7 @@
 {
   "services": [
     {
-      "serviceTypeId": 5,
+      "serviceTypePublicId": "…",
       "serviceName": "کوتاهی",
       "price": 450000,
       "requiresDeposit": true,
@@ -345,10 +365,10 @@
 
 | Query | نوع |
 |-------|-----|
-| `branchId` | number |
+| `branchPublicId` | Guid |
 | `staffProfilePublicId` | Guid? — اگر null = «اولین نفر آزاد» |
 | `date` | DateOnly (`yyyy-MM-dd`) |
-| `serviceTypeIds` | number[] |
+| `serviceTypePublicIds` | Guid[] |
 
 ```json
 {
@@ -360,16 +380,16 @@
 }
 ```
 
-**ب) مسیر Booking (با offering عددی)**
+**ب) مسیر Booking (با offering عمومی)**
 
 `GET /api/booking/slots` — Public
 
 | Query | نوع |
 |-------|-----|
-| `salonId` | Guid |
-| `branchId` | number |
-| `staffId` | number? |
-| `offeringIds` | number[] **الزامی** |
+| `salonPublicId` | Guid |
+| `branchPublicId` | Guid |
+| `staffPublicId` | Guid? |
+| `offeringPublicIds` | Guid[] **الزامی** |
 | `date` | DateTime |
 
 ```json
@@ -377,17 +397,17 @@
   {
     "start": "2026-08-01T10:00:00Z",
     "end": "2026-08-01T10:45:00Z",
-    "staffProfileId": 7,
+    "staffPublicId": "…",
     "isAvailable": true
   }
 ]
 ```
 
 **پرسنل بر اساس offeringها:**  
-`GET /api/staff-profiles/by-salon/{salonPublicId}/for-services?offeringIds=44&offeringIds=45`
+`GET /api/staff-profiles/by-salon/{salonPublicId}/for-services?offeringPublicIds={guid}&offeringPublicIds={guid}`
 
 ```json
-[{ "id": 7, "firstName": "علی", "avatarUrl": null }]
+[{ "staffPublicId": "…", "firstName": "علی", "avatarUrl": null }]
 ```
 
 #### گام ۶ — ثبت نوبت آنلاین
@@ -396,8 +416,8 @@
 
 | فیلد | نوع | توضیح |
 |------|-----|--------|
-| `salonId` | number | شناسهٔ **عددی** سالن |
-| `branchId` | number? | |
+| `salonPublicId` | Guid | شناسهٔ عمومی سالن |
+| `branchPublicId` | Guid? | شناسهٔ عمومی شعبه |
 | `startTime` | datetime | UTC/ISO |
 | `notes` | string? | |
 | `services` | array | حداقل یک خط |
@@ -406,22 +426,22 @@
 
 | فیلد | نوع |
 |------|-----|
-| `offeringId` | number | `ServiceOffering.Id` |
-| `staffId` | number | `StaffMember.Id` |
+| `offeringPublicId` | Guid | `ServiceOffering.PublicId` |
+| `staffPublicId` | Guid | `StaffMember.PublicId` |
 
 ```json
 {
-  "salonId": 12,
-  "branchId": 3,
+  "salonPublicId": "…",
+  "branchPublicId": "…",
   "startTime": "2026-08-01T10:00:00Z",
   "notes": null,
   "services": [
-    { "offeringId": 44, "staffId": 7 }
+    { "offeringPublicId": "…", "staffPublicId": "…" }
   ]
 }
 ```
 
-**پاسخ `data`:** `number` = شناسهٔ نوبت.
+**پاسخ `data`:** Guid = `Appointment.PublicId` (برای `GET /api/appointments/me/{appointmentPublicId}`).
 
 **رفتار مهم برای UI**
 
@@ -429,7 +449,7 @@
 - اگر سرویس بیعانه داشته باشد، سرور از **کیف پول مشتری** بیعانه می‌گیرد؛ موجودی ناکافی → خطا.
 - پنجرهٔ لغو رایگان با `freeCancellationWindowHours` (معمولاً ۲۴) هم‌خوان است.
 
-> **نگاشت شناسه‌ها:** browse اغلب با `serviceTypeId` / `ServicePublicId` (Guid) کار می‌کند؛ ثبت نهایی به `offeringId` (long) و `staffId` (long) نیاز دارد. قبل از Create، offering متناظر شعبه را از کاتالوگ سالن یا مسیرهایی که `offeringIds` می‌گیرند resolve کنید.
+> **نگاشت شناسه‌ها (Phase 3):** کل قیف رزرو مشتری (browse → slots → create → me) با Guid/`PublicId` است. long داخلی فقط داخل Application resolve می‌شود. APIهای سالن‌دار (`POST /api/appointments`, catalog) همچنان long می‌مانند.
 
 ---
 
@@ -442,7 +462,7 @@
 ```json
 [
   {
-    "id": 101,
+    "id": "…",
     "startTime": "2026-08-01T10:00:00Z",
     "endTime": "2026-08-01T10:45:00Z",
     "status": 1,
@@ -452,13 +472,15 @@
 ]
 ```
 
+`id` = Guid عمومی نوبت (`Appointment.PublicId`).
+
 #### جزئیات نوبت من
 
-`GET /api/appointments/me/{id}` — CustomerOnly
+`GET /api/appointments/me/{appointmentPublicId}` — CustomerOnly (`appointmentPublicId` = Guid)
 
 ```json
 {
-  "id": 101,
+  "id": "…",
   "startTime": "2026-08-01T10:00:00Z",
   "endTime": "2026-08-01T10:45:00Z",
   "status": 1,
@@ -467,7 +489,8 @@
   "branchAddress": "…",
   "services": [
     {
-      "id": 501,
+      "offeringPublicId": "…",
+      "staffPublicId": "…",
       "name": "کوتاهی",
       "durationMinutes": 45,
       "price": 450000,
@@ -650,13 +673,15 @@
       "publicId": null,
       "branchPublicId": "…",
       "isCreator": true,
-      "phoneNumber": null
+      "phoneNumber": null,
+      "offeringPublicIds": ["…", "…"]
     },
     {
       "publicId": null,
       "branchPublicId": "…",
       "isCreator": false,
-      "phoneNumber": "0912…"
+      "phoneNumber": "0912…",
+      "offeringPublicIds": ["…"]
     }
   ]
 }
@@ -665,6 +690,8 @@
 اگر `isCreator=false` باشد `phoneNumber` الزامی است.
 
 دقیقاً **یک** آیتم با `isCreator: true` الزامی است — مالک از JWT لینک می‌شود و این فلگ فقط برای **انتساب شعبهٔ مالک** است (هویت پرسنل مالک از مرحلهٔ ۱ وجود دارد). پروفایل `StaffMember` مالک هرگز hard-delete نمی‌شود حتی اگر از لیست حذف شود.
+
+`offeringPublicIds` الزامی است (حداقل یک Guid برای هر پرسنل) — همان `publicId`های `ServiceOffering` برگشتی از مرحلهٔ ۳ (`save-services`)، نه `serviceTypePublicId`. سرور desired-state sync روی `StaffMemberServices` انجام می‌دهد (افزودن / فعال‌سازی / حذف انتساب‌های خارج از لیست) داخل همان تراکنش ذخیرهٔ پرسنل. قیمت/مدت سفارشی همچنان فقط از Catalog: `PUT /api/catalog/staff/{staffMemberId}/services`.
 
 قابلیت پرسنل از طریق انتساب به `ServiceOffering` (`StaffMemberService`) تعریف می‌شود — فیلد `staffType` حذف شده است.
 
@@ -1258,8 +1285,8 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 آرایه‌های query را تکرار کنید:
 
 ```
-?serviceTypeIds=5&serviceTypeIds=8
-?offeringIds=44&offeringIds=45
+?serviceTypePublicIds={guid}&serviceTypePublicIds={guid}
+?offeringPublicIds={guid}&offeringPublicIds={guid}
 ```
 
 ### ۵.۴ Enumهای پرکاربرد (عدد در JSON)
@@ -1289,7 +1316,7 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 3. قبل از رزرو آنلاین: نقش/کانتکست مشتری (بدون اتکا به `salon_id` پنل)
 4. موفقیت را از روی status بخوانید؛ `data` را فقط وقتی بدنه دارید
 5. برای پرداخت، همیشه `idempotencyKey` یکتا بفرستید
-6. شناسه‌ها را قاطی نکنید: Guid عمومی سالن/سرویس ≠ long داخلی offering/staff/salon
+6. قیف رزرو مشتری Guid-first است (`salonPublicId`/`branchPublicId`/`offeringPublicId`/`staffPublicId`/appointment PublicId)؛ long داخلی فقط در Application. API سالن‌دار می‌تواند long بماند.
 7. قبل از ایجاد سالن جدید: اشتراک trial/active بگیرید (`POST /api/subscriptions/trial` یا checkout + mark-paid)
 
 ---
