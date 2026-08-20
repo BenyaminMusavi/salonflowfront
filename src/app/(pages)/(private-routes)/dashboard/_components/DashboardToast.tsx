@@ -3,20 +3,18 @@
 import { useEffect } from "react";
 import { cn } from "@/shared/utils/className";
 
-export type SalonInfoToastState = {
+export type DashboardToastState = {
   type: "success" | "error";
   message: string;
 } | null;
 
-interface SalonInfoToastProps {
-  toast: SalonInfoToastState;
-  onDismiss: () => void;
-}
-
-export default function SalonInfoToast({
+export function DashboardToast({
   toast,
   onDismiss,
-}: SalonInfoToastProps) {
+}: {
+  toast: DashboardToastState;
+  onDismiss: () => void;
+}) {
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(onDismiss, 3200);

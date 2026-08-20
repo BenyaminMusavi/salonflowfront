@@ -28,7 +28,7 @@ export default function ContactSocialSection({
   return (
     <section
       id="salon-contact"
-      className="scroll-mt-14 rounded-lg bg-surface-secondary p-3"
+      className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
     >
       <h2 className="mb-3 text-sm font-bold text-foreground">تماس و شبکه‌ها</h2>
       <div className="flex flex-col gap-3">

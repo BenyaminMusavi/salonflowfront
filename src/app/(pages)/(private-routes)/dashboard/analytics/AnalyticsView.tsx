@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Input } from "@/shared/components/primitives/input/Input";
 import { useQueryDashboardSummary } from "@/services/domains/reports/hooks";
 import { defaultReportRange } from "@/services/domains/reports/utils/report-mappers";
 import { asNumber, metricFromUnknown } from "@/services/domains/reports/utils/report-mappers";
@@ -14,6 +13,16 @@ import { IDashboardSummary, IReportSparklinePoint } from "@/services/domains/rep
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  DashboardCard,
+  DashboardDateField,
+  DashboardEmptyState,
+  DashboardKpi,
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSelect,
+  DashboardSkeleton,
+} from "../_components";
 
 function pickMetric(
   summary: IDashboardSummary | undefined,
@@ -40,14 +49,18 @@ function Sparkline({ points }: { points: IReportSparklinePoint[] }) {
   const values = points.map((p) => p.collected ?? 0);
   const max = Math.max(...values, 1);
   const w = 320;
-  const h = 56;
-  const d = values
-    .map((v, i) => {
-      const x = (i / Math.max(values.length - 1, 1)) * w;
-      const y = h - (v / max) * (h - 4) - 2;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
+  const h = 72;
+  const coords = values.map((v, i) => {
+    const x = (i / Math.max(values.length - 1, 1)) * w;
+    const y = h - (v / max) * (h - 8) - 4;
+    return { x, y };
+  });
+  const d = coords
+    .map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`)
     .join(" ");
+  const area = coords.length
+    ? `${d} L${coords[coords.length - 1].x.toFixed(1)},${h} L${coords[0].x.toFixed(1)},${h} Z`
+    : "";
 
   if (points.length === 0) {
     return (
@@ -58,39 +71,13 @@ function Sparkline({ points }: { points: IReportSparklinePoint[] }) {
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
-      className="h-14 w-full text-primary"
+      className="h-20 w-full text-primary"
       role="img"
       aria-label="روند دریافت"
     >
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d={area} fill="currentColor" className="opacity-20" />
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="2.5" />
     </svg>
-  );
-}
-
-function KpiCard({
-  title,
-  value,
-  percentChange,
-}: {
-  title: string;
-  value: string;
-  percentChange: number | null;
-}) {
-  const change = formatPercentChange(percentChange);
-  return (
-    <div className="rounded-lg bg-surface p-3">
-      <p className="text-xs text-foreground-muted">{title}</p>
-      <p className="mt-1 text-sm font-bold text-foreground">{value}</p>
-      {change ? (
-        <p
-          className={`mt-1 text-[11px] ${
-            (percentChange ?? 0) >= 0 ? "text-primary" : "text-error"
-          }`}
-        >
-          {change}
-        </p>
-      ) : null}
-    </div>
   );
 }
 
@@ -133,32 +120,57 @@ export default function AnalyticsView() {
     ? summary.sparkline
     : [];
 
+  const kpis = [
+    {
+      group: "مالی",
+      items: [
+        { title: "دریافت‌شده", value: formatMoneyOrDash(collected.value), change: collected.percentChange },
+        { title: "صندوق", value: formatMoneyOrDash(tillCollected.value), change: tillCollected.percentChange },
+        { title: "درآمد خدمات", value: formatMoneyOrDash(serviceRevenue.value), change: serviceRevenue.percentChange },
+        { title: "خالص پس از استرداد", value: formatMoneyOrDash(netCollected.value), change: netCollected.percentChange },
+        { title: "مطالبات", value: formatMoneyOrDash(outstanding.value), change: outstanding.percentChange },
+      ],
+    },
+    {
+      group: "عملیاتی",
+      items: [
+        { title: "نرخ لغو", value: formatRate(cancelRate.value), change: cancelRate.percentChange },
+        { title: "نرخ عدم حضور", value: formatRate(noShowRate.value), change: noShowRate.percentChange },
+      ],
+    },
+    {
+      group: "مشتری",
+      items: [
+        {
+          title: "مشتری جدید",
+          value: newCustomers.value != null ? String(newCustomers.value) : "—",
+          change: newCustomers.percentChange,
+        },
+        {
+          title: "مشتری بازگشتی",
+          value:
+            returningCustomers.value != null
+              ? String(returningCustomers.value)
+              : "—",
+          change: returningCustomers.percentChange,
+        },
+      ],
+    },
+  ];
+
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="mb-2 text-base font-bold text-foreground">
-          تحلیل و KPI
-        </h1>
-        <p className="mb-3 text-xs text-foreground-muted">
-          کارت‌های مالی، عملیاتی و مشتری برای بازه انتخابی. دوره قبلی هم‌طول را
-          سرور در درصد تغییر برمی‌گرداند.
-        </p>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="تحلیل"
+        description="شاخص‌های مالی، عملیاتی و مشتری برای بازه انتخابی."
+      />
+
+      <DashboardCard className="sticky top-[4.5rem] z-10 space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="h-10 min-h-10"
-          />
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="h-10 min-h-10"
-          />
+          <DashboardDateField name="analytics-from" value={from} onChange={setFrom} label="از" />
+          <DashboardDateField name="analytics-to" value={to} onChange={setTo} label="تا" />
         </div>
-        <select
-          className="mt-2 h-12 w-full rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+        <DashboardSelect
           value={branchId}
           onChange={(e) =>
             setBranchId(e.target.value ? Number(e.target.value) : "")
@@ -173,81 +185,47 @@ export default function AnalyticsView() {
               {branch.name}
             </option>
           ))}
-        </select>
-      </div>
+        </DashboardSelect>
+      </DashboardCard>
 
       {query.isLoading ? (
-        <p className="text-sm text-foreground-muted">در حال دریافت خلاصه…</p>
+        <DashboardSkeleton cards={2} rows={2} />
       ) : query.isError ? (
-        <p className="text-sm text-error">
-          {getApiErrorMessage(query.error, "دریافت خلاصه داشبورد ناموفق بود.")}
-        </p>
+        <DashboardEmptyState
+          title="دریافت خلاصه ناموفق بود"
+          description={getApiErrorMessage(
+            query.error,
+            "دریافت خلاصه داشبورد ناموفق بود."
+          )}
+        />
       ) : (
         <>
-          <div className="rounded-lg bg-surface-secondary p-3">
+          <DashboardCard>
             <p className="mb-2 text-xs font-bold text-foreground-muted">
-              روند دریافت (sparkline)
+              روند دریافت
             </p>
             <Sparkline points={sparkline} />
-          </div>
+          </DashboardCard>
 
-          <div className="grid grid-cols-2 gap-2">
-            <KpiCard
-              title="دریافت‌شده"
-              value={formatMoneyOrDash(collected.value)}
-              percentChange={collected.percentChange}
-            />
-            <KpiCard
-              title="صندوق (نقد+کارت+آنلاین)"
-              value={formatMoneyOrDash(tillCollected.value)}
-              percentChange={tillCollected.percentChange}
-            />
-            <KpiCard
-              title="درآمد خدمات"
-              value={formatMoneyOrDash(serviceRevenue.value)}
-              percentChange={serviceRevenue.percentChange}
-            />
-            <KpiCard
-              title="خالص پس از استرداد"
-              value={formatMoneyOrDash(netCollected.value)}
-              percentChange={netCollected.percentChange}
-            />
-            <KpiCard
-              title="مطالبات"
-              value={formatMoneyOrDash(outstanding.value)}
-              percentChange={outstanding.percentChange}
-            />
-            <KpiCard
-              title="نرخ لغو"
-              value={formatRate(cancelRate.value)}
-              percentChange={cancelRate.percentChange}
-            />
-            <KpiCard
-              title="نرخ عدم حضور"
-              value={formatRate(noShowRate.value)}
-              percentChange={noShowRate.percentChange}
-            />
-            <KpiCard
-              title="مشتری جدید"
-              value={
-                newCustomers.value != null
-                  ? String(newCustomers.value)
-                  : "—"
-              }
-              percentChange={newCustomers.percentChange}
-            />
-            <KpiCard
-              title="مشتری بازگشتی"
-              value={
-                returningCustomers.value != null
-                  ? String(returningCustomers.value)
-                  : "—"
-              }
-              percentChange={returningCustomers.percentChange}
-            />
-          </div>
+          {kpis.map((group) => (
+            <div key={group.group} className="space-y-2">
+              <p className="px-1 text-xs font-bold text-foreground-muted">
+                {group.group}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {group.items.map((item) => (
+                  <DashboardKpi
+                    key={item.title}
+                    title={item.title}
+                    value={item.value}
+                    hint={formatPercentChange(item.change)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </>
       )}
-    </div>
+    </DashboardPage>
   );
 }

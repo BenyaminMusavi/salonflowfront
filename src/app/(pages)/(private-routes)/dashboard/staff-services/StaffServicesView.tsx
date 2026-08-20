@@ -11,6 +11,15 @@ import {
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  DashboardCard,
+  DashboardEmptyState,
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSelect,
+  DashboardToast,
+  type DashboardToastState,
+} from "../_components";
 
 type TRow = {
   serviceOfferingId: number;
@@ -19,10 +28,21 @@ type TRow = {
   customDurationMinutes?: number | null;
 };
 
+function staffLabel(member: {
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}) {
+  return (
+    member.fullName ||
+    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+    "پرسنل"
+  );
+}
+
 export default function StaffServicesView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [toast, setToast] = useState<DashboardToastState>(null);
 
   const offeringsQuery = useQueryCatalogOfferings(true);
   const offerings = offeringsQuery.data?.data ?? [];
@@ -63,10 +83,8 @@ export default function StaffServicesView() {
   }, [selectedStaffId, offerings, staffServices]);
 
   const onSave = async () => {
-    setError("");
-    setSuccess("");
     if (!selectedStaffId) {
-      setError("ابتدا یک پرسنل انتخاب کنید.");
+      setToast({ type: "error", message: "ابتدا یک پرسنل انتخاب کنید." });
       return;
     }
     try {
@@ -90,46 +108,51 @@ export default function StaffServicesView() {
             })),
         },
       });
-      setSuccess("تخصیص خدمات پرسنل با موفقیت ذخیره شد.");
+      setToast({ type: "success", message: "تخصیص خدمات پرسنل ذخیره شد." });
     } catch (err) {
-      setError(getApiErrorMessage(err, "ذخیره تخصیص خدمات ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ذخیره تخصیص خدمات ناموفق بود."),
+      });
     }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="mb-2 text-base font-bold text-foreground">تخصیص خدمات به پرسنل</h1>
-        <p className="text-xs text-foreground-muted">
-          {"Staff-centric assignment با مسیر PUT /api/catalog/staff/{id}/services."}
-        </p>
-      </div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="خدمات پرسنل"
+        description="برای هر پرسنل مشخص کنید کدام سرویس‌ها را ارائه می‌دهد."
+      />
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <select
-          className="h-12 w-full rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+      <DashboardCard>
+        <DashboardSelect
           value={staffMemberId}
           onChange={(e) => setStaffMemberId(Number(e.target.value))}
         >
           <option value="">انتخاب پرسنل</option>
           {staff.map((member) => (
             <option key={member.id} value={member.id}>
-              {member.fullName || [member.firstName, member.lastName].filter(Boolean).join(" ")}
+              {staffLabel(member)}
             </option>
           ))}
-        </select>
-      </div>
+        </DashboardSelect>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-3 text-sm font-bold text-foreground">لیست خدمات</h2>
+      {!selectedStaffId ? (
+        <DashboardEmptyState
+          title="پرسنل را انتخاب کنید"
+          description="ابتدا خدمات کاتالوگ را بسازید، سپس پرسنل را انتخاب کنید."
+        />
+      ) : (
         <div className="space-y-2">
           {rows.map((row) => {
             const offering = offerings.find((x) => x.id === row.serviceOfferingId);
             return (
-              <div key={row.serviceOfferingId} className="rounded-md border border-border p-3">
+              <DashboardCard key={row.serviceOfferingId} className="p-3">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    className="h-4 w-4 accent-primary"
                     checked={row.isActive}
                     onChange={(e) =>
                       setRows((prev) =>
@@ -141,67 +164,62 @@ export default function StaffServicesView() {
                       )
                     }
                   />
-                  <span className="text-sm text-foreground">
-                    {offering?.serviceTypeName || `Service #${row.serviceOfferingId}`}
+                  <span className="text-sm font-semibold text-foreground">
+                    {offering?.serviceTypeName || "سرویس"}
                   </span>
                 </label>
-                <div className="mt-2 grid grid-cols-1 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="قیمت اختصاصی (اختیاری)"
-                    value={row.customPrice ?? ""}
-                    onChange={(e) =>
-                      setRows((prev) =>
-                        prev.map((it) =>
-                          it.serviceOfferingId === row.serviceOfferingId
-                            ? {
-                                ...it,
-                                customPrice: e.target.value ? Number(e.target.value) : null,
-                              }
-                            : it
+                {row.isActive ? (
+                  <div className="mt-2 grid grid-cols-1 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="قیمت اختصاصی (اختیاری)"
+                      value={row.customPrice ?? ""}
+                      onChange={(e) =>
+                        setRows((prev) =>
+                          prev.map((it) =>
+                            it.serviceOfferingId === row.serviceOfferingId
+                              ? {
+                                  ...it,
+                                  customPrice: e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                }
+                              : it
+                          )
                         )
-                      )
-                    }
-                  />
-                  <Input
-                    type="number"
-                    placeholder="مدت اختصاصی (دقیقه)"
-                    value={row.customDurationMinutes ?? ""}
-                    onChange={(e) =>
-                      setRows((prev) =>
-                        prev.map((it) =>
-                          it.serviceOfferingId === row.serviceOfferingId
-                            ? {
-                                ...it,
-                                customDurationMinutes: e.target.value
-                                  ? Number(e.target.value)
-                                  : null,
-                              }
-                            : it
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="مدت اختصاصی (دقیقه)"
+                      value={row.customDurationMinutes ?? ""}
+                      onChange={(e) =>
+                        setRows((prev) =>
+                          prev.map((it) =>
+                            it.serviceOfferingId === row.serviceOfferingId
+                              ? {
+                                  ...it,
+                                  customDurationMinutes: e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                }
+                              : it
+                          )
                         )
-                      )
-                    }
-                  />
-                </div>
-              </div>
+                      }
+                    />
+                  </div>
+                ) : null}
+              </DashboardCard>
             );
           })}
-          {rows.length === 0 ? (
-            <p className="text-xs text-foreground-muted">
-              ابتدا خدمات کاتالوگ را ایجاد کنید؛ سپس پرسنل فعال را انتخاب نمایید.
-            </p>
-          ) : null}
-        </div>
-        <div className="mt-3">
           <Button onClick={onSave} isLoading={mutateStaffServices.isPending}>
             ذخیره تخصیص‌ها
           </Button>
         </div>
-      </div>
+      )}
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-      {success ? <p className="text-sm text-primary">{success}</p> : null}
-    </div>
+      <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
+    </DashboardPage>
   );
 }
-

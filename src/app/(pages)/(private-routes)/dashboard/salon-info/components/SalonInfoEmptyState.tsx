@@ -20,7 +20,7 @@ export default function SalonInfoEmptyState({
   showOnboardingCta = true,
 }: SalonInfoEmptyStateProps) {
   return (
-    <div className="rounded-lg bg-surface-secondary p-4 text-center">
+    <div className="rounded-[20px] border border-border bg-surface p-4 text-center">
       <h2 className="text-sm font-bold text-foreground">{title}</h2>
       <p className="mt-2 text-xs leading-6 text-foreground-muted">{description}</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">

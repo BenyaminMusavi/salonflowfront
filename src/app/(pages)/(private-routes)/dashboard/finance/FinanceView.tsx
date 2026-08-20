@@ -10,20 +10,41 @@ import { useMutatePayments, useQueryPaymentsByInvoice } from "@/services/domains
 import { useMutateWallet, useQueryWalletByCustomer, useQueryWalletTransactions } from "@/services/domains/wallets/hooks";
 import { useMutateTips } from "@/services/domains/tips/hooks";
 import { useQueryCustomers } from "@/services/domains/customers/hooks";
+import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
+import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import { paymentMethodLabel } from "@/services/domains/reports/utils/report-display";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  DashboardCard,
+  DashboardDateField,
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSelect,
+  DashboardToast,
+  todayGregorian,
+  type DashboardToastState,
+} from "../_components";
+import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
-const toDateOnly = (d: Date) => {
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
+function staffLabel(member: {
+  id?: number;
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}) {
+  return (
+    member.fullName ||
+    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+    (member.id != null ? `پرسنل #${member.id}` : "پرسنل")
+  );
+}
 
 export default function FinanceView() {
-  const [date, setDate] = useState(toDateOnly(new Date()));
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
+  const [date, setDate] = useState(todayGregorian());
+  const [toast, setToast] = useState<DashboardToastState>(null);
 
   const completedAppointmentsQuery = useQuerySalonAppointments(date, {
     status: AppointmentStatus.Completed,
@@ -65,28 +86,38 @@ export default function FinanceView() {
   const walletMutations = useMutateWallet();
   const [walletAmount, setWalletAmount] = useState("");
 
+  const offerings = useQueryCatalogOfferings(true).data?.data ?? [];
+  const staff =
+    useQueryStaffForOfferings(
+      salonPublicId || undefined,
+      offerings.map((o) => o.id),
+      { enabled: offerings.length > 0 }
+    ).data?.data ?? [];
+
   const tipsMutate = useMutateTips();
-  const [tipStaffId, setTipStaffId] = useState("");
+  const [tipStaffId, setTipStaffId] = useState<number | "">("");
   const [tipAmount, setTipAmount] = useState("");
-  const [tipAppointmentId, setTipAppointmentId] = useState("");
+  const [tipAppointmentId, setTipAppointmentId] = useState<number | "">("");
 
   const issueInvoice = async (appointmentId: number) => {
-    setError("");
-    setSuccess("");
     try {
       const res = await invoiceMutations.createFromAppointment.mutateAsync(appointmentId);
-      setSuccess(`فاکتور ایجاد شد (شماره: ${res.data?.id ?? "-"})`);
+      setToast({
+        type: "success",
+        message: `فاکتور ایجاد شد (شماره: ${res.data?.id ?? "-"})`,
+      });
     } catch (err) {
-      setError(getApiErrorMessage(err, "صدور فاکتور ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "صدور فاکتور ناموفق بود."),
+      });
     }
   };
 
   const submitPayment = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     if (!selectedInvoiceId || !amount) {
-      setError("شماره فاکتور و مبلغ پرداخت الزامی است.");
+      setToast({ type: "error", message: "شماره فاکتور و مبلغ پرداخت الزامی است." });
       return;
     }
     try {
@@ -96,22 +127,24 @@ export default function FinanceView() {
         paymentMethod,
         paymentType: PaymentType.Full,
       });
-      setSuccess(
-        res.data?.isDuplicate
-          ? "این پرداخت قبلا ثبت شده بود (idempotent)."
-          : `پرداخت ثبت شد. مانده فاکتور: ${formatToman(res.data?.invoiceOutstanding)}`
-      );
+      setToast({
+        type: "success",
+        message: res.data?.isDuplicate
+          ? "این پرداخت قبلا ثبت شده بود."
+          : `پرداخت ثبت شد. مانده: ${formatToman(res.data?.invoiceOutstanding)}`,
+      });
       setAmount("");
     } catch (err) {
-      setError(getApiErrorMessage(err, "ثبت پرداخت ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ثبت پرداخت ناموفق بود."),
+      });
     }
   };
 
   const walletOp = async (type: "charge" | "debit") => {
-    setError("");
-    setSuccess("");
     if (!customerId || !walletAmount) {
-      setError("مشتری و مبلغ کیف پول الزامی است.");
+      setToast({ type: "error", message: "مشتری و مبلغ کیف پول الزامی است." });
       return;
     }
     try {
@@ -122,23 +155,24 @@ export default function FinanceView() {
       };
       if (type === "charge") {
         await walletMutations.charge.mutateAsync(body);
-        setSuccess("کیف پول مشتری شارژ شد.");
+        setToast({ type: "success", message: "کیف پول مشتری شارژ شد." });
       } else {
         await walletMutations.debit.mutateAsync(body);
-        setSuccess("از کیف پول مشتری برداشت شد.");
+        setToast({ type: "success", message: "از کیف پول مشتری برداشت شد." });
       }
       setWalletAmount("");
     } catch (err) {
-      setError(getApiErrorMessage(err, "عملیات کیف پول ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "عملیات کیف پول ناموفق بود."),
+      });
     }
   };
 
   const submitTip = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     if (!tipStaffId || !tipAmount) {
-      setError("شناسه پرسنل و مبلغ انعام الزامی است.");
+      setToast({ type: "error", message: "پرسنل و مبلغ انعام الزامی است." });
       return;
     }
     try {
@@ -147,36 +181,39 @@ export default function FinanceView() {
         amount: Number(tipAmount),
         appointmentId: tipAppointmentId ? Number(tipAppointmentId) : undefined,
       });
-      setSuccess("انعام ثبت شد.");
+      setToast({ type: "success", message: "انعام ثبت شد." });
       setTipAmount("");
       setTipAppointmentId("");
     } catch (err) {
-      setError(getApiErrorMessage(err, "ثبت انعام ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ثبت انعام ناموفق بود."),
+      });
     }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="text-base font-bold text-foreground">ماژول مالی</h1>
-      </div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="مالی"
+        description="صدور فاکتور، پرداخت، کیف پول و انعام."
+      />
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-foreground">صدور فاکتور از نوبت Completed</h2>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-10 min-h-10"
-            inputWrapperClassname="w-[150px]"
-          />
+      <DashboardCard>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-foreground">صدور فاکتور</h2>
+          <div className="w-[170px]">
+            <DashboardDateField name="finance-day" value={date} onChange={setDate} />
+          </div>
         </div>
         <div className="space-y-2">
           {completedAppointments.map((a) => (
-            <div key={a.id} className="flex items-center justify-between rounded border border-border p-2">
+            <div
+              key={a.id}
+              className="flex items-center justify-between gap-2 rounded-[12px] border border-border p-3"
+            >
               <span className="text-xs text-foreground-muted">
-                نوبت #{a.id} - {a.staffNames || "بدون پرسنل"}
+                نوبت #{a.id} · {a.staffNames || "بدون پرسنل"}
               </span>
               <Button size="sm" onClick={() => issueInvoice(a.id)}>
                 صدور فاکتور
@@ -184,34 +221,34 @@ export default function FinanceView() {
             </div>
           ))}
           {completedAppointments.length === 0 ? (
-            <p className="text-xs text-foreground-muted">برای این تاریخ نوبت تکمیل‌شده‌ای یافت نشد.</p>
+            <p className="text-xs text-foreground-muted">
+              برای این تاریخ نوبت تکمیل‌شده‌ای نیست.
+            </p>
           ) : null}
         </div>
-      </div>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">ثبت پرداخت</h2>
+      <DashboardCard>
+        <h2 className="mb-3 text-sm font-bold text-foreground">ثبت پرداخت</h2>
         <form className="grid grid-cols-1 gap-2" onSubmit={submitPayment}>
-          <select
-            className="h-12 rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+          <DashboardSelect
             value={selectedInvoiceId}
             onChange={(e) => setSelectedInvoiceId(Number(e.target.value))}
           >
             <option value="">انتخاب فاکتور</option>
             {invoices.map((inv) => (
               <option key={inv.id} value={inv.id}>
-                فاکتور #{inv.id} - مانده {formatToman(inv.outstandingAmount)}
+                فاکتور #{inv.id} · مانده {formatToman(inv.outstandingAmount)}
               </option>
             ))}
-          </select>
+          </DashboardSelect>
           <Input
             type="number"
-            placeholder="مبلغ"
+            placeholder="مبلغ (تومان)"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
-          <select
-            className="h-12 rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+          <DashboardSelect
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(Number(e.target.value))}
           >
@@ -220,29 +257,30 @@ export default function FinanceView() {
             <option value={PaymentMethod.Online}>آنلاین</option>
             <option value={PaymentMethod.Transfer}>انتقال</option>
             <option value={PaymentMethod.Wallet}>کیف پول</option>
-          </select>
+          </DashboardSelect>
           <Button type="submit" isLoading={paymentMutations.create.isPending}>
             ثبت پرداخت
           </Button>
         </form>
-        <div className="mt-2 space-y-1">
+        <div className="mt-3 space-y-1">
           {payments.map((p, i) => (
             <p key={`${p.id}-${i}`} className="text-xs text-foreground-muted">
-              پرداخت #{p.id} | {formatToman(p.amount)} | روش {p.paymentMethod}
+              پرداخت #{p.id} · {formatToman(p.amount)} تومان ·{" "}
+              {paymentMethodLabel(p.paymentMethod)}
             </p>
           ))}
         </div>
-      </div>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">کیف پول مشتری</h2>
+      <DashboardCard>
+        <h2 className="mb-3 text-sm font-bold text-foreground">کیف پول مشتری</h2>
         <Input
           placeholder="جستجوی مشتری"
           value={customerSearch}
           onChange={(e) => setCustomerSearch(e.target.value)}
         />
-        <select
-          className="mt-2 h-12 w-full rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+        <DashboardSelect
+          className="mt-2"
           value={customerId}
           onChange={(e) => setCustomerId(Number(e.target.value))}
         >
@@ -252,11 +290,12 @@ export default function FinanceView() {
               {c.fullName} - {c.phone}
             </option>
           ))}
-        </select>
-        <p className="mt-2 text-xs text-foreground-muted">
-          موجودی: {formatToman(walletQuery.data?.data?.balance)} تومان
+        </DashboardSelect>
+        <p className="mt-3 text-lg font-bold text-foreground">
+          {formatToman(walletQuery.data?.data?.balance)} تومان
         </p>
-        <div className="mt-2 flex gap-2">
+        <p className="text-[11px] text-foreground-muted">موجودی کیف پول</p>
+        <div className="mt-3 flex gap-2">
           <Input
             type="number"
             placeholder="مبلغ"
@@ -266,49 +305,66 @@ export default function FinanceView() {
           <Button size="sm" onClick={() => walletOp("charge")}>
             شارژ
           </Button>
-          <Button size="sm" variant="outline" onClick={() => walletOp("debit")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className={dashboardQuietButtonClass}
+            onClick={() => walletOp("debit")}
+          >
             برداشت
           </Button>
         </div>
-        <div className="mt-2 space-y-1">
+        <div className="mt-3 space-y-1">
           {(walletTxQuery.data?.data ?? []).slice(0, 5).map((t) => (
             <p key={t.id} className="text-xs text-foreground-muted">
-              {formatToman(t.amount)} | {t.description || "بدون توضیح"}
+              {formatToman(t.amount)} · {t.description || "بدون توضیح"}
             </p>
           ))}
         </div>
-      </div>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">ثبت انعام</h2>
+      <DashboardCard>
+        <h2 className="mb-3 text-sm font-bold text-foreground">ثبت انعام</h2>
         <form className="grid grid-cols-1 gap-2" onSubmit={submitTip}>
-          <Input
-            type="number"
-            placeholder="شناسه پرسنل"
+          <DashboardSelect
             value={tipStaffId}
-            onChange={(e) => setTipStaffId(e.target.value)}
-          />
+            onChange={(e) =>
+              setTipStaffId(e.target.value ? Number(e.target.value) : "")
+            }
+          >
+            <option value="">انتخاب پرسنل</option>
+            {staff.map((member) => (
+              <option key={member.id} value={member.id}>
+                {staffLabel(member)}
+              </option>
+            ))}
+          </DashboardSelect>
           <Input
             type="number"
-            placeholder="مبلغ انعام"
+            placeholder="مبلغ انعام (تومان)"
             value={tipAmount}
             onChange={(e) => setTipAmount(e.target.value)}
           />
-          <Input
-            type="number"
-            placeholder="شناسه نوبت (اختیاری)"
+          <DashboardSelect
             value={tipAppointmentId}
-            onChange={(e) => setTipAppointmentId(e.target.value)}
-          />
+            onChange={(e) =>
+              setTipAppointmentId(e.target.value ? Number(e.target.value) : "")
+            }
+          >
+            <option value="">نوبت (اختیاری)</option>
+            {completedAppointments.map((a) => (
+              <option key={a.id} value={a.id}>
+                نوبت #{a.id} · {a.staffNames || "بدون پرسنل"}
+              </option>
+            ))}
+          </DashboardSelect>
           <Button type="submit" isLoading={tipsMutate.isPending}>
             ثبت انعام
           </Button>
         </form>
-      </div>
+      </DashboardCard>
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-      {success ? <p className="text-sm text-primary">{success}</p> : null}
-    </div>
+      <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
+    </DashboardPage>
   );
 }
-

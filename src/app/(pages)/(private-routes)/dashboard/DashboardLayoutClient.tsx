@@ -12,15 +12,20 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
-import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
-import { BellIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, BellIcon } from "@phosphor-icons/react";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import SubscriptionLockBanner from "@/shared/components/composites/subscription-lock-banner/SubscriptionLockBanner";
+import {
+  OwnerBottomNav,
+  OwnerSubnav,
+  getOwnerNavGroup,
+} from "./_components";
 
 function Transferring() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center text-sm text-foreground-muted">
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-sm text-foreground-muted">
+      <div className="h-8 w-8 animate-pulse rounded-full bg-primary/30" />
       در حال انتقال…
     </div>
   );
@@ -57,7 +62,7 @@ function SalonSelectPanel({
               type="button"
               disabled={isSwitching}
               onClick={() => onSelect(m)}
-              className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right transition-colors disabled:opacity-50"
+              className="flex items-center gap-3 rounded-[20px] border border-border bg-surface p-4 text-right transition-colors hover:bg-surface-hover disabled:opacity-50"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-input text-[14px] font-bold text-foreground">
                 {m.name.charAt(0)}
@@ -248,57 +253,40 @@ export default function DashboardLayoutClient({
     return <Transferring />;
   }
 
-  const tabs = [
-    { href: RouteAddress.DASHBOARD.BASE, label: "تخته روزانه" },
-    { href: RouteAddress.DASHBOARD.ANALYTICS, label: "تحلیل" },
-    { href: RouteAddress.DASHBOARD.REPORTS, label: "گزارش‌ها" },
-    { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
-    { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
-    { href: RouteAddress.DASHBOARD.SCHEDULES, label: "برنامه پرسنل" },
-    { href: RouteAddress.DASHBOARD.FINANCE, label: "مالی" },
-    { href: RouteAddress.DASHBOARD.Z_REPORT, label: "Z-Report" },
-    { href: RouteAddress.DASHBOARD.PAYOUTS, label: "تسویه/کمیسیون" },
-    { href: RouteAddress.DASHBOARD.SALON_INFO, label: "اطلاعات سالن" },
-    { href: RouteAddress.HOME.BASE, label: "بازگشت به مشتری" },
-  ];
+  const activeGroup = getOwnerNavGroup(pathname);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="border-b border-border px-safe-area py-3">
-        <div className="flex items-center justify-between">
-          <div>
+    <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 px-safe-area py-3 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs text-foreground-muted">پنل سالن‌دار</p>
-            <p className="text-sm font-bold text-foreground">
+            <p className="truncate text-sm font-bold text-foreground">
               {salonName || `سالن #${salonId}`}
             </p>
           </div>
-          <Link
-            href={RouteAddress.DASHBOARD.NOTIFICATIONS}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
-            aria-label="اعلان‌ها"
-          >
-            <BellIcon size={18} className="text-foreground" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={RouteAddress.HOME.BASE}
+              className="flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-foreground-muted"
+            >
+              <ArrowLeftIcon size={14} />
+              اپ مشتری
+            </Link>
+            <Link
+              href={RouteAddress.DASHBOARD.NOTIFICATIONS}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
+              aria-label="اعلان‌ها"
+            >
+              <BellIcon size={18} className="text-foreground" />
+            </Link>
+          </div>
         </div>
-      </div>
-      <div className="flex gap-2 overflow-x-auto px-safe-area py-2">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap",
-              pathname === tab.href
-                ? "bg-primary text-primary-foreground"
-                : "bg-surface text-foreground-muted"
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </div>
+      </header>
+      <OwnerSubnav group={activeGroup} pathname={pathname} />
       {!entitlementLoading && !isEntitled ? <SubscriptionLockBanner /> : null}
-      <div className="w-full">{children}</div>
+      <div className="w-full flex-1">{children}</div>
+      <OwnerBottomNav pathname={pathname} />
     </div>
   );
 }

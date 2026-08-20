@@ -1,6 +1,5 @@
-import NotificationsView from "@/app/(pages)/(main-pages)/notifications/NotificationsView";
+import DashboardNotificationsView from "./DashboardNotificationsView";
 
 export default function DashboardNotificationsPage() {
-  return <NotificationsView title="اعلان‌های پنل سالن‌دار" />;
+  return <DashboardNotificationsView />;
 }
-

@@ -11,6 +11,7 @@ import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutat
 import { useMutateSalonMedia } from "@/services/domains/salons/hooks/useMutateSalonMedia";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
+import { DashboardPage, DashboardPageHeader } from "../_components";
 import SalonInfoJumpNav, {
   SALON_INFO_SECTIONS,
 } from "./components/SalonInfoJumpNav";
@@ -405,15 +406,13 @@ export default function SalonInfoView() {
   const showMissingContext = !salonPublicId;
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
+    <DashboardPage>
       <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="text-base font-bold text-foreground">اطلاعات سالن</h1>
-        <p className="mt-1 text-xs text-foreground-muted">
-          ویرایش اطلاعات پایه، تماس، رسانه و شعبه‌ها برای سالن فعال.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="اطلاعات سالن"
+        description="ویرایش اطلاعات پایه، تماس، رسانه و شعبه‌ها برای سالن فعال."
+      />
 
       {showMissingContext && (
         <SalonInfoEmptyState
@@ -507,6 +506,6 @@ export default function SalonInfoView() {
       )}
 
       <SalonInfoToast toast={toast} onDismiss={dismissToast} />
-    </div>
+    </DashboardPage>
   );
 }

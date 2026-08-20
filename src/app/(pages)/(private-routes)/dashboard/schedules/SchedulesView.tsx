@@ -1,8 +1,14 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/shared/components/primitives/drawer/Drawer";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks";
@@ -15,21 +21,52 @@ import {
   useQuerySpecialSchedules,
 } from "@/services/domains/special-schedules/hooks";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  DashboardCard,
+  DashboardDateField,
+  DashboardEmptyState,
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSelect,
+  DashboardToast,
+  type DashboardToastState,
+} from "../_components";
+import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
 const DAYS = [
+  { value: 6, label: "شنبه" },
   { value: 0, label: "یکشنبه" },
   { value: 1, label: "دوشنبه" },
   { value: 2, label: "سه‌شنبه" },
   { value: 3, label: "چهارشنبه" },
   { value: 4, label: "پنجشنبه" },
   { value: 5, label: "جمعه" },
-  { value: 6, label: "شنبه" },
 ];
+
+function staffLabel(member: {
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}) {
+  return (
+    member.fullName ||
+    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+    "پرسنل"
+  );
+}
+
+function formatShift(start?: string | null, end?: string | null) {
+  const s = start?.slice(0, 5) ?? "";
+  const e = end?.slice(0, 5) ?? "";
+  if (!s && !e) return "تعطیل";
+  return `${s} تا ${e}`;
+}
 
 export default function SchedulesView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [toast, setToast] = useState<DashboardToastState>(null);
+  const [workingOpen, setWorkingOpen] = useState(false);
+  const [specialOpen, setSpecialOpen] = useState(false);
 
   const offeringsQuery = useQueryCatalogOfferings(true);
   const offeringIds = (offeringsQuery.data?.data ?? []).map((x) => x.id);
@@ -46,6 +83,17 @@ export default function SchedulesView() {
   const specialQuery = useQuerySpecialSchedules(selectedStaffId);
   const workingMutations = useMutateWorkingSchedules();
   const specialMutations = useMutateSpecialSchedules();
+  const workingItems = workingQuery.data?.data ?? [];
+
+  const weekMap = useMemo(() => {
+    const map = new Map<number, typeof workingItems>();
+    for (const item of workingItems) {
+      const list = map.get(item.dayOfWeek) ?? [];
+      list.push(item);
+      map.set(item.dayOfWeek, list);
+    }
+    return map;
+  }, [workingItems]);
 
   const [workingForm, setWorkingForm] = useState({
     dayOfWeek: 6,
@@ -64,8 +112,6 @@ export default function SchedulesView() {
   const onCreateWorking = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedStaffId) return;
-    setError("");
-    setSuccess("");
     try {
       await workingMutations.create.mutateAsync({
         staffMemberId: selectedStaffId,
@@ -75,17 +121,19 @@ export default function SchedulesView() {
         isOffDay: workingForm.isOffDay,
         isManagedBySalon: true,
       });
-      setSuccess("برنامه هفتگی ذخیره شد.");
+      setToast({ type: "success", message: "برنامه هفتگی ذخیره شد." });
+      setWorkingOpen(false);
     } catch (err) {
-      setError(getApiErrorMessage(err, "ثبت برنامه هفتگی ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ثبت برنامه هفتگی ناموفق بود."),
+      });
     }
   };
 
   const onCreateSpecial = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedStaffId) return;
-    setError("");
-    setSuccess("");
     try {
       await specialMutations.create.mutateAsync({
         staffMemberId: selectedStaffId,
@@ -95,172 +143,230 @@ export default function SchedulesView() {
         endTime: specialForm.isOffDay ? null : specialForm.endTime || null,
         note: specialForm.note || null,
       });
-      setSuccess("برنامه خاص ثبت شد.");
+      setToast({ type: "success", message: "برنامه خاص ثبت شد." });
       setSpecialForm({ date: "", isOffDay: true, startTime: "", endTime: "", note: "" });
+      setSpecialOpen(false);
     } catch (err) {
-      setError(getApiErrorMessage(err, "ثبت برنامه خاص ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ثبت برنامه خاص ناموفق بود."),
+      });
     }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="mb-2 text-base font-bold text-foreground">برنامه کاری پرسنل</h1>
-        <p className="text-xs text-foreground-muted">
-          مدیریت برنامه هفتگی (`working-schedules`) و روزهای خاص (`special-schedules`).
-        </p>
-      </div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="برنامه پرسنل"
+        description="شیفت هفتگی و روزهای خاص هر پرسنل."
+      />
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <select
-          className="h-12 w-full rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+      <DashboardCard>
+        <DashboardSelect
           value={staffMemberId}
           onChange={(e) => setStaffMemberId(Number(e.target.value))}
         >
           <option value="">انتخاب پرسنل</option>
           {staff.map((member) => (
             <option key={member.id} value={member.id}>
-              {member.fullName || [member.firstName, member.lastName].filter(Boolean).join(" ")}
+              {staffLabel(member)}
             </option>
           ))}
-        </select>
-      </div>
+        </DashboardSelect>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">افزودن برنامه هفتگی</h2>
-        <form className="grid grid-cols-1 gap-2" onSubmit={onCreateWorking}>
-          <select
-            className="h-12 rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
-            value={workingForm.dayOfWeek}
-            onChange={(e) =>
-              setWorkingForm((prev) => ({ ...prev, dayOfWeek: Number(e.target.value) }))
-            }
-          >
-            {DAYS.map((day) => (
-              <option key={day.value} value={day.value}>
-                {day.label}
-              </option>
-            ))}
-          </select>
-          <label className="text-xs text-foreground-muted">
-            <input
-              type="checkbox"
-              className="me-2"
-              checked={workingForm.isOffDay}
-              onChange={(e) =>
-                setWorkingForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
-              }
+      {!selectedStaffId ? (
+        <DashboardEmptyState
+          title="پرسنل را انتخاب کنید"
+          description="برای دیدن هفته کاری، یک نفر از تیم را انتخاب کنید."
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-foreground">هفته کاری</h2>
+            <Button size="sm" onClick={() => setWorkingOpen(true)}>
+              افزودن شیفت
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {DAYS.map((day) => {
+              const shifts = weekMap.get(day.value) ?? [];
+              return (
+                <DashboardCard key={day.value} className="p-3">
+                  <p className="text-sm font-bold text-foreground">{day.label}</p>
+                  {shifts.length === 0 ? (
+                    <p className="mt-1 text-xs text-foreground-muted">شیفتی ثبت نشده</p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {shifts.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="text-xs text-foreground-muted">
+                            {item.isOffDay
+                              ? "تعطیل"
+                              : formatShift(item.startTime, item.endTime)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={dashboardQuietButtonClass}
+                            onClick={() => workingMutations.remove.mutate(item.id)}
+                          >
+                            حذف
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DashboardCard>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-foreground">روز خاص / مرخصی</h2>
+            <Button size="sm" onClick={() => setSpecialOpen(true)}>
+              افزودن
+            </Button>
+          </div>
+          {(specialQuery.data?.data ?? []).length === 0 ? (
+            <DashboardEmptyState
+              title="روز خاصی ثبت نشده"
+              description="مرخصی یا ساعت متفاوت یک روز مشخص را اینجا اضافه کنید."
             />
-            روز تعطیل
-          </label>
-          {!workingForm.isOffDay ? (
-            <>
-              <Input
-                type="time"
-                value={workingForm.startTime.slice(0, 5)}
-                onChange={(e) =>
-                  setWorkingForm((prev) => ({ ...prev, startTime: `${e.target.value}:00` }))
-                }
-              />
-              <Input
-                type="time"
-                value={workingForm.endTime.slice(0, 5)}
-                onChange={(e) =>
-                  setWorkingForm((prev) => ({ ...prev, endTime: `${e.target.value}:00` }))
-                }
-              />
-            </>
-          ) : null}
-          <Button type="submit" isLoading={workingMutations.create.isPending}>
-            ثبت برنامه هفتگی
-          </Button>
-        </form>
-
-        <div className="mt-3 space-y-2">
-          {(workingQuery.data?.data ?? []).map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
-              <span className="text-foreground-muted">
-                {DAYS.find((d) => d.value === item.dayOfWeek)?.label} |{" "}
-                {item.isOffDay ? "تعطیل" : `${item.startTime} - ${item.endTime}`}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => workingMutations.remove.mutate(item.id)}
-              >
-                حذف
-              </Button>
+          ) : (
+            <div className="space-y-2">
+              {(specialQuery.data?.data ?? []).map((item) => (
+                <DashboardCard key={item.id} className="flex items-center justify-between p-3">
+                  <span className="text-xs text-foreground-muted">
+                    {item.date} ·{" "}
+                    {item.isOffDay ? "تعطیل" : formatShift(item.startTime, item.endTime)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={dashboardQuietButtonClass}
+                    onClick={() => specialMutations.remove.mutate(item.id)}
+                  >
+                    حذف
+                  </Button>
+                </DashboardCard>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+        </>
+      )}
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">روز خاص / مرخصی</h2>
-        <form className="grid grid-cols-1 gap-2" onSubmit={onCreateSpecial}>
-          <Input
-            type="date"
-            value={specialForm.date}
-            onChange={(e) => setSpecialForm((prev) => ({ ...prev, date: e.target.value }))}
-          />
-          <label className="text-xs text-foreground-muted">
-            <input
-              type="checkbox"
-              className="me-2"
-              checked={specialForm.isOffDay}
+      <Drawer open={workingOpen} onOpenChange={setWorkingOpen}>
+        <DrawerContent className="border-border bg-background">
+          <DrawerHeader className="text-right">
+            <DrawerTitle>افزودن شیفت هفتگی</DrawerTitle>
+          </DrawerHeader>
+          <form className="grid grid-cols-1 gap-2 px-4 pb-6" onSubmit={onCreateWorking}>
+            <DashboardSelect
+              value={workingForm.dayOfWeek}
               onChange={(e) =>
-                setSpecialForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
+                setWorkingForm((prev) => ({ ...prev, dayOfWeek: Number(e.target.value) }))
               }
-            />
-            مرخصی کامل
-          </label>
-          {!specialForm.isOffDay ? (
-            <>
-              <Input
-                type="time"
-                value={specialForm.startTime}
+            >
+              {DAYS.map((day) => (
+                <option key={day.value} value={day.value}>
+                  {day.label}
+                </option>
+              ))}
+            </DashboardSelect>
+            <label className="text-xs text-foreground-muted">
+              <input
+                type="checkbox"
+                className="me-2 accent-primary"
+                checked={workingForm.isOffDay}
                 onChange={(e) =>
-                  setSpecialForm((prev) => ({ ...prev, startTime: e.target.value }))
+                  setWorkingForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
                 }
               />
-              <Input
-                type="time"
-                value={specialForm.endTime}
-                onChange={(e) => setSpecialForm((prev) => ({ ...prev, endTime: e.target.value }))}
+              روز تعطیل
+            </label>
+            {!workingForm.isOffDay ? (
+              <>
+                <Input
+                  type="time"
+                  value={workingForm.startTime.slice(0, 5)}
+                  onChange={(e) =>
+                    setWorkingForm((prev) => ({ ...prev, startTime: `${e.target.value}:00` }))
+                  }
+                />
+                <Input
+                  type="time"
+                  value={workingForm.endTime.slice(0, 5)}
+                  onChange={(e) =>
+                    setWorkingForm((prev) => ({ ...prev, endTime: `${e.target.value}:00` }))
+                  }
+                />
+              </>
+            ) : null}
+            <Button type="submit" isLoading={workingMutations.create.isPending}>
+              ثبت برنامه هفتگی
+            </Button>
+          </form>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={specialOpen} onOpenChange={setSpecialOpen}>
+        <DrawerContent className="border-border bg-background">
+          <DrawerHeader className="text-right">
+            <DrawerTitle>روز خاص</DrawerTitle>
+          </DrawerHeader>
+          <form className="grid grid-cols-1 gap-2 px-4 pb-6" onSubmit={onCreateSpecial}>
+            <DashboardDateField
+              name="special-date"
+              value={specialForm.date}
+              onChange={(date) => setSpecialForm((prev) => ({ ...prev, date }))}
+              label="تاریخ"
+            />
+            <label className="text-xs text-foreground-muted">
+              <input
+                type="checkbox"
+                className="me-2 accent-primary"
+                checked={specialForm.isOffDay}
+                onChange={(e) =>
+                  setSpecialForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
+                }
               />
-            </>
-          ) : null}
-          <Input
-            placeholder="یادداشت"
-            value={specialForm.note}
-            onChange={(e) => setSpecialForm((prev) => ({ ...prev, note: e.target.value }))}
-          />
-          <Button type="submit" isLoading={specialMutations.create.isPending}>
-            ثبت برنامه خاص
-          </Button>
-        </form>
+              مرخصی کامل
+            </label>
+            {!specialForm.isOffDay ? (
+              <>
+                <Input
+                  type="time"
+                  value={specialForm.startTime}
+                  onChange={(e) =>
+                    setSpecialForm((prev) => ({ ...prev, startTime: e.target.value }))
+                  }
+                />
+                <Input
+                  type="time"
+                  value={specialForm.endTime}
+                  onChange={(e) =>
+                    setSpecialForm((prev) => ({ ...prev, endTime: e.target.value }))
+                  }
+                />
+              </>
+            ) : null}
+            <Input
+              placeholder="یادداشت"
+              value={specialForm.note}
+              onChange={(e) => setSpecialForm((prev) => ({ ...prev, note: e.target.value }))}
+            />
+            <Button type="submit" isLoading={specialMutations.create.isPending}>
+              ثبت برنامه خاص
+            </Button>
+          </form>
+        </DrawerContent>
+      </Drawer>
 
-        <div className="mt-3 space-y-2">
-          {(specialQuery.data?.data ?? []).map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
-              <span className="text-foreground-muted">
-                {item.date} | {item.isOffDay ? "تعطیل" : `${item.startTime} - ${item.endTime}`}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => specialMutations.remove.mutate(item.id)}
-              >
-                حذف
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-      {success ? <p className="text-sm text-primary">{success}</p> : null}
-    </div>
+      <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
+    </DashboardPage>
   );
 }
-

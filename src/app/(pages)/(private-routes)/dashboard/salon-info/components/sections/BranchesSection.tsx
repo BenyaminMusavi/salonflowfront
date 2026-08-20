@@ -37,7 +37,7 @@ export default function BranchesSection({
   return (
     <section
       id="salon-branches"
-      className="scroll-mt-14 rounded-lg bg-surface-secondary p-3"
+      className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-foreground">شعبه‌ها و آدرس</h2>

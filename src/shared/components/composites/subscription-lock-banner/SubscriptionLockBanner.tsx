@@ -16,10 +16,10 @@ export default function SubscriptionLockBanner({
     <div
       className={
         className ??
-        "mx-auto mt-3 w-full max-w-[600px] px-safe-area"
+        "mx-auto mt-3 w-full max-w-[720px] px-safe-area"
       }
     >
-      <div className="rounded-lg border border-error/30 bg-error/10 p-3">
+      <div className="rounded-[20px] border border-error/30 bg-error/10 p-4">
         <div className="flex items-start gap-2">
           <LockSimpleIcon
             size={18}

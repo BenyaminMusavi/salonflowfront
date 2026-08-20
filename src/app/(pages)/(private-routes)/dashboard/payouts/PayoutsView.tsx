@@ -2,7 +2,6 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
-import { Input } from "@/shared/components/primitives/input/Input";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
@@ -11,22 +10,70 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useMutatePayouts, useQueryEarnings, useQueryPayoutsByStaff } from "@/services/domains/payouts/hooks";
 import { useMutateCommission, useQueryCommissionPlans } from "@/services/domains/commission/hooks";
 import { PaymentMethod } from "@/services/common/enums/domain-enums";
+import {
+  DashboardAdvanced,
+  DashboardCard,
+  DashboardDateField,
+  DashboardEmptyState,
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSelect,
+  DashboardStatusChip,
+  DashboardToast,
+  type DashboardToastState,
+} from "../_components";
+import { dashboardQuietButtonClass } from "../_components/buttonClasses";
+
+function staffLabel(member: {
+  id?: number;
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}) {
+  return (
+    member.fullName ||
+    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+    (member.id != null ? `پرسنل #${member.id}` : "پرسنل")
+  );
+}
+
+function earningStatus(status: number): { label: string; className: string } {
+  switch (status) {
+    case 2:
+      return { label: "تأیید شده", className: "bg-success-background text-success" };
+    case 3:
+      return { label: "پرداخت‌شده", className: "bg-primary/15 text-primary" };
+    default:
+      return { label: "در انتظار", className: "bg-warning-background text-warning" };
+  }
+}
+
+function payoutStatus(status?: number): { label: string; className: string } {
+  switch (status) {
+    case 2:
+      return { label: "تأیید شده", className: "bg-success-background text-success" };
+    case 3:
+      return { label: "پرداخت‌شده", className: "bg-primary/15 text-primary" };
+    default:
+      return { label: "پیش‌نویس", className: "bg-warning-background text-warning" };
+  }
+}
 
 export default function PayoutsView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [toast, setToast] = useState<DashboardToastState>(null);
 
   const earningsQuery = useQueryEarnings({ pageSize: 50 });
   const earnings = earningsQuery.data?.data?.items ?? [];
   const payoutsMutate = useMutatePayouts();
 
   const offerings = useQueryCatalogOfferings(true).data?.data ?? [];
-  const staff = useQueryStaffForOfferings(
-    salonPublicId || undefined,
-    offerings.map((o) => o.id),
-    { enabled: offerings.length > 0 }
-  ).data?.data ?? [];
+  const staff =
+    useQueryStaffForOfferings(
+      salonPublicId || undefined,
+      offerings.map((o) => o.id),
+      { enabled: offerings.length > 0 }
+    ).data?.data ?? [];
 
   const [staffMemberId, setStaffMemberId] = useState<number | "">("");
   const selectedStaffId = staffMemberId ? Number(staffMemberId) : undefined;
@@ -41,22 +88,17 @@ export default function PayoutsView() {
   const [planJson, setPlanJson] = useState(JSON.stringify({ name: "طرح جدید" }, null, 2));
 
   const staffNameById = useMemo(
-    () =>
-      new Map(
-        staff.map((s) => [
-          s.id,
-          s.fullName || [s.firstName, s.lastName].filter(Boolean).join(" "),
-        ])
-      ),
+    () => new Map(staff.map((s) => [s.id, staffLabel(s)])),
     [staff]
   );
 
   const onCreatePayout = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     if (!selectedStaffId || !periodStart || !periodEnd) {
-      setError("پرسنل و بازه زمانی برای ایجاد تسویه الزامی است.");
+      setToast({
+        type: "error",
+        message: "پرسنل و بازه زمانی برای ایجاد تسویه الزامی است.",
+      });
       return;
     }
     try {
@@ -65,123 +107,177 @@ export default function PayoutsView() {
         periodStart,
         periodEnd,
       });
-      setSuccess("درخواست تسویه ایجاد شد.");
+      setToast({ type: "success", message: "درخواست تسویه ایجاد شد." });
     } catch (err) {
-      setError(getApiErrorMessage(err, "ایجاد تسویه ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ایجاد تسویه ناموفق بود."),
+      });
     }
   };
 
   const onCreatePlan = async () => {
-    setError("");
-    setSuccess("");
     try {
       await commissionMutate.createPlan.mutateAsync(
         JSON.parse(planJson) as Record<string, unknown>
       );
-      setSuccess("پلن کمیسیون ایجاد شد.");
+      setToast({ type: "success", message: "پلن کمیسیون ایجاد شد." });
     } catch (err) {
-      setError(getApiErrorMessage(err, "ایجاد پلن کمیسیون ناموفق بود."));
+      setToast({
+        type: "error",
+        message: getApiErrorMessage(err, "ایجاد پلن کمیسیون ناموفق بود."),
+      });
     }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-8">
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h1 className="text-base font-bold text-foreground">تسویه و کمیسیون</h1>
-        <p className="text-xs text-foreground-muted">
-          فقط Owner ops پیاده‌سازی شده و بخش‌های Admin خارج از محدوده این SPA هستند.
-        </p>
-      </div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="تسویه"
+        description="درآمد پرسنل، درخواست تسویه و طرح کمیسیون."
+      />
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">Earnings</h2>
+      <DashboardCard>
+        <h2 className="mb-3 text-sm font-bold text-foreground">درآمدها</h2>
         <div className="space-y-2">
-          {earnings.map((e) => (
-            <div key={e.id} className="rounded-md border border-border p-2">
-              <p className="text-xs text-foreground-muted">
-                پرسنل #{e.staffMemberId} | ناخالص {formatToman(e.grossAmount)} | کمیسیون{" "}
-                {formatToman(e.commissionAmount)}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" onClick={() => payoutsMutate.approveEarning.mutate(e.id)}>
-                  تایید درآمد
-                </Button>
+          {earnings.map((e) => {
+            const chip = earningStatus(e.status);
+            return (
+              <div key={e.id} className="rounded-[12px] border border-border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    {staffNameById.get(e.staffMemberId) || `پرسنل #${e.staffMemberId}`}
+                  </p>
+                  <DashboardStatusChip label={chip.label} className={chip.className} />
+                </div>
+                <p className="mt-1 text-xs text-foreground-muted">
+                  ناخالص {formatToman(e.grossAmount)} · کمیسیون {formatToman(e.commissionAmount)}
+                </p>
+                {e.status === 1 ? (
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => payoutsMutate.approveEarning.mutate(e.id)}
+                    >
+                      تأیید درآمد
+                    </Button>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {earnings.length === 0 ? (
-            <p className="text-xs text-foreground-muted">درآمدی برای نمایش وجود ندارد.</p>
+            <p className="text-xs text-foreground-muted">درآمدی برای نمایش نیست.</p>
           ) : null}
         </div>
-      </div>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">ساخت/مدیریت Payout</h2>
+      <DashboardCard>
+        <h2 className="mb-3 text-sm font-bold text-foreground">ایجاد تسویه</h2>
         <form className="grid grid-cols-1 gap-2" onSubmit={onCreatePayout}>
-          <select
-            className="h-12 rounded-[2px] bg-foreground/5 px-3 text-sm text-foreground"
+          <DashboardSelect
             value={staffMemberId}
             onChange={(e) => setStaffMemberId(Number(e.target.value))}
           >
             <option value="">انتخاب پرسنل</option>
             {staff.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.fullName || [s.firstName, s.lastName].filter(Boolean).join(" ")}
+                {staffLabel(s)}
               </option>
             ))}
-          </select>
-          <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
-          <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+          </DashboardSelect>
+          <DashboardDateField
+            name="payout-start"
+            value={periodStart}
+            onChange={setPeriodStart}
+            label="از"
+          />
+          <DashboardDateField
+            name="payout-end"
+            value={periodEnd}
+            onChange={setPeriodEnd}
+            label="تا"
+          />
           <Button type="submit" isLoading={payoutsMutate.createPayout.isPending}>
             ایجاد تسویه
           </Button>
         </form>
 
         <div className="mt-3 space-y-2">
-          {payoutsByStaff.map((p) => (
-            <div key={p.id} className="rounded-md border border-border p-2">
-              <p className="text-xs text-foreground-muted">
-                تسویه #{p.id} | پرسنل {staffNameById.get(p.staffMemberId) || p.staffMemberId}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" onClick={() => payoutsMutate.approvePayout.mutate(p.id)}>
-                  تایید
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    payoutsMutate.markPaid.mutate({ id: p.id, method: PaymentMethod.Transfer })
-                  }
-                >
-                  Mark Paid
-                </Button>
+          {payoutsByStaff.map((p) => {
+            const chip = payoutStatus(p.status);
+            return (
+              <div key={p.id} className="rounded-[12px] border border-border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    تسویه #{p.id}
+                  </p>
+                  <DashboardStatusChip label={chip.label} className={chip.className} />
+                </div>
+                <p className="mt-1 text-xs text-foreground-muted">
+                  {staffNameById.get(p.staffMemberId) || p.staffMemberId}
+                  {p.totalAmount != null ? ` · ${formatToman(p.totalAmount)} تومان` : ""}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  {p.status === 1 || p.status == null ? (
+                    <Button
+                      size="sm"
+                      onClick={() => payoutsMutate.approvePayout.mutate(p.id)}
+                    >
+                      تأیید
+                    </Button>
+                  ) : null}
+                  {p.status === 2 ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={dashboardQuietButtonClass}
+                      onClick={() =>
+                        payoutsMutate.markPaid.mutate({
+                          id: p.id,
+                          method: PaymentMethod.Transfer,
+                        })
+                      }
+                    >
+                      علامت پرداخت‌شده
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+          {selectedStaffId && payoutsByStaff.length === 0 ? (
+            <DashboardEmptyState
+              title="تسویه‌ای برای این پرسنل نیست"
+              description="بازه را انتخاب کنید و درخواست جدید بسازید."
+            />
+          ) : null}
         </div>
-      </div>
+      </DashboardCard>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
-        <h2 className="mb-2 text-sm font-bold text-foreground">Commission Plans</h2>
+      <DashboardAdvanced title="طرح‌های کمیسیون">
         <textarea
-          className="min-h-28 w-full rounded-[2px] bg-foreground/5 p-2 text-xs text-foreground"
+          className="min-h-28 w-full rounded-[2px] border border-input-border bg-input p-2 text-xs text-foreground"
           value={planJson}
           onChange={(e) => setPlanJson(e.target.value)}
         />
         <div className="mt-2">
-          <Button size="sm" onClick={onCreatePlan} isLoading={commissionMutate.createPlan.isPending}>
+          <Button
+            size="sm"
+            onClick={onCreatePlan}
+            isLoading={commissionMutate.createPlan.isPending}
+          >
             ایجاد پلن
           </Button>
         </div>
         <div className="mt-3 space-y-2">
           {commissionPlans.map((plan) => (
-            <div key={plan.id} className="rounded-md border border-border p-2 text-xs">
+            <div key={plan.id} className="rounded-[12px] border border-border p-2 text-xs">
               <pre className="overflow-x-auto whitespace-pre-wrap text-foreground-muted">
                 {JSON.stringify(plan, null, 2)}
               </pre>
               <Button
-                className="mt-2"
+                className={`mt-2 ${dashboardQuietButtonClass}`}
                 size="sm"
                 variant="outline"
                 onClick={() => commissionMutate.deletePlan.mutate(plan.id)}
@@ -191,11 +287,9 @@ export default function PayoutsView() {
             </div>
           ))}
         </div>
-      </div>
+      </DashboardAdvanced>
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-      {success ? <p className="text-sm text-primary">{success}</p> : null}
-    </div>
+      <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
+    </DashboardPage>
   );
 }
-

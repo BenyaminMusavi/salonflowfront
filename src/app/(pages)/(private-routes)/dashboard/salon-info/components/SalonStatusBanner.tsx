@@ -11,7 +11,7 @@ export default function SalonStatusBanner({ show }: SalonStatusBannerProps) {
   if (!show) return null;
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+    <div className="rounded-[20px] border border-primary/30 bg-primary/10 p-4">
       <p className="text-sm font-semibold text-foreground">
         ثبت‌نام سالن ناقص است
       </p>

@@ -21,7 +21,7 @@ export default function SalonInfoJumpNav({
   return (
     <nav
       aria-label="بخش‌های اطلاعات سالن"
-      className="sticky top-0 z-10 -mx-safe-area border-b border-border bg-background/95 px-safe-area py-2 backdrop-blur"
+      className="sticky top-[3.25rem] z-10 -mx-safe-area border-b border-border bg-background/95 px-safe-area py-2 backdrop-blur"
     >
       <div className="flex gap-2 overflow-x-auto">
         {SALON_INFO_SECTIONS.map((section) => (
@@ -33,7 +33,7 @@ export default function SalonInfoJumpNav({
               "rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors",
               activeId === section.id
                 ? "bg-primary text-primary-foreground"
-                : "bg-surface-tertiary text-foreground-muted"
+                : "bg-surface text-foreground-muted"
             )}
           >
             {section.label}

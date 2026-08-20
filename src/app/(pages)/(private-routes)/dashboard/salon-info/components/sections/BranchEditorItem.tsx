@@ -50,7 +50,7 @@ export default function BranchEditorItem({
     onChange({ ...values, ...patch });
 
   return (
-    <div className="rounded-[16px] bg-surface-tertiary p-3">
+    <div className="rounded-[16px] border border-border bg-background-elevated p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-sm font-bold text-foreground">شعبه {index + 1}</p>
         {canRemove && (
