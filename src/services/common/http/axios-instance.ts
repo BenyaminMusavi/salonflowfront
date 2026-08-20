@@ -90,16 +90,11 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { salonId, branchId } = useSalonContextStore.getState();
-
-      // Bare axios — avoids interceptor recursion / circular import with authService
+      // Bare axios — avoids interceptor recursion / circular import with authService.
+      // Context lives on the server refresh-token session; body is refreshToken only.
       const refreshRes = await axios.post<TResponse<IAuth>>(
         API_ADDRESS.AUTH.REFRESH,
-        {
-          refreshToken,
-          salonId: salonId ?? null,
-          branchId: branchId ?? null,
-        },
+        { refreshToken },
         {
           baseURL: API_BASE_URL ?? process.env.NEXT_PUBLIC_API_DOMAIN,
           headers: { Accept: "application/json" },

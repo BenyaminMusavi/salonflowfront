@@ -21,11 +21,11 @@ import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-map
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 
 export default function SubscriptionsView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
 
   const { data: plansRes, isLoading: plansLoading, isError: plansError } =
     useQuerySubscriptionPlans();
@@ -85,8 +85,7 @@ export default function SubscriptionsView() {
 
   const requireAuth = () => {
     if (!isLoggedIn) {
-      setRedirectUrl(RouteAddress.SUBSCRIPTIONS.BASE);
-      router.push(RouteAddress.AUTH.LOGIN.BASE);
+      router.push(getLoginHref(RouteAddress.SUBSCRIPTIONS.BASE));
       return false;
     }
     return true;

@@ -12,8 +12,8 @@ import { useMutateVerifyOtp } from "@/services/domains/auth/hooks/useMutateVerif
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
-import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
+import { resolvePostLoginRedirect } from "@/shared/utils/authRedirect";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -51,7 +51,7 @@ const OtpFormProvider = ({ children }: IProps) => {
       });
       clearSalon();
       setToken(res.data, true);
-      router.push(RouteAddress.HOME.BASE);
+      router.push(resolvePostLoginRedirect());
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
     }

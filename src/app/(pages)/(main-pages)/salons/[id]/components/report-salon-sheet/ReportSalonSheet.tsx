@@ -7,7 +7,7 @@ import { useMutateCreateSalonReport } from "@/services/domains/salon-reports/hoo
 import { SalonReportReason } from "@/services/common/enums/domain-enums";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import { RouteAddress } from "@/shared/data/routeAddress";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 import { cn } from "@/shared/utils/className";
 
 const REASONS: { value: SalonReportReason; label: string }[] = [
@@ -32,7 +32,6 @@ export default function ReportSalonSheet({
 }: ReportSalonSheetProps) {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
   const { mutateAsync, isPending } = useMutateCreateSalonReport();
 
   const [reason, setReason] = useState<SalonReportReason>(
@@ -57,8 +56,7 @@ export default function ReportSalonSheet({
   const handleSubmit = async () => {
     setError("");
     if (!isLoggedIn) {
-      setRedirectUrl(window.location.pathname);
-      router.push(RouteAddress.AUTH.LOGIN.BASE);
+      router.push(getLoginHref(window.location.pathname));
       return;
     }
     try {

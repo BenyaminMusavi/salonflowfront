@@ -31,9 +31,10 @@
 | **Customer / Global** | بدون `salon_id` | مرور سالن، رزرو آنلاین، نوبت‌های من، پروفایل |
 | **Salon context** | `salon_id` (+ اختیاری `branch_id`) | پنل سالن: کاتالوگ، تخته روزانه، مالی، مشتریان |
 
-- نقش‌های tenant از membership فعال سالن می‌آیند؛ فقط وقتی `salon_id` در توکن باشد.
-- پس از Login/OTP، اگر کاربر دقیقاً **یک** membership فعال داشته باشد، سرور ممکن است خودکار کانتکست سالن را ست کند.
-- برای ورود صریح به پنل سالن (یا خروج از آن) از `POST /api/auth/switch-context` استفاده کنید و **توکن جدید** را جایگزین کنید.
+- نقش‌های tenant از membership فعال سالن می‌آیند؛ فقط وقتی `salon_id` در توکن باشد. توکن پنل نقش سراسری `Customer` را ندارد.
+- Login/OTP **همیشه** در حالت مشتری/سراسری است (بدون `salon_id`). ورود به داشبورد فقط با `switch-context`.
+- کانتکست سالن روی **نشست** (`RefreshToken`) ذخیره می‌شود، نه روی کاربر. تمدید توکن همان کانتکست را از سرور برمی‌گرداند.
+- برای ورود به پنل سالن (یا خروج از آن) از `POST /api/auth/switch-context` استفاده کنید و **هر دو** `accessToken` و `refreshToken` جدید را جایگزین کنید.
 - اکثر APIهای داشبورد بدون `salon_id` در JWT شکست می‌خورند (403/خطای کسب‌وکار).
 
 ### ۱.۲ گرفتن توکن JWT
@@ -103,10 +104,10 @@
 
 | Method + Path | Auth | Body | پاسخ |
 |---------------|------|------|------|
-| `POST /api/auth/refresh` | Anonymous | `refreshToken`, `salonId?`, `branchId?` | `AuthResponse` |
+| `POST /api/auth/refresh` | Anonymous | `refreshToken` | `AuthResponse` (هر دو توکن) |
 | `POST /api/auth/logout` | JWT | `refreshToken` | `200` خالی |
 
-در refresh، `salonId` / `branchId` را بفرستید تا کانتکست سالن بعد از تمدید حفظ شود؛ سرور membership را دوباره اعتبارسنجی می‌کند.
+Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نفرستید؛ کانتکست از نشست سرور خوانده می‌شود. اگر membership سالن دیگر فعال نباشد، refresh با **401** شکست می‌خورد (نه برگشت خاموش به حالت مشتری).
 
 #### کاربر جاری
 
@@ -142,18 +143,19 @@
 | فیلد | نوع | معنی |
 |------|-----|------|
 | `salonId` | number \| null | شناسهٔ عددی سالن؛ `null` = برگشت به حالت مشتری/سراسری |
-| `branchId` | number \| null | شعبهٔ فعال (اختیاری) |
+| `branchId` | number \| null | شعبهٔ فعال (اختیاری؛ باید متعلق به همان سالن و در محدودهٔ membership باشد) |
+| `refreshToken` | string | Refresh token **همین نشست** — الزامی؛ سرور آن را rotate می‌کند |
 
-**پاسخ:** `AuthResponse` جدید — `accessToken` قبلی را دور بیندازید.
+**پاسخ:** `AuthResponse` جدید با **هر دو** `accessToken` و `refreshToken`. هر دو را جایگزین کنید.
 
 ```json
-{ "salonId": 12, "branchId": 3 }
+{ "salonId": 12, "branchId": 3, "refreshToken": "abc..." }
 ```
 
 برای خروج از پنل سالن:
 
 ```json
-{ "salonId": null, "branchId": null }
+{ "salonId": null, "branchId": null, "refreshToken": "abc..." }
 ```
 
 ### ۱.۴ سیاست‌های Authorization (خلاصه)
@@ -311,6 +313,8 @@
 ```
 
 روزهای `isAvailable=false` را در UI خاکستری/غیرفعال کنید. از `servicePublicId` پاسخ خدمات شعبه به‌عنوان `serviceTypePublicId` استفاده کنید.
+
+قابلیت پرسنل از `StaffMemberServices` (انتساب به offering) می‌آید — نه از `pricing-rules`. بدون انتساب فعال، تاریخ/پرسنل/اسلات خالی برمی‌گردد حتی اگر قیمت پایه روی offering باشد.
 
 #### گام ۳ — پرسنل فعال در آن روز
 
@@ -561,7 +565,7 @@
 
 ## ۳. پنل سالن‌دار (Salon Dashboard)
 
-پیش‌نیاز همهٔ صفحات این بخش: JWT با **`salon_id`** (از طریق login خودکار یا `switch-context`).
+پیش‌نیاز همهٔ صفحات این بخش: JWT با **`salon_id`** (فقط از طریق `switch-context`؛ login دیگر کانتکست سالن نمی‌گذارد).
 
 **پیش‌نیاز اشتراک:** قبل از `POST /api/salons/save-basic-info` برای **ایجاد** سالن جدید، مالک باید اشتراک billable داشته باشد (`Trialing` / `Active` / `Grace`) و تعداد سالن‌هایش از `maxSalons` طرح کمتر باشد. ابتدا [۴. اشتراک پلتفرم](#۴-اشتراک-پلتفرم-platform-subscription) را ببینید (مثلاً `POST /api/subscriptions/trial`).
 
@@ -1312,7 +1316,7 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 ### ۵.۵ چک‌لیست سریع کلاینت
 
 1. همهٔ درخواست‌های محافظت‌شده: `Authorization: Bearer …`
-2. قبل از داشبورد: `switch-context` با `salonId` عددی → ذخیرهٔ توکن جدید
+2. قبل از داشبورد: `switch-context` با `salonId` عددی + `refreshToken` نشست → ذخیرهٔ **هر دو** توکن جدید
 3. قبل از رزرو آنلاین: نقش/کانتکست مشتری (بدون اتکا به `salon_id` پنل)
 4. موفقیت را از روی status بخوانید؛ `data` را فقط وقتی بدنه دارید
 5. برای پرداخت، همیشه `idempotencyKey` یکتا بفرستید

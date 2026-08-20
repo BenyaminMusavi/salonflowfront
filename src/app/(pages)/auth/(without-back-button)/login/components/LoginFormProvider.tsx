@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +9,9 @@ import { useMutateLoginWithPassword } from "@/services/domains/auth/hooks/useMut
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
-import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
 import { useFormError } from "@/shared/hooks/useFormError";
+import { resolvePostLoginRedirect } from "@/shared/utils/authRedirect";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -44,7 +44,8 @@ const LoginFormProvider = ({ children }: IProps) => {
       });
       clearSalon();
       setAccessToken(res.data, true);
-      router.push(RouteAddress.HOME.BASE);
+      // Login JWT is always customer/global; memberships hydrate via GET /api/auth/me.
+      router.push(resolvePostLoginRedirect());
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
     }

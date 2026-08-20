@@ -88,16 +88,17 @@ export default function BusinessSwitcher() {
 
       <BottomSheet open={open} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-[16px] bg-background-secondary py-4">
+          <div className="flex items-center gap-3 rounded-[16px] bg-background-secondary px-4 py-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-tertiary text-[16px] font-bold text-foreground">
               <UserIcon size={20} />
             </div>
             <div className="flex-1">
+              <p className="text-[11px] text-foreground-muted">حساب فعلی</p>
               <p className="text-[14px] font-bold text-foreground">{fullName}</p>
-              <p className="text-[12px] text-foreground-muted">
+              <p className="text-[12px] text-foreground-muted" dir="ltr">
                 {data?.data?.phone}
               </p>
-              <p className="text-[11px] text-foreground-muted mt-0.5">
+              <p className="mt-0.5 text-[11px] text-foreground-muted">
                 {salonId != null
                   ? `کانتکست سالن: ${activeMembership?.name ?? salonName ?? salonId}`
                   : "کانتکست مشتری"}
@@ -107,7 +108,7 @@ export default function BusinessSwitcher() {
 
           <div className="flex flex-col gap-2">
             <p className="text-[13px] font-semibold text-foreground-muted">
-              کسب و کارها
+              تعویض کانتکست
             </p>
 
             <button
@@ -136,36 +137,43 @@ export default function BusinessSwitcher() {
               )}
             </button>
 
-            {memberships.map((m) => (
-              <button
-                key={m.salonId}
-                type="button"
-                disabled={isSwitching}
-                onClick={() => handleSwitchSalon(m)}
-                className={`flex items-center gap-3 rounded-[16px] p-4 text-right transition-colors disabled:opacity-50 ${
-                  m.salonId === salonId
-                    ? "bg-primary/10 ring-1 ring-primary"
-                    : "bg-background-secondary"
-                }`}
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary text-[14px] font-bold text-foreground">
-                  {m.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <p className="text-[14px] font-bold text-foreground">
-                    {m.name}
-                  </p>
-                  {m.roleName ? (
-                    <p className="text-[12px] text-foreground-muted">
-                      {m.roleName}
+            {memberships.length === 0 ? (
+              <p className="px-1 text-[12px] text-foreground-muted">
+                هنوز کسب‌وکاری ندارید. با «افزودن کسب و کار» سالن بسازید یا اگر
+                عضویت دارید کمی صبر کنید تا لیست بارگذاری شود.
+              </p>
+            ) : (
+              memberships.map((m) => (
+                <button
+                  key={m.salonId}
+                  type="button"
+                  disabled={isSwitching}
+                  onClick={() => handleSwitchSalon(m)}
+                  className={`flex items-center gap-3 rounded-[16px] p-4 text-right transition-colors disabled:opacity-50 ${
+                    m.salonId === salonId
+                      ? "bg-primary/10 ring-1 ring-primary"
+                      : "bg-background-secondary"
+                  }`}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary text-[14px] font-bold text-foreground">
+                    {m.name.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[14px] font-bold text-foreground">
+                      {m.name}
                     </p>
-                  ) : null}
-                </div>
-                {m.salonId === salonId && (
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
+                    {m.roleName ? (
+                      <p className="text-[12px] text-foreground-muted">
+                        {m.roleName}
+                      </p>
+                    ) : null}
+                  </div>
+                  {m.salonId === salonId && (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </button>
+              ))
+            )}
 
             <button
               type="button"

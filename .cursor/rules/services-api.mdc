@@ -9,9 +9,10 @@ alwaysApply: false
 - Singleton domain services in `src/services/domains/<domain>/`; React Query hooks in `hooks/`.
 - Paths only via `API_ADDRESS` in `src/services/common/apiAddress.ts`.
 - Success with body: unwrap `TResponse<T>.data`. Success 204 / empty 200: no `data` expected.
-- Auth header: Bearer access token. On 401 with a prior token, refresh via bare axios (not `axiosInstance`) then retry; pass `salonId`/`branchId` from `useSalonContextStore` on refresh.
+- Auth header: Bearer access token. On 401 with a prior token, refresh via bare axios (not `axiosInstance`) then retry; body is `{ refreshToken }` only (salon context lives on the server session).
 - `GET /api/auth/me` returns profile plus `memberships` (`salonId`, `salonPublicId`, `salonName`, `roleId`, `roleName`, `branchId`). Client syncs them into `useSalonContextStore` via `setMemberships` (`useSyncMembershipsFromAuthMe`); do not set active `salonId` from `/me` alone.
-- `switch-context` replaces the access token; `salonId: null` exits to customer/global mode. Dashboard requires a salon JWT via `switch-context` before owner APIs.
+- `POST /api/auth/switch-context` body: `{ salonId, branchId, refreshToken }`. Replace **both** tokens on success; `salonId: null` exits to customer/global. Clear React Query cache after switch. Dashboard requires a salon JWT via `switch-context` before owner APIs.
+- Home header: guests see «ورود»; `BusinessSwitcher` only when logged in.
 - ID mapping: public browse Guids ≠ long IDs for create/favorites/finance. Booking create body is `{ salonId, branchId?, startTime, notes?, services: [{ offeringId, staffId }] }`.
 - Favorites CRUD uses numeric `salonId` (`POST/DELETE /api/favorites/{salonId}`); resolve via `resolveNumericSalonId` from detail when present.
 - Online booking browse: branch services / available-dates / staff-availability / calculate-price / `GET /api/salons/available-slots`. Create needs long `offeringId` + `staffId` — enrich via salon-offerings + staff-for-offerings (`booking-mappers.ts`). Exit salon JWT context before create.

@@ -24,6 +24,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { GenderType } from "@/services/common/enums/domain-enums";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 
 const STEPS = [
   { id: 1, label: "اطلاعات" },
@@ -102,7 +103,6 @@ const cardClass = "flex flex-col gap-2 rounded-[20px] bg-surface p-4";
 export default function OnboardingView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
 
   const {
     canCreateSalon,
@@ -123,8 +123,7 @@ export default function OnboardingView() {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      setRedirectUrl(RouteAddress.ONBOARDING.BASE);
-      router.replace(RouteAddress.AUTH.LOGIN.BASE);
+      router.replace(getLoginHref(RouteAddress.ONBOARDING.BASE));
       return;
     }
     if (!entitlementFetched || entitlementLoading) return;
@@ -139,7 +138,6 @@ export default function OnboardingView() {
     canCreateSalon,
     hasDraft,
     router,
-    setRedirectUrl,
   ]);
 
   const step = draft.step;

@@ -25,6 +25,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 import BookProgressHeader from "./components/BookProgressHeader";
 import BookStickyCta from "./components/BookStickyCta";
 import BookBranchStep from "./components/BookBranchStep";
@@ -48,7 +49,6 @@ export default function BookView() {
   const router = useRouter();
 
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
   const activeSalonContextId = useSalonContextStore((s) => s.salonId);
   const { mutateAsync: switchContext } = useMutateSwitchContext();
   const { mutateAsync: createBooking, isPending: isCreating } =
@@ -412,8 +412,7 @@ export default function BookView() {
 
     if (!isLoggedIn) {
       persistDraftNow();
-      setRedirectUrl(RouteAddress.SALONS.BOOK(salonPublicId!));
-      router.push(RouteAddress.AUTH.LOGIN.BASE);
+      router.push(getLoginHref(RouteAddress.SALONS.BOOK(salonPublicId!)));
       return;
     }
 

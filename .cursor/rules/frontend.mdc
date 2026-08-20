@@ -7,6 +7,8 @@ alwaysApply: false
 # Frontend UI
 
 - Customer routes live under `src/app/(pages)/(main-pages)/`; owner routes live under `(private-routes)/` with `onboarding` and `dashboard`.
+- Login/OTP always lands customer/global (salon store cleared). Post-login destination: `resolvePostLoginRedirect()` (`redirectUrl` then `?callback=` / session). Use `getLoginHref(returnPath)` for auth CTAs.
+- Dashboard without salon JWT: preferred or single membership → auto `switch-context`; multiple → in-layout «انتخاب سالن». Memberships from `GET /api/auth/me` via `AuthMeMembershipsSyncProvider`.
 - Owner dashboard phase-8 surfaces: `/dashboard/catalog`, `/dashboard/staff-services`, `/dashboard/schedules` for catalog, staff assignment, and schedules.
 - Owner dashboard salon profile edit: `/dashboard/salon-info` («اطلاعات سالن»); `/onboarding` remains create/resume-draft only.
 - Owner dashboard phase-9 surfaces: `/dashboard/finance` and `/dashboard/z-report`; customer wallet page `/wallet` must render real balance/transactions.

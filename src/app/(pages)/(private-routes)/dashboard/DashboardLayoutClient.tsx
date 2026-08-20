@@ -1,21 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
+import {
+  useSalonContextStore,
+  ISalonMembership,
+} from "@/services/salon-context-store/useSalonContextStore";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
 import { cn } from "@/shared/utils/className";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 import { BellIcon } from "@phosphor-icons/react";
 
 function Transferring() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center text-sm text-foreground-muted">
       در حال انتقال…
+    </div>
+  );
+}
+
+function SalonSelectPanel({
+  memberships,
+  isSwitching,
+  onSelect,
+  onBackHome,
+}: {
+  memberships: ISalonMembership[];
+  isSwitching: boolean;
+  onSelect: (m: ISalonMembership) => void;
+  onBackHome: () => void;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col bg-background px-safe-area py-8">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+        <div>
+          <p className="text-xs text-foreground-muted">پنل سالن‌دار</p>
+          <h1 className="mt-1 text-lg font-bold text-foreground">
+            انتخاب سالن
+          </h1>
+          <p className="mt-2 text-sm text-foreground-muted">
+            برای ورود به داشبورد، سالن مورد نظر را انتخاب کنید.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {memberships.map((m) => (
+            <button
+              key={m.salonId}
+              type="button"
+              disabled={isSwitching}
+              onClick={() => onSelect(m)}
+              className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right transition-colors disabled:opacity-50"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-input text-[14px] font-bold text-foreground">
+                {m.name.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-foreground">{m.name}</p>
+                {m.roleName ? (
+                  <p className="text-[12px] text-foreground-muted">{m.roleName}</p>
+                ) : null}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          disabled={isSwitching}
+          onClick={onBackHome}
+          className="text-sm font-medium text-foreground-muted disabled:opacity-50"
+        >
+          بازگشت به اپ مشتری
+        </button>
+      </div>
     </div>
   );
 }
@@ -31,7 +94,6 @@ export default function DashboardLayoutClient({
   // Start false so SSR never touches zustand persist (undefined during prerender).
   const [tokenReady, setTokenReady] = useState(false);
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
 
   const hasHydrated = useSalonContextStore((s) => s._hasHydrated);
   const salonId = useSalonContextStore((s) => s.salonId);
@@ -48,6 +110,7 @@ export default function DashboardLayoutClient({
   const preferredCaptured = useRef(false);
   /** Salon id from first hydrated snapshot; used if context was cleared then /dashboard is reopened. */
   const preferredSalonIdRef = useRef<number | null>(null);
+  const [needsSalonPick, setNeedsSalonPick] = useState(false);
 
   useEffect(() => {
     const persist = useTokenStore.persist;
@@ -68,47 +131,71 @@ export default function DashboardLayoutClient({
     preferredSalonIdRef.current = salonId;
   }, [hasHydrated, salonId]);
 
-  useEffect(() => {
-    if (!hasHydrated || !tokenReady) return;
-
-    if (!isLoggedIn) {
-      setRedirectUrl(RouteAddress.DASHBOARD.BASE);
-      router.replace(RouteAddress.AUTH.LOGIN.BASE);
-      return;
-    }
-
-    if (!isSuccess && !isError) return;
-
-    if (salonId != null) return;
-
+  const membershipList = useMemo(() => {
     const fromMe = mapAuthMeMembershipsToSalon(data?.data?.memberships);
-    const list = fromMe.length > 0 ? fromMe : memberships;
+    return fromMe.length > 0 ? fromMe : memberships;
+  }, [data, memberships]);
 
-    if (list.length === 0) {
-      router.replace(RouteAddress.HOME.BASE);
-      return;
-    }
-
-    if (autoSwitchStarted.current || isSwitching) return;
-    autoSwitchStarted.current = true;
-
-    const preferredId = preferredSalonIdRef.current;
-    const target =
-      (preferredId != null
-        ? list.find((m) => m.salonId === preferredId)
-        : undefined) ?? list[0];
-
-    void switchContext({
+  const applySalonContext = async (target: ISalonMembership) => {
+    await switchContext({
       salonId: target.salonId,
       branchId: target.branchId ?? null,
       salonName: target.name,
       salonPublicId: target.salonPublicId,
       roleId: target.roleId,
       roleName: target.roleName,
-    }).catch(() => {
-      autoSwitchStarted.current = false;
-      router.replace(RouteAddress.HOME.BASE);
     });
+    setNeedsSalonPick(false);
+  };
+
+  useEffect(() => {
+    if (!hasHydrated || !tokenReady) return;
+
+    if (!isLoggedIn) {
+      router.replace(getLoginHref(RouteAddress.DASHBOARD.BASE));
+      return;
+    }
+
+    if (!isSuccess && !isError) return;
+
+    if (salonId != null) {
+      setNeedsSalonPick(false);
+      return;
+    }
+
+    if (membershipList.length === 0) {
+      setNeedsSalonPick(false);
+      router.replace(RouteAddress.HOME.BASE);
+      return;
+    }
+
+    const preferredId = preferredSalonIdRef.current;
+    const preferred =
+      preferredId != null
+        ? membershipList.find((m) => m.salonId === preferredId)
+        : undefined;
+
+    // Preferred prior context or single membership → auto switch-context.
+    // Multiple memberships with no preferred → force explicit selection.
+    if (!preferred && membershipList.length > 1) {
+      setNeedsSalonPick(true);
+      return;
+    }
+
+    if (autoSwitchStarted.current || isSwitching) return;
+    autoSwitchStarted.current = true;
+
+    const target = preferred ?? membershipList[0];
+
+    void applySalonContext(target).catch(() => {
+      autoSwitchStarted.current = false;
+      if (membershipList.length > 1) {
+        setNeedsSalonPick(true);
+      } else {
+        router.replace(RouteAddress.HOME.BASE);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- switch via applySalonContext; avoid re-run loops
   }, [
     hasHydrated,
     tokenReady,
@@ -116,15 +203,34 @@ export default function DashboardLayoutClient({
     isSuccess,
     isError,
     salonId,
-    memberships,
-    data,
+    membershipList,
     isSwitching,
-    switchContext,
     router,
-    setRedirectUrl,
   ]);
 
   const meSettled = isSuccess || isError;
+
+  if (
+    hasHydrated &&
+    tokenReady &&
+    isLoggedIn &&
+    meSettled &&
+    salonId == null &&
+    needsSalonPick
+  ) {
+    return (
+      <SalonSelectPanel
+        memberships={membershipList}
+        isSwitching={isSwitching}
+        onSelect={(m) => {
+          void applySalonContext(m).catch(() => {
+            /* keep picker open */
+          });
+        }}
+        onBackHome={() => router.replace(RouteAddress.HOME.BASE)}
+      />
+    );
+  }
 
   const readyToRender =
     hasHydrated &&
@@ -162,7 +268,7 @@ export default function DashboardLayoutClient({
           </div>
           <Link
             href={RouteAddress.DASHBOARD.NOTIFICATIONS}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-tertiary"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
             aria-label="اعلان‌ها"
           >
             <BellIcon size={18} className="text-foreground" />
@@ -178,7 +284,7 @@ export default function DashboardLayoutClient({
               "rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap",
               pathname === tab.href
                 ? "bg-primary text-primary-foreground"
-                : "bg-surface-tertiary text-foreground-muted"
+                : "bg-surface text-foreground-muted"
             )}
           >
             {tab.label}

@@ -55,8 +55,6 @@ export interface ISetPasswordWithOtpRequest {
 
 export interface IRefreshRequest {
   refreshToken: string;
-  salonId?: number | null;
-  branchId?: number | null;
 }
 
 export interface ILogoutRequest {
@@ -66,6 +64,7 @@ export interface ILogoutRequest {
 export interface ISwitchContextRequest {
   salonId: number | null;
   branchId: number | null;
+  refreshToken: string;
 }
 
 export type TAuthEntity = TResponse<IAuth>;

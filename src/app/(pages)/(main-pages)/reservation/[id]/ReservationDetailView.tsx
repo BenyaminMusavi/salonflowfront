@@ -18,6 +18,7 @@ import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-map
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 import AppointmentReviewSection from "./components/AppointmentReviewSection";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
@@ -26,7 +27,6 @@ export default function ReservationDetailView() {
   const appointmentPublicId = params?.id;
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
 
   const { data, isLoading, isError } = useQueryMyAppointmentById(
     appointmentPublicId
@@ -49,12 +49,13 @@ export default function ReservationDetailView() {
         <button
           type="button"
           onClick={() => {
-            if (appointmentPublicId) {
-              setRedirectUrl(
-                RouteAddress.RESERVATION.DETAILS(appointmentPublicId)
-              );
-            }
-            router.push(RouteAddress.AUTH.LOGIN.BASE);
+            router.push(
+              getLoginHref(
+                appointmentPublicId
+                  ? RouteAddress.RESERVATION.DETAILS(appointmentPublicId)
+                  : RouteAddress.RESERVATION.BASE
+              )
+            );
           }}
           className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
         >

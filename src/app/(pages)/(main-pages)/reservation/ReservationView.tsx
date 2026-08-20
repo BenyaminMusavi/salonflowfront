@@ -11,11 +11,11 @@ import {
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 
 export default function ReservationView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const setRedirectUrl = useTokenStore((s) => s.setRedirectUrl);
   const { data, isLoading, isError, refetch, isFetching } =
     useQueryMyAppointments();
 
@@ -31,8 +31,7 @@ export default function ReservationView() {
         <button
           type="button"
           onClick={() => {
-            setRedirectUrl(RouteAddress.RESERVATION.BASE);
-            router.push(RouteAddress.AUTH.LOGIN.BASE);
+            router.push(getLoginHref(RouteAddress.RESERVATION.BASE));
           }}
           className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
         >
