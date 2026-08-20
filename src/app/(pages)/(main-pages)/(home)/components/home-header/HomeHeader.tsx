@@ -20,7 +20,7 @@ function HomeHeader() {
     return (
       <Header>
         <div className="flex items-center gap-x-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-foreground">
             <UserIcon size={24} />
           </div>
           <div className="flex flex-col gap-y-1">
@@ -43,7 +43,7 @@ function HomeHeader() {
   return (
     <Header>
       <div className="flex items-center gap-x-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-white">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-foreground">
           <UserIcon size={24} />
         </div>
         <div className="flex flex-col gap-y-1">
@@ -56,7 +56,7 @@ function HomeHeader() {
       <div className="flex gap-x-3">
         <Link
           href={RouteAddress.NOTIFICATIONS.BASE}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/10 text-white"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/10 text-foreground"
           aria-label="اعلان‌ها"
         >
           <BellIcon size={24} />

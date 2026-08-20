@@ -1,6 +1,6 @@
 import {cva, VariantProps} from 'class-variance-authority';
 
-export const iconCurrencyVariants = cva('text-black', {
+export const iconCurrencyVariants = cva('text-foreground-inverse', {
   variants: {
     weight: {
       bold: 'font-bold',

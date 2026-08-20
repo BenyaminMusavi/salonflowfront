@@ -26,7 +26,7 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
         className="absolute inset-0 h-full w-full object-cover"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-overlay/70 via-overlay/30 to-transparent" />
 
       <FavoriteHeartButton
         isFavorite={isFavorite}
@@ -34,15 +34,15 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
         pending={isPending}
         onToggle={toggle}
         size={18}
-        className="absolute right-3 top-3 z-10 h-9 w-9 bg-black/60 backdrop-blur-sm"
+        className="absolute right-3 top-3 z-10 h-9 w-9 bg-overlay/60 backdrop-blur-sm"
       />
 
       <div className="relative z-10 flex h-full w-3/5 flex-col justify-end gap-2 p-5">
-        <span className="text-[11px] text-white/70">
+        <span className="text-[11px] text-on-media/70">
           {slide.genderType || slide.services || "سالن"}
         </span>
 
-        <h3 className="text-[18px] font-bold leading-tight text-white">
+        <h3 className="text-[18px] font-bold leading-tight text-on-media">
           {slide.name}
         </h3>
 
@@ -63,9 +63,9 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">
-        <StarIcon size={14} className="text-yellow-400" weight="fill" />
-        <span className="text-[12px] font-semibold text-white">
+      <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-overlay/60 px-3 py-1.5 backdrop-blur-sm">
+        <StarIcon size={14} className="text-rating" weight="fill" />
+        <span className="text-[12px] font-semibold text-on-media">
           {(slide.rating ?? 0).toFixed(1)}
         </span>
       </div>

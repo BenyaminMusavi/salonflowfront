@@ -78,7 +78,7 @@ export function SelectReactHookForm<TFieldValues extends FieldValues>({
       </Select>
 
       {error && (
-        <p className="ms-2 text-xs font-medium text-red-500">{error.message}</p>
+        <p className="ms-2 text-xs font-medium text-error">{error.message}</p>
       )}
     </div>
   );

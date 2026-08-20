@@ -203,9 +203,9 @@ const SelectItem = React.forwardRef<
       >
         {itemContent}
         {isSelected ? (
-          <span className="w-5 h-5 bg-white border-[6px] border-success rounded-full" />
+          <span className="w-5 h-5 bg-surface-white border-[6px] border-success rounded-full" />
         ) : (
-          <span className="w-5 h-5 bg-white border-2 border-border rounded-full" />
+          <span className="w-5 h-5 bg-surface-white border-2 border-border rounded-full" />
         )}
       </button>
     );

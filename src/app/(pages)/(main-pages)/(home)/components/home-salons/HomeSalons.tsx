@@ -53,7 +53,7 @@ function HomeSalons() {
 
   return (
     <div className="flex flex-col gap-y-3 px-safe-area">
-      <span className="text-[24px] font-bold text-white">آرایشگرتو پیدا کن</span>
+      <span className="text-[24px] font-bold text-foreground">آرایشگرتو پیدا کن</span>
       <div>
         {isLoading && (
           <div className="flex h-[280px] items-center justify-center rounded-[32px] bg-surface text-sm text-foreground-muted">

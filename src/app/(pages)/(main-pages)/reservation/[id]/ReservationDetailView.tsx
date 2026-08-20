@@ -238,7 +238,7 @@ export default function ReservationDetailView() {
               type="button"
               disabled={isCancelling}
               onClick={handleCancel}
-              className="flex-1 rounded-full bg-error py-3 text-sm font-bold text-white disabled:opacity-40"
+              className="flex-1 rounded-full bg-error py-3 text-sm font-bold text-content-white disabled:opacity-40"
             >
               {isCancelling ? "در حال لغو…" : "تأیید لغو"}
             </button>

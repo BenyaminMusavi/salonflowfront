@@ -37,7 +37,7 @@ function FavoriteSalonCard({ salon }: { salon: IFavoriteSalon }) {
           className="object-cover"
           sizes="(max-width:768px) 100vw, 600px"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-overlay/75 via-overlay/15 to-transparent" />
 
         <FavoriteHeartButton
           isFavorite={isFavorite}
@@ -45,12 +45,12 @@ function FavoriteSalonCard({ salon }: { salon: IFavoriteSalon }) {
           pending={isPending}
           onToggle={toggle}
           size={18}
-          className="absolute right-3 top-3 z-10 h-9 w-9 bg-black/50 backdrop-blur-sm"
+          className="absolute right-3 top-3 z-10 h-9 w-9 bg-overlay/50 backdrop-blur-sm"
         />
 
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur-sm">
-          <StarIcon size={12} weight="fill" className="text-yellow-400" />
-          <span className="text-[11px] font-semibold text-white">
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-overlay/60 px-2.5 py-1 backdrop-blur-sm">
+          <StarIcon size={12} weight="fill" className="text-rating" />
+          <span className="text-[11px] font-semibold text-on-media">
             {(salon.averageRating ?? 0).toFixed(1)}
           </span>
         </div>

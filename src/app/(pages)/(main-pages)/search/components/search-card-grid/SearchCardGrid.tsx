@@ -30,7 +30,7 @@ function SearchSalonCard({ salon }: { salon: ISalonCard }) {
         sizes="(max-width:768px) 50vw, 25vw"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-overlay/80 via-overlay/20 to-transparent" />
 
       <FavoriteHeartButton
         isFavorite={isFavorite}
@@ -38,18 +38,18 @@ function SearchSalonCard({ salon }: { salon: ISalonCard }) {
         pending={isPending}
         onToggle={toggle}
         size={16}
-        className="absolute right-2 top-2 z-10 h-8 w-8 bg-black/60 backdrop-blur-sm"
+        className="absolute right-2 top-2 z-10 h-8 w-8 bg-overlay/60 backdrop-blur-sm"
       />
 
-      <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur-sm">
-        <StarIcon size={12} weight="fill" className="text-yellow-400" />
-        <span className="text-[11px] font-semibold text-white">
+      <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-overlay/60 px-2.5 py-1 backdrop-blur-sm">
+        <StarIcon size={12} weight="fill" className="text-rating" />
+        <span className="text-[11px] font-semibold text-on-media">
           {(salon.rating ?? 0).toFixed(1)}
         </span>
       </div>
 
       <div className="absolute inset-x-4 bottom-4 z-10 flex items-center justify-between gap-2">
-        <h4 className="truncate text-[14px] font-bold text-white">
+        <h4 className="truncate text-[14px] font-bold text-on-media">
           {salon.name}
         </h4>
 

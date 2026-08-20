@@ -20,6 +20,6 @@ alwaysApply: false
 - Owner dashboard chrome: sticky header (salon name, back to customer app, notifications) + 4-item owner bottom nav (امروز / بینش / عملیات / مالی) with in-group subtabs. Customer `BottomNavigation` stays customer-only. Dashboard shell max width is `720px`; onboarding stays `600px`.
 - Shared owner UI lives in `dashboard/_components/` (`DashboardPage`, `DashboardCard`, `DashboardSelect`, `DashboardDateField`, empty/skeleton/toast). Do not use the broken shared `Select.tsx` in dashboard.
 - Icons: `@phosphor-icons/react` or `lucide-react` — never `@radix-ui/react-icons` (not installed).
-- Use real theme tokens from `globals.css`: `bg-surface` for cards; `bg-input` / `border-input-border` / `text-foreground` for fields; `text-foreground-muted` for secondary text; primary green for accents. Avoid ghost tokens (`bg-surface-tertiary`, `text-content-*`) — they are not defined.
+- Use theme tokens from `globals.css`: prefer `bg-surface`, `bg-input` / `border-input-border` / `text-foreground` / `text-foreground-muted` for new UI. Legacy aliases (`surface-tertiary`, `content-primary`, `border-primary`, …) are defined in `@theme` and may stay in existing primitives. Photo overlays use `text-on-media` / `bg-overlay`. Do not hardcode `bg-black`, `text-white`, or hex colors in classNames.
 - Money = Toman; dates = Jalali in UI, `yyyy-MM-dd` / ISO toward the API.
 - Do not ship mock identity, fake businesses, or crypto-style wallet placeholders when wiring real APIs.

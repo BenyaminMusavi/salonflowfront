@@ -141,7 +141,7 @@ export default function ReportSalonSheet({
               type="button"
               disabled={isPending}
               onClick={handleSubmit}
-              className="rounded-full bg-error py-3 text-sm font-bold text-white disabled:opacity-40"
+              className="rounded-full bg-error py-3 text-sm font-bold text-content-white disabled:opacity-40"
             >
               {isPending ? "در حال ارسال…" : "ارسال گزارش"}
             </button>

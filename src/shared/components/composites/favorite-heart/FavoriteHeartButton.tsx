@@ -58,13 +58,13 @@ export default function FavoriteHeartButton({
           weight={isFavorite ? "fill" : "regular"}
           size={size}
           className={cn(
-            isFavorite ? "text-error" : "text-white",
+            isFavorite ? "text-error" : "text-on-media",
             iconClassName
           )}
         />
       </button>
       {error ? (
-        <span className="absolute top-full left-1/2 z-20 mt-1 w-max max-w-[180px] -translate-x-1/2 rounded-md bg-error px-2 py-1 text-[10px] text-white">
+        <span className="absolute top-full left-1/2 z-20 mt-1 w-max max-w-[180px] -translate-x-1/2 rounded-md bg-error px-2 py-1 text-[10px] text-content-white">
           {error}
         </span>
       ) : null}

@@ -36,15 +36,8 @@ function BrandedFallback({ name }: { name: string }) {
       className="relative flex h-[35vh] w-full items-center justify-center overflow-hidden"
       aria-hidden
     >
-      <div className="absolute inset-0 bg-[linear-gradient(145deg,#060e02_0%,#0c1707_45%,#13220d_78%,rgba(155,233,85,0.12)_100%)]" />
-      <div
-        className="absolute inset-0 opacity-[0.14]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(156,173,149,0.55) 1px, transparent 0)",
-          backgroundSize: "18px 18px",
-        }}
-      />
+      <div className="absolute inset-0 bg-salon-hero" />
+      <div className="absolute inset-0 bg-salon-hero-dots bg-[length:18px_18px] opacity-[0.14]" />
       <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
       <span className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border border-border bg-surface/80 text-3xl font-bold text-foreground-muted">
         {monogram}

@@ -94,20 +94,20 @@ const InteractiveStepper = ({ initialSteps, initialStep = 1 }: {initialSteps: {i
         <button
           onClick={() => setActiveStep(prev => Math.max(1, prev - 1))}
           disabled={activeStep === 1}
-          className="px-4 py-2 bg-surface-brand text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-surface-brand text-content-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           مرحله قبلی
         </button>
         <button
           onClick={() => setActiveStep(prev => Math.min(steps.length, prev + 1))}
           disabled={activeStep === steps.length}
-          className="px-4 py-2 bg-surface-brand text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-surface-brand text-content-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           مرحله بعدی
         </button>
         <button
           onClick={() => setActiveStep(1)}
-          className="px-4 py-2 bg-surface-error text-white rounded-lg"
+          className="px-4 py-2 bg-surface-error text-content-white rounded-lg"
         >
           بازنشانی
         </button>
@@ -273,7 +273,7 @@ export const FormWizard: Story = {
           onStepClick={setActiveStep}
         />
 
-        <div className="mt-8 p-6 border rounded-lg bg-white">
+        <div className="mt-8 p-6 border rounded-lg bg-surface-white">
           <h3 className="text-lg font-semibold mb-4">
             مرحله {activeStep}: {formSteps.find(s => s.id === activeStep)?.label}
           </h3>
@@ -297,7 +297,7 @@ export const FormWizard: Story = {
                   alert('فرم با موفقیت ثبت شد!');
                 }
               }}
-              className="px-6 py-2 bg-surface-brand text-white rounded-lg"
+              className="px-6 py-2 bg-surface-brand text-content-white rounded-lg"
             >
               {activeStep === formSteps.length ? 'ارسال فرم' : 'ادامه'}
             </button>
@@ -349,8 +349,8 @@ export const AutoProgress: Story = {
               onClick={() => setIsAutoProgress(!isAutoProgress)}
               className={`px-4 py-2 rounded-lg ${
                 isAutoProgress
-                  ? 'bg-surface-error text-white'
-                  : 'bg-surface-success text-white'
+                  ? 'bg-surface-error text-content-white'
+                  : 'bg-surface-success text-content-white'
               }`}
             >
               {isAutoProgress ? 'توقف' : 'شروع پیشرفت خودکار'}
@@ -415,7 +415,7 @@ export const EdgeCases: Story = {
               onClick={() => setActiveStep(step)}
               className={`px-3 py-1 rounded ${
                 activeStep === step
-                  ? 'bg-surface-brand text-white'
+                  ? 'bg-surface-brand text-content-white'
                   : 'bg-surface-secondary'
               }`}
             >

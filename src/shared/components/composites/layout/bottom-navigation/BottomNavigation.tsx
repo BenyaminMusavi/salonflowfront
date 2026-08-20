@@ -52,7 +52,7 @@ function BottomNavigation() {
               {isActive && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute flex h-[calc(100%-8px)] aspect-square inset-y-1 rounded-full bg-white/10"
+                  className="absolute flex h-[calc(100%-8px)] aspect-square inset-y-1 rounded-full bg-on-media/10"
                   transition={{
                     type: "spring",
                     stiffness: 500,

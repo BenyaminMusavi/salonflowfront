@@ -540,7 +540,7 @@ export const CustomStyling: Story = {
 className="h-7 w-14 [&>span]:h-6 [&>span]:w-6"
 
 // رنگ متفاوت
-className="data-[state=checked]:bg-green-500"
+className="data-[state=checked]:bg-success"
 
 // گرد کامل
 className="rounded-full [&>span]:rounded-full"`}

@@ -17,7 +17,7 @@ interface IProps {
 const TopNavigation = ({ children }: IProps) => {
   const router = useRouter();
   return (
-    <div className={"fixed z-20 top-0 bg-surface-white inset-x-0 justify-center flex"}>
+    <div className={"fixed z-20 top-0 bg-transparent inset-x-0 justify-center flex"}>
       <div
         className={
           "w-full flex justify-between max-w-[600px] py-4  h-full px-safe-area"
@@ -26,15 +26,15 @@ const TopNavigation = ({ children }: IProps) => {
         <div className="flex items-center justify-between w-full">
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-white"
           >
-            <ArrowRightIcon size={20} className="text-black" weight="bold" />
+            <ArrowRightIcon size={20} className="text-foreground-inverse" weight="bold" />
           </button>
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-white"
           >
-            <ShareNetworkIcon size={20} className="text-black" weight="bold" />
+            <ShareNetworkIcon size={20} className="text-foreground-inverse" weight="bold" />
           </button>
         </div>
       </div>

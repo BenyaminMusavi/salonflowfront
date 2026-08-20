@@ -38,11 +38,11 @@ export default function HomeSalonsCard({
         className="object-cover transition duration-500 group-hover:scale-105"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-overlay/75 via-overlay/20 to-transparent" />
 
       <div className="absolute left-4 top-4">
-        <div className="flex h-8 items-center gap-2 rounded-full bg-black/40 px-3 backdrop-blur-xl">
-          <span className="text-sm font-medium text-white">
+        <div className="flex h-8 items-center gap-2 rounded-full bg-overlay/40 px-3 backdrop-blur-xl">
+          <span className="text-sm font-medium text-on-media">
             {rating.toFixed(1)}
           </span>
           <StarIcon weight="fill" size={18} className="text-primary" />
@@ -54,16 +54,16 @@ export default function HomeSalonsCard({
         disabled={!canFavorite}
         pending={favoritePending}
         onToggle={onToggleFavorite}
-        className="absolute right-4 top-4 z-10 h-10 w-10 bg-black/40 backdrop-blur-xl hover:bg-black/60"
+        className="absolute right-4 top-4 z-10 h-10 w-10 bg-overlay/40 backdrop-blur-xl hover:bg-overlay/60"
       />
 
       <div className="absolute bottom-4 left-4 right-4">
-        <div className="flex items-center justify-between rounded-[28px] border border-white/10 bg-black/35 p-4 backdrop-blur-2xl">
+        <div className="flex items-center justify-between rounded-[28px] border border-on-media/10 bg-overlay/35 p-4 backdrop-blur-2xl">
           <div className="min-w-0">
-            <h3 className="truncate text-[16px] font-semibold text-white">
+            <h3 className="truncate text-[16px] font-semibold text-on-media">
               {name}
             </h3>
-            <p className="mt-1 truncate text-[12px] text-white/70">{address}</p>
+            <p className="mt-1 truncate text-[12px] text-on-media/70">{address}</p>
           </div>
 
           <Link

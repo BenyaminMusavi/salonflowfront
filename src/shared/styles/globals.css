@@ -47,6 +47,11 @@
     --color-surface-hover: #152510;
     --color-surface-active: #1c3216;
     --color-surface-disabled: #0a1108;
+    --color-surface-secondary: var(--color-surface);
+    --color-surface-tertiary: var(--color-background-tertiary);
+    --color-surface-quaternary: var(--color-background-elevated);
+    --color-surface-fill: var(--color-foreground);
+    --color-surface-white: #ffffff;
 
     /* ==========================
        Success
@@ -128,7 +133,51 @@
     --color-ring: #9be955;
     --color-ring-offset: #060e02;
 
+    /* ==========================
+       Surface tints / content aliases
+    ========================== */
 
+    --color-surface-brand: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    --color-surface-brand-fill: var(--color-primary);
+    --color-surface-success: var(--color-success-background);
+    --color-surface-success-fill: var(--color-success);
+    --color-surface-warning: var(--color-warning-background);
+    --color-surface-warning-fill: var(--color-warning);
+    --color-surface-error: var(--color-error-background);
+    --color-surface-error-fill: var(--color-error);
+
+    --color-content-primary: var(--color-foreground);
+    --color-content-secondary: var(--color-foreground-muted);
+    --color-content-bold: var(--color-foreground);
+    --color-content-disabled: var(--color-foreground-disabled);
+    --color-content-quaternary: var(--color-foreground-disabled);
+    --color-content-white: #ffffff;
+    --color-content-brand: var(--color-primary);
+    --color-content-success: var(--color-success);
+    --color-content-warning: var(--color-warning);
+    --color-content-error: var(--color-error);
+
+    --color-overlay: #000000;
+    --color-on-media: #ffffff;
+    --color-rating: #facc15;
+    --color-accent: var(--color-surface-hover);
+    --color-accent-foreground: var(--color-foreground);
+    --color-destructive: var(--color-error);
+    --color-destructive-foreground: var(--color-error-foreground);
+    --color-border-primary: var(--color-border);
+
+    --background-image-salon-hero: linear-gradient(
+        145deg,
+        var(--color-background) 0%,
+        var(--color-background-secondary) 45%,
+        var(--color-background-tertiary) 78%,
+        color-mix(in srgb, var(--color-primary) 12%, transparent) 100%
+    );
+    --background-image-salon-hero-dots: radial-gradient(
+        circle at 1px 1px,
+        color-mix(in srgb, var(--color-foreground-muted) 55%, transparent) 1px,
+        transparent 0
+    );
 
     --spacing-safe-area: 14px;
 }
@@ -177,20 +226,20 @@
 }
 
 .home-swiper .swiper-pagination-bullet {
-    background: #888;
+    background: color-mix(in srgb, var(--color-on-media) 53%, var(--color-overlay));
     opacity: 1;
 }
 
 .home-swiper .swiper-pagination-bullet-active {
-    background: #79c728;
+    background: var(--color-primary-active);
 }
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.05) inset !important;
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #111 !important;
+    -webkit-box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-overlay) 5%, transparent) inset !important;
+    -webkit-text-fill-color: var(--color-on-media) !important;
+    caret-color: var(--color-foreground-inverse) !important;
     transition: background-color 9999s ease-in-out 0s;
 }
