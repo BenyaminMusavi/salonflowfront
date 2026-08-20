@@ -7,6 +7,8 @@ import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import { IAuth } from "@/services/domains/auth/types/auth.type";
 import { getCookie } from "cookies-next";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { setAuthLogoutReason } from "@/shared/utils/authRedirect";
+import { useFavoriteIdsStore } from "@/services/domains/favorites/store/useFavoriteIdsStore";
 
 let isRefreshing = false;
 let queue: Array<{
@@ -31,13 +33,24 @@ const axiosInstance = axios.create({
   },
 });
 
-const forceLogout = () => {
+const forceLogout = (reason: "membership" | "expired" = "expired") => {
   useTokenStore.getState().clear();
   useSalonContextStore.getState().clearAll();
+  useFavoriteIdsStore.getState().clear();
   if (typeof window !== "undefined") {
+    setAuthLogoutReason(reason);
     window.location.href = RouteAddress.AUTH.LOGIN.BASE;
   }
 };
+
+function logoutReasonFromRefreshError(error: unknown): "membership" | "expired" {
+  const data = (error as { response?: { data?: Record<string, unknown> } })
+    ?.response?.data;
+  const message =
+    typeof data?.message === "string" ? data.message : "";
+  if (/membership|سالن|salon/i.test(message)) return "membership";
+  return "expired";
+}
 
 /* ---------- REQUEST ---------- */
 axiosInstance.interceptors.request.use((config) => {
@@ -110,7 +123,7 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(original);
     } catch (e) {
       rejectQueue(e);
-      forceLogout();
+      forceLogout(logoutReasonFromRefreshError(e));
       return Promise.reject(e);
     } finally {
       isRefreshing = false;

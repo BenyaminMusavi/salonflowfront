@@ -454,7 +454,8 @@ export default function BookView() {
       setError(
         getApiErrorMessage(
           e,
-          "ثبت نوبت ناموفق بود. موجودی کیف‌پول یا آزاد بودن اسلات را بررسی کنید."
+          "ثبت نوبت ناموفق بود. موجودی کیف‌پول یا آزاد بودن اسلات را بررسی کنید.",
+          { audience: "customer" }
         )
       );
     }

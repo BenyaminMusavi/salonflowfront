@@ -169,6 +169,21 @@ export const API_ADDRESS = {
 
   REPORTS: {
     Z_REPORT: "/api/reports/z-report",
+    DASHBOARD_SUMMARY: "/api/reports/dashboard-summary",
+    REVENUE_BY_METHOD: "/api/reports/revenue-by-method",
+    REVENUE_BY_SERVICE: "/api/reports/revenue-by-service",
+    REVENUE_BY_BRANCH: "/api/reports/revenue-by-branch",
+    REVENUE_BY_DAY: "/api/reports/revenue-by-day",
+    OUTSTANDING: "/api/reports/outstanding",
+    APPOINTMENT_FUNNEL: "/api/reports/appointment-funnel",
+    STAFF_PERFORMANCE: "/api/reports/staff-performance",
+    PEAK_HOURS: "/api/reports/peak-hours",
+    FILL_RATE: "/api/reports/fill-rate",
+    CUSTOMERS_SUMMARY: "/api/reports/customers/summary",
+    CUSTOMERS_TOP: "/api/reports/customers/top",
+    CUSTOMERS_AT_RISK: "/api/reports/customers/at-risk",
+    EXPORT: "/api/reports/export",
+    DAILY_SNAPSHOTS: "/api/reports/daily-snapshots",
   },
 
   EARNINGS: {

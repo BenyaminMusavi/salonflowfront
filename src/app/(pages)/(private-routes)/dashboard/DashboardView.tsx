@@ -18,7 +18,11 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  getApiErrorMessage,
+  SUBSCRIPTION_OWNER_LOCK_MESSAGE,
+} from "@/services/domains/booking/utils/booking-mappers";
+import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
@@ -48,6 +52,9 @@ export default function DashboardView() {
   const appointmentsQuery = useQuerySalonAppointments(date, { pageSize: 100 });
   const lifecycle = useMutateSalonLifecycle();
   const quickBook = useMutateQuickBook();
+  const { isEntitled, isLoading: entitlementLoading } =
+    useSubscriptionEntitlement();
+  const bookingLocked = !entitlementLoading && !isEntitled;
 
   const salonDetail = useQuerySalonById(salonPublicId || undefined);
   const branches = salonDetail.data?.data?.branches ?? [];
@@ -86,6 +93,11 @@ export default function DashboardView() {
     setError("");
     setSuccess("");
 
+    if (bookingLocked) {
+      setError(SUBSCRIPTION_OWNER_LOCK_MESSAGE);
+      return;
+    }
+
     if (!activeBranchId || !selectedOfferingId || !Number(staffId) || !date || !time) {
       setError("همه فیلدهای رزرو سریع را تکمیل کنید.");
       return;
@@ -106,7 +118,11 @@ export default function DashboardView() {
       setFullName("");
       setNotes("");
     } catch (err) {
-      setError(getApiErrorMessage(err, "ثبت رزرو سریع ناموفق بود."));
+      setError(
+        getApiErrorMessage(err, "ثبت رزرو سریع ناموفق بود.", {
+          audience: "owner",
+        })
+      );
     }
   };
 
@@ -151,6 +167,14 @@ export default function DashboardView() {
 
       <div className="rounded-lg bg-surface-secondary p-3">
         <h2 className="mb-3 text-sm font-bold text-foreground">رزرو سریع (Walk-in/Phone)</h2>
+        {bookingLocked ? (
+          <p className="mb-3 text-xs text-error">
+            {SUBSCRIPTION_OWNER_LOCK_MESSAGE}{" "}
+            <Link className="underline" href={RouteAddress.SUBSCRIPTIONS.BASE}>
+              مدیریت اشتراک
+            </Link>
+          </p>
+        ) : null}
         <form className="grid grid-cols-1 gap-2" onSubmit={onQuickBook}>
           <Input
             placeholder="موبایل مشتری"
@@ -207,7 +231,11 @@ export default function DashboardView() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
-          <Button type="submit" isLoading={quickBook.isPending}>
+          <Button
+            type="submit"
+            isLoading={quickBook.isPending}
+            disabled={bookingLocked}
+          >
             ثبت رزرو سریع
           </Button>
         </form>
@@ -303,7 +331,20 @@ export default function DashboardView() {
         )}
       </div>
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-error">
+          {error}
+          {error === SUBSCRIPTION_OWNER_LOCK_MESSAGE ||
+          (typeof error === "string" && error.includes("اشتراک")) ? (
+            <>
+              {" "}
+              <Link className="underline" href={RouteAddress.SUBSCRIPTIONS.BASE}>
+                اشتراک
+              </Link>
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {success ? <p className="text-sm text-primary">{success}</p> : null}
     </div>
   );

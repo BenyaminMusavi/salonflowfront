@@ -55,6 +55,8 @@ export const RouteAddress = {
   },
   DASHBOARD: {
     BASE: "/dashboard",
+    ANALYTICS: "/dashboard/analytics",
+    REPORTS: "/dashboard/reports",
     CATALOG: "/dashboard/catalog",
     STAFF_SERVICES: "/dashboard/staff-services",
     SCHEDULES: "/dashboard/schedules",

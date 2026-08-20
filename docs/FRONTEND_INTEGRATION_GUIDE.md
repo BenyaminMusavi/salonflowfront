@@ -19,6 +19,7 @@
 3. [پنل سالن‌دار (Salon Dashboard)](#۳-پنل-سالن‌دار-salon-dashboard)
 4. [اشتراک پلتفرم (Platform Subscription)](#۴-اشتراک-پلتفرم-platform-subscription)
 5. [قراردادهای مهم (Conventions)](#۵-قراردادهای-مهم-conventions)
+6. [پنل ادمین پلتفرم (Admin)](#۶-پنل-ادمین-پلتفرم-admin)
 
 ---
 
@@ -134,7 +135,7 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 
 `memberships` فقط عضویت‌های **فعال** روی سالن‌های حذف‌نشده است (یک ردیف به‌ازای هر membership؛ برای Staff ممکن است چند شعبه از یک سالن بیاید). از این لیست Business Switcher را پر کنید، سپس با `salonId`/`branchId` به `switch-context` بروید تا JWT داشبورد ست شود.
 
-> برای پروفایل مبتنی بر JWT از همین endpoint استفاده کنید. `GET /api/users/me` در وضعیت فعلی قرارداد قابل‌اعتماد برای کلاینت نیست.
+> برای پروفایل مبتنی بر JWT از `GET /api/auth/me` یا `GET /api/users/me` (هر دو JWT + `[Authorize]`) استفاده کنید. `users/me` شناسه را فقط از توکن می‌خواند.
 
 ### ۱.۳ Switch-Context
 
@@ -167,6 +168,7 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 | `CustomerOnly` | `POST /api/booking/create`، `GET /api/appointments/me*`، `api/favorites` |
 | `SalonAccess` | تخته روزانه، رزرو سالن، lifecycle، Z-Report |
 | `CanCancelAppointment` | لغو نوبت (مشتری یا سالن) |
+| `AdminOnly` | پنل پلتفرم `api/admin/*`، moderation نظرات/گزارش سوءرفتار، mark-paid اشتراک |
 
 ---
 
@@ -454,6 +456,7 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 - `CustomerId` و `Source=Online` از سرور/JWT می‌آید — نفرستید.
 - اگر سرویس بیعانه داشته باشد، سرور از **کیف پول مشتری** بیعانه می‌گیرد؛ موجودی ناکافی → خطا.
 - پنجرهٔ لغو رایگان با `freeCancellationWindowHours` (معمولاً ۲۴) هم‌خوان است.
+- مالک سالن باید اشتراک billable داشته باشد؛ در غیر این صورت `400` با فیلد `subscription`. Cancel/Complete نوبت‌های موجود قفل نمی‌شوند.
 
 > **نگاشت شناسه‌ها (Phase 3):** کل قیف رزرو مشتری (browse → slots → create → me) با Guid/`PublicId` است. long داخلی فقط داخل Application resolve می‌شود. APIهای سالن‌دار (`POST /api/appointments`, catalog) همچنان long می‌مانند.
 
@@ -732,7 +735,9 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 
 #### وضعیت تأیید سالن
 
-`SalonApprovalStatus`: 1 Pending, 2 Approved, 3 Rejected, 4 Draft — فقط سالن‌های Approved در لیست عمومی مشتری دیده می‌شوند.
+`SalonApprovalStatus`: 1 Pending, 2 Approved, 3 Rejected, 4 Draft — فقط سالن‌های Approved در لیست عمومی مشتری دیده می‌شوند. اگر ادمین رد کند، مالک پس از اصلاح دوباره `POST .../submit-for-review` می‌زند (سرور Rejected را به Draft برمی‌گرداند سپس Pending).
+
+**قفل ویرایش:** وقتی وضعیت **Pending** است، همهٔ مراحل ذخیرهٔ ویزارد (`save-basic-info` با `publicId` موجود، `save-branches`, `save-services`, `save-staff`, `save-medias`, `save-my-schedule`) با **400** و پیام `امکان ویرایش در حالت در انتظار بررسی وجود ندارد.` رد می‌شوند. Draft، Rejected و Approved قابل ویرایش‌اند. `submit-for-review` این قفل را ندارد.
 
 ---
 
@@ -902,7 +907,7 @@ Base: `api/catalog` — JWT + کانتکست سالن.
 }
 ```
 
-`source`: فقط `2` WalkIn یا `3` Phone (پیش‌فرض Phone). پاسخ: id نوبت.
+`source`: فقط `2` WalkIn یا `3` Phone (پیش‌فرض Phone). پاسخ: id نوبت. اگر اشتراک مالک سالن billable نباشد → `400` فیلد `subscription`. Cancel/Complete قفل نیستند.
 
 **رزرو سریع (Find-or-Create مشتری با موبایل):** `POST /api/appointments/quick-book`
 
@@ -1040,6 +1045,9 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
   "cardTotal": 800000,
   "onlineTotal": 0,
   "paymentsTotal": 2000000,
+  "transferTotal": 0,
+  "walletTotal": 150000,
+  "collectedTotal": 2150000,
   "tipsTotal": 150000,
   "staffCommissionTotal": 400000,
   "staffCommissions": [
@@ -1048,7 +1056,7 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
 }
 ```
 
-روز بر اساس تقویم تهران به بازهٔ UTC نگاشت می‌شود. فقط پرداخت‌های Paid با روش Cash/Card/Online در جمع پرداخت‌ها می‌آیند.
+روز بر اساس تقویم تهران به بازهٔ UTC نگاشت می‌شود. `paymentsTotal` همان صندوق روز است (Cash+Card+Online). `walletTotal` / `transferTotal` جدا هستند؛ `collectedTotal` جمع همهٔ روش‌های Paid است. داشبورد بازه‌ای در [۳.۸](#۳۸-داشبورد-و-گزارش‌گیری) است.
 
 ---
 
@@ -1139,14 +1147,85 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
 
 ---
 
+### ۳.۸ داشبورد و گزارش‌گیری
+
+همه با سیاست **SalonAccess**. `SalonId` از JWT (`switch-context`) خوانده می‌شود — `salonId` کوئری فقط برای Z-Report (سازگاری) و `POST /api/reports/snapshot` است. `PlatformInvoice` در این اعداد نیست.
+
+| Query | معنی |
+|-------|------|
+| `from` / `to` | `DateOnly` تقویم تهران (`yyyy-MM-dd`). پیش‌فرض ۳۰ روز تا امروز تهران. سقف JSON‏ ۹۰ روز؛ export‏ ۳۶۵ روز |
+| `branchId` | اختیاری. اگر در JWT `branch_id` باشد و کوئری خالی باشد، همان شعبه فیلتر می‌شود |
+
+**تعریف سنجه (مهم برای UI):**
+
+| فیلد | معنی |
+|------|------|
+| `collected` | مجموع پرداخت‌های `Paid` در بازه `PaidAt` (همه روش‌ها) |
+| `tillCollected` | Cash + Card + Online — هم‌تراز `z-report.paymentsTotal` |
+| `serviceRevenue` | مجموع خطوط فاکتور نهایی که `appointmentServiceId` دارند (Issued/PartiallyPaid/Paid) |
+| `netCollected` | Collected منهای استرداد Processed |
+| `outstanding` | مانده فاکتورهای Issued/PartiallyPaid (نقطه‌ای، نه لزوماً محدود به بازه) |
+| `cancelRate` | Cancelled / همه نوبت‌های بازه (درصد) |
+| `noShowRate` | NoShow / (Completed + NoShow + Cancelled) |
+| `newCustomers` | اولین نوبت Completed آن مشتری در این سالن داخل بازه |
+| `returningCustomers` | Completed در بازه + حداقل یک Completed قدیمی‌تر در همان سالن |
+
+دوره قبلی هم‌طول را سرور در `previousFrom`/`previousTo` و `percentChange` کارت‌ها برمی‌گرداند.
+
+#### صفحه اول
+
+`GET /api/reports/dashboard-summary?from=&to=&branchId=`
+
+پاسخ شامل کارت‌های مالی/عملیاتی/مشتری + `sparkline[]` (`date`, `collected`, `appointments`).
+
+#### گزارش‌های مالی و عملیاتی
+
+| Method + Path | پاسخ |
+|---------------|------|
+| `GET /api/reports/revenue-by-method` | روش پرداخت + نوع پرداخت + refunds |
+| `GET /api/reports/revenue-by-service` | top ۲۰ خدمت |
+| `GET /api/reports/revenue-by-branch` | per شعبه (بدون `branchId`) |
+| `GET /api/reports/revenue-by-day` | سری روزانه |
+| `GET /api/reports/outstanding` | مطالبات، بیعانه در جریان، تخفیف/مالیات بازه |
+| `GET /api/reports/appointment-funnel` | وضعیت + کانال رزرو |
+| `GET /api/reports/staff-performance` | لیدربورد + صف کمیسیون |
+| `GET /api/reports/peak-hours` | ساعت ۰–۲۳ تهران و روز هفته |
+| `GET /api/reports/fill-rate` | دقایق در دسترس از برنامه کاری در برابر دقایق رزرو (+ بافر) |
+
+#### CRM
+
+| Method + Path | توضیح |
+|---------------|--------|
+| `GET /api/reports/customers/summary` | جدید / بازگشته / retention / میانگین فاصله مراجعه / نظرات Approved بازه |
+| `GET /api/reports/customers/top?lifetime=false` | برتر بر اساس Collected؛ `lifetime=true` همهٔ تاریخ |
+| `GET /api/reports/customers/at-risk?inactiveDays=60` | آخرین Completed قدیمی‌تر از N روز، حداقل ۲ مراجعه، فقط `smsConsent` |
+
+شمارنده‌های `Customer.totalSpent` سراسری‌اند و برای سالن مخلوط می‌شوند؛ این APIها از نوبت/پرداخت همان سالن می‌آیند.
+
+#### خروجی و اسنپ‌شات
+
+`GET /api/reports/export?report={name}&from=&to=&branchId=` — فایل CSV (UTF-8 BOM)، wrap نمی‌شود.
+
+`report`: `dashboard-summary` \| `revenue-by-day` \| `revenue-by-method` \| `revenue-by-service` \| `staff-performance` \| `customers-top`
+
+`GET /api/reports/daily-snapshots?from=&to=` — جدول `SalonDailyStats` (جاب روزانه حدود ۰۰:۱۵ تهران برای دیروز). داشبورد زنده از OLTP است؛ این سری برای نمودارهای طولانی‌مدت.
+
+`POST /api/reports/snapshot?date=2026-08-01&salonId=` — بازسازی یک روز.
+
+ابزار BI خارجی مسیر پنل سالن‌دار نیست.
+
+---
+
 ## ۴. اشتراک پلتفرم (Platform Subscription)
 
 اشتراک **سطح مالک** است (`OwnerUserId`)، نه یک سابسکرایب جدا برای هر سالن. طرح‌ها `maxSalons` دارند؛ همهٔ سالن‌های همان مالک تا سقف طرح entitlement می‌گیرند.
 
 وضعیت‌ها: `Trialing=1`, `Active=2`, `Grace=3`, `PastDue=4`, `Canceled=5`, `Expired=6`, `Suspended=7`  
-**Billable (قفل باز):** Trialing, Active, Grace — پس از پایان دوره، ۷ روز Grace سپس Suspended (جاب روزانه Quartz).
+**Billable (قفل باز):** Trialing, Active, Grace. جاب روزانه Quartz وضعیت را persist می‌کند؛ **گیت عملیاتی منتظر جاب نمی‌ماند.** `GET /me/entitlement` و گیت‌ها `EndDate` / `GracePeriodEndDate` را همان لحظه اعمال می‌کنند: اگر Trialing/Active ولی `EndDate` گذشته باشد هنوز داخل ۷ روز مهلت است → `status=Grace` و `isEntitled=true`؛ اگر مهلت هم گذشته باشد → `status=Suspended` و `isEntitled=false` (اگر `cancelAtPeriodEnd` باشد به‌جای Grace، `Expired`). این خواندن وضعیت persistشده را عوض نمی‌کند.
 
 **پول:** فعلاً درگاه واقعی نیست. مالک `checkout` می‌سازد → ادمین `mark-paid` می‌کند → اشتراک فعال می‌شود. فیلد `externalPaymentRef` برای ارتقای بعدی به PSP آماده است. فاکتور پلتفرم جدا از `Invoice`/`Payment` رزرو سالن است.
+
+**قفل عملیاتی:** `POST /api/booking/create`، `POST /api/appointments` و `POST /api/appointments/quick-book` بدون اشتراک billable مالک سالن `400` با فیلد `subscription` می‌دهند. Cancel / CheckIn / Complete / NoShow قفل نیستند تا تسویه نوبت‌های قبلی ممکن بماند.
 
 ### ۴.۱ کاتالوگ و وضعیت من
 
@@ -1154,7 +1233,7 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
 |---------------|------|--------|
 | `GET /api/subscriptions/plans` | Anonymous | طرح‌های فعال؛ در صورت کمپین سراسری، `campaignPrice` / `campaignName` هم برمی‌گردد |
 | `GET /api/subscriptions/me` | JWT | اشتراک جاری یا `204` |
-| `GET /api/subscriptions/me/entitlement` | JWT | `isEntitled`, `maxSalons`, `ownedSalonCount`, `status`, تاریخ‌ها |
+| `GET /api/subscriptions/me/entitlement` | JWT | `isEntitled`, `maxSalons`, `ownedSalonCount`, `status` مؤثر (با چک تاریخ)، تاریخ‌ها |
 | `GET /api/subscriptions/entitlement/salon/{salonId}` | SalonAccess | entitlement بر اساس مالک همان سالن |
 
 **نمونه plan**
@@ -1286,6 +1365,7 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
 ```
 GET /api/appointments/staff/7/day-board?date=2026-08-01
 GET /api/reports/z-report?salonId=12&date=2026-08-01
+GET /api/reports/dashboard-summary?from=2026-08-01&to=2026-08-31
 ```
 
 TimeOnly در JSON معمولاً `"09:00:00"` است.
@@ -1316,6 +1396,8 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 | PlatformInvoiceStatus | 1 Pending, 2 Paid, 3 Cancelled, 4 Expired |
 | PromoCodeScope | 1 PlatformSubscription, 2 SalonBooking |
 | EntityType | see Media section (1–23; Gallery=6 obsolete) |
+| ModerationActionType | 1 Reject, 2 Suspend, 3 HideReview, 4 HideMedia |
+| SalonTrustStatus | 1 Active, 2 UnderReview, 3 Suspended |
 
 ### ۵.۵ چک‌لیست سریع کلاینت
 
@@ -1325,7 +1407,56 @@ TimeOnly در JSON معمولاً `"09:00:00"` است.
 4. موفقیت را از روی status بخوانید؛ `data` را فقط وقتی بدنه دارید
 5. برای پرداخت، همیشه `idempotencyKey` یکتا بفرستید
 6. قیف رزرو مشتری Guid-first است (`salonPublicId`/`branchPublicId`/`offeringPublicId`/`staffPublicId`/appointment PublicId)؛ long داخلی فقط در Application. API سالن‌دار می‌تواند long بماند.
-7. قبل از ایجاد سالن جدید: اشتراک trial/active بگیرید (`POST /api/subscriptions/trial` یا checkout + mark-paid)
+7. قبل از ایجاد سالن جدید **و** قبل از ثبت نوبت (آنلاین / سالن / quick-book): اشتراک trial/active بگیرید (`POST /api/subscriptions/trial` یا checkout + mark-paid). `GET /api/subscriptions/me/entitlement` را برای بنر قفل پنل بخوانید.
+
+---
+
+## ۶. پنل ادمین پلتفرم (Admin)
+
+نقش JWT `Admin` (سراسری، از `UserRole`). همهٔ مسیرهای زیر سیاست **`AdminOnly`** دارند — سالن‌دار (`SalonOwner`) به آن‌ها دسترسی ندارد (403).
+
+ادمین **ویرایشگر پروفایل سالن نیست** (نام/آدرس/اینستاگرام را PUT نمی‌کند). کنترل از مسیر تایید، رد، تعلیق، و مخفی کردن رسانه است. در رد/تعلیق/مخفی، فیلد `reason` اجباری است و در `ModerationAction` ذخیره می‌شود تا مالک بتواند مشکل را ببیند و اصلاح کند.
+
+لیست عمومی مشتری (`GET /api/salons`) عوض نشده: فقط `SalonApproval=Approved` و `TrustStatus=Active`. رسانهٔ `IsHidden=true` در کاتالوگ عمومی نمی‌آید.
+
+### ۶.۱ سالن‌ها — `api/admin/salons`
+
+| Method + Path | Body | توضیح |
+|---------------|------|--------|
+| `GET /api/admin/salons?page=&pageSize=&approvalStatus=&trustStatus=&search=` | — | همهٔ وضعیت‌ها (Draft/Pending/Approved/Rejected)؛ فیلترها اختیاری |
+| `POST /api/admin/salons/{salonPublicId}/approve` | — | Pending → Approved |
+| `POST /api/admin/salons/{salonPublicId}/reject` | `{ "reason": "…" }` | Pending → Rejected + `ModerationAction` (Reject). مالک بعداً دوباره `submit-for-review` |
+| `POST /api/admin/salons/{salonPublicId}/suspend` | `{ "reason": "…" }` | `TrustStatus` → Suspended (۳) + `ModerationAction` (Suspend). از کاتالوگ عمومی خارج می‌شود |
+
+`salonPublicId` همان Guid عمومی سالن است. `reason` خالی → 400.
+
+**نمونه آیتم لیست**
+
+```json
+{
+  "id": 12,
+  "publicId": "…",
+  "name": "سالن نمونه",
+  "ownerUserId": 28,
+  "approvalStatus": 1,
+  "rejectionReason": null,
+  "trustStatus": 1,
+  "createdAt": "2026-08-01T10:00:00.000Z"
+}
+```
+
+`approvalStatus`: 1 Pending, 2 Approved, 3 Rejected, 4 Draft.  
+`trustStatus`: 1 Active, 2 UnderReview, 3 Suspended.
+
+### ۶.۲ رسانه — `api/admin/media`
+
+| Method + Path | Body | توضیح |
+|---------------|------|--------|
+| `POST /api/admin/media/{mediaId}/hide` | `{ "reason": "…" }` | `IsHidden=true`؛ از کاتالوگ عمومی حذف می‌شود. `mediaId` شناسهٔ عددی. `ModerationActionType=HideMedia` |
+
+پاسخ موفق شامل `id`, `publicId`, `salonId`, `isHidden`.
+
+مسیرهای AdminOnly قدیمی (صف نظرات، salon-reports، mark-paid) فعلاً سر جای خود هستند.
 
 ---
 

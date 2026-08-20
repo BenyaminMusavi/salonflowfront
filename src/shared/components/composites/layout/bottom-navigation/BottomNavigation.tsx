@@ -5,9 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import {
   CalendarBlankIcon,
-  CardholderIcon,
-  ChartPieSliceIcon,
-  CubeTransparentIcon,
+  HeartIcon,
   HouseSimpleIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -24,11 +22,12 @@ function BottomNavigation() {
   const currentPath = getPurePath(pathname);
 
   const navItems = [
-    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon }, // Home
-    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon }, // Search
-    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon }, // Bookings / Reservations
-    { href: RouteAddress.WALLET.BASE, icon: WalletIcon }, // Bookings / Wallet
-    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon }, // Profile
+    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon },
+    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon },
+    { href: RouteAddress.FAVORITES.BASE, icon: HeartIcon },
+    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon },
+    { href: RouteAddress.WALLET.BASE, icon: WalletIcon },
+    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon },
   ];
 
   const isMainPage = navItems.some(

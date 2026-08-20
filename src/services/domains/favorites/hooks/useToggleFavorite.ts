@@ -9,6 +9,7 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { getLoginHref } from "@/shared/utils/authRedirect";
+import { useFavoriteIdsStore } from "../store/useFavoriteIdsStore";
 
 /**
  * Toggle favorite by catalog Guid (`salonPublicId` === `SalonCardDto.id`).
@@ -19,14 +20,15 @@ export const useToggleFavorite = (salonPublicId: string | undefined) => {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
   const activeSalonId = useSalonContextStore((s) => s.salonId);
   const switchContext = useMutateSwitchContext();
-  const { data } = useQueryFavorites();
+  useQueryFavorites();
+  const ids = useFavoriteIdsStore((s) => s.ids);
   const add = useMutateAddFavorite();
   const remove = useMutateRemoveFavorite();
 
   const isFavorite = useMemo(() => {
-    if (!salonPublicId || !data?.data) return false;
-    return data.data.some((f) => f.salonPublicId === salonPublicId);
-  }, [data?.data, salonPublicId]);
+    if (!salonPublicId) return false;
+    return ids.includes(salonPublicId);
+  }, [ids, salonPublicId]);
 
   const isPending =
     add.isPending || remove.isPending || switchContext.isPending;

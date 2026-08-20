@@ -12,9 +12,11 @@ alwaysApply: false
 - Owner dashboard phase-8 surfaces: `/dashboard/catalog`, `/dashboard/staff-services`, `/dashboard/schedules` for catalog, staff assignment, and schedules.
 - Owner dashboard salon profile edit: `/dashboard/salon-info` («اطلاعات سالن»); `/onboarding` remains create/resume-draft only.
 - Owner dashboard phase-9 surfaces: `/dashboard/finance` and `/dashboard/z-report`; customer wallet page `/wallet` must render real balance/transactions.
+- Owner dashboard analytics: `/dashboard/analytics` (`GET /api/reports/dashboard-summary` KPI cards + sparkline) and `/dashboard/reports` (financial/staff/CRM breakdowns + CSV export).
 - Owner dashboard phase-10 surfaces: `/dashboard/payouts` and `/dashboard/notifications`; customer notifications at `/notifications`.
-- Customer favorites: `/favorites` plus heart toggle on catalog/search/detail cards (`salonPublicId` Guid).
-- Never add platform admin UI to this SPA; admin surface is explicitly deferred/out of scope.
+- Customer favorites: `/favorites` plus heart toggle on catalog/search/detail cards (`salonPublicId` Guid). Bottom nav includes Favorites.
+- Subscription operational lock: dashboard banner + quick-book disabled when `GET /api/subscriptions/me/entitlement` has `isEntitled=false`. Online booking maps `errors.field=subscription` to a customer-facing lock message. Cancel/complete stay unlocked.
+- Never add platform admin UI to this SPA; admin surface is explicitly deferred/out of scope (`api/admin/*`, approve/reject salons, hide media, user management).
 - Use `RouteAddress` for navigation; keep bottom nav customer-only unless adding an owner shell.
 - Icons: `@phosphor-icons/react` or `lucide-react` — never `@radix-ui/react-icons` (not installed).
 - Use real theme tokens from `globals.css`: `bg-surface` for cards; `bg-input` / `border-input-border` / `text-foreground` for fields; `text-foreground-muted` for secondary text; primary green for accents. Avoid ghost tokens (`bg-surface-tertiary`, `text-content-*`) — they are not defined.

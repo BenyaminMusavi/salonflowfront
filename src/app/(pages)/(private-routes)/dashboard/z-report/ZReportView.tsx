@@ -39,7 +39,16 @@ export default function ZReportView() {
           <p>پرداخت نقدی: {formatToman(data.cashTotal)} تومان</p>
           <p>پرداخت کارت: {formatToman(data.cardTotal)} تومان</p>
           <p>پرداخت آنلاین: {formatToman(data.onlineTotal)} تومان</p>
-          <p>مجموع پرداخت‌ها: {formatToman(data.paymentsTotal)} تومان</p>
+          <p>مجموع صندوق (نقد+کارت+آنلاین): {formatToman(data.paymentsTotal)} تومان</p>
+          {data.transferTotal != null ? (
+            <p>انتقال: {formatToman(data.transferTotal)} تومان</p>
+          ) : null}
+          {data.walletTotal != null ? (
+            <p>کیف پول: {formatToman(data.walletTotal)} تومان</p>
+          ) : null}
+          {data.collectedTotal != null ? (
+            <p>جمع همه روش‌های Paid: {formatToman(data.collectedTotal)} تومان</p>
+          ) : null}
           <p>مجموع انعام: {formatToman(data.tipsTotal)} تومان</p>
           <p>جمع کمیسیون پرسنل: {formatToman(data.staffCommissionTotal)} تومان</p>
           <div className="mt-3 space-y-1">

@@ -76,3 +76,18 @@ export function getLoginHref(returnPath?: string | null): string {
   }
   return RouteAddress.AUTH.LOGIN.BASE;
 }
+
+export const AUTH_LOGOUT_REASON_KEY = "auth_logout_reason";
+
+export function setAuthLogoutReason(reason: "membership" | "expired") {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(AUTH_LOGOUT_REASON_KEY, reason);
+}
+
+export function consumeAuthLogoutReason(): "membership" | "expired" | null {
+  if (typeof window === "undefined") return null;
+  const value = sessionStorage.getItem(AUTH_LOGOUT_REASON_KEY);
+  sessionStorage.removeItem(AUTH_LOGOUT_REASON_KEY);
+  if (value === "membership" || value === "expired") return value;
+  return null;
+}

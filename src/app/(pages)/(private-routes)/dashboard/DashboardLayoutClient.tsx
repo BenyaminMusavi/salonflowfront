@@ -15,6 +15,8 @@ import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapA
 import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { BellIcon } from "@phosphor-icons/react";
+import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
+import SubscriptionLockBanner from "@/shared/components/composites/subscription-lock-banner/SubscriptionLockBanner";
 
 function Transferring() {
   return (
@@ -105,6 +107,8 @@ export default function DashboardLayoutClient({
   });
   const { mutateAsync: switchContext, isPending: isSwitching } =
     useMutateSwitchContext();
+  const { isEntitled, isLoading: entitlementLoading } =
+    useSubscriptionEntitlement();
 
   const autoSwitchStarted = useRef(false);
   const preferredCaptured = useRef(false);
@@ -246,6 +250,8 @@ export default function DashboardLayoutClient({
 
   const tabs = [
     { href: RouteAddress.DASHBOARD.BASE, label: "تخته روزانه" },
+    { href: RouteAddress.DASHBOARD.ANALYTICS, label: "تحلیل" },
+    { href: RouteAddress.DASHBOARD.REPORTS, label: "گزارش‌ها" },
     { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
     { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
     { href: RouteAddress.DASHBOARD.SCHEDULES, label: "برنامه پرسنل" },
@@ -291,6 +297,7 @@ export default function DashboardLayoutClient({
           </Link>
         ))}
       </div>
+      {!entitlementLoading && !isEntitled ? <SubscriptionLockBanner /> : null}
       <div className="w-full">{children}</div>
     </div>
   );
