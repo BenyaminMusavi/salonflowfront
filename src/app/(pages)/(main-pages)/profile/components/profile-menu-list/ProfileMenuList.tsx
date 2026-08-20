@@ -8,6 +8,7 @@ import {
   CrownSimple,
   Storefront,
   BellSimple,
+  HeartIcon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
@@ -16,6 +17,11 @@ const items = [
     label: "نوبت‌های من",
     icon: CalendarBlank,
     href: RouteAddress.RESERVATION.BASE,
+  },
+  {
+    label: "علاقه‌مندی‌های من",
+    icon: HeartIcon,
+    href: RouteAddress.FAVORITES.BASE,
   },
   {
     label: "ثبت سالن",

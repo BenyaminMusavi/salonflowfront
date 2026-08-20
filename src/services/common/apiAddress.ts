@@ -54,7 +54,7 @@ export const API_ADDRESS = {
 
   FAVORITES: {
     BASE: "/api/favorites",
-    BY_SALON: (salonId: number) => `/api/favorites/${salonId}`,
+    BY_SALON: (salonPublicId: string) => `/api/favorites/${salonPublicId}`,
   },
 
   SALON_OFFERING: {

@@ -29,7 +29,7 @@ export default function SalonsDetailView() {
 
   const numericSalonId = salon ? resolveNumericSalonId(salon) : undefined;
   const { isFavorite, canToggle, isPending, toggle } =
-    useToggleFavorite(numericSalonId);
+    useToggleFavorite(salonPublicId);
 
   if (isLoading) {
     return (

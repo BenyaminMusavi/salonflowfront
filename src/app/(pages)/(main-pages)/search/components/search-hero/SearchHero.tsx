@@ -7,9 +7,71 @@ import "swiper/css";
 import "swiper/css/pagination";
 import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
 import { ISalonCard } from "@/services/domains/salons/types/salons.type";
+import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import barbershop from "@/shared/assets/images/barbershop.png";
+import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
+
+function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
+  const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(
+    slide.id
+  );
+
+  return (
+    <div className="relative h-[180px] w-full overflow-hidden rounded-[28px]">
+      <img
+        src={salonImageSrc(slide.imageUrl, barbershop.src)}
+        alt={slide.name}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+
+      <FavoriteHeartButton
+        isFavorite={isFavorite}
+        disabled={!canToggle}
+        pending={isPending}
+        onToggle={toggle}
+        size={18}
+        className="absolute right-3 top-3 z-10 h-9 w-9 bg-black/60 backdrop-blur-sm"
+      />
+
+      <div className="relative z-10 flex h-full w-3/5 flex-col justify-end gap-2 p-5">
+        <span className="text-[11px] text-white/70">
+          {slide.genderType || slide.services || "سالن"}
+        </span>
+
+        <h3 className="text-[18px] font-bold leading-tight text-white">
+          {slide.name}
+        </h3>
+
+        <div className="mt-1 flex items-center gap-2">
+          <Link
+            href={RouteAddress.SALONS.DETAILS(slide.id)}
+            className="rounded-full bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground"
+          >
+            رزرو کن
+          </Link>
+
+          <Link
+            href={RouteAddress.SALONS.DETAILS(slide.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          >
+            <ArrowUpLeftIcon size={16} weight="bold" />
+          </Link>
+        </div>
+      </div>
+
+      <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+        <StarIcon size={14} className="text-yellow-400" weight="fill" />
+        <span className="text-[12px] font-semibold text-white">
+          {(slide.rating ?? 0).toFixed(1)}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 interface SearchHeroProps {
   salons: ISalonCard[];
@@ -30,48 +92,7 @@ export default function SearchHero({ salons }: SearchHeroProps) {
       >
         {slides.map((slide) => (
           <SwiperSlide key={slide.id}>
-            <div className="relative h-[180px] w-full overflow-hidden rounded-[28px]">
-              <img
-                src={salonImageSrc(slide.imageUrl, barbershop.src)}
-                alt={slide.name}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
-
-              <div className="relative z-10 flex h-full w-3/5 flex-col justify-end gap-2 p-5">
-                <span className="text-[11px] text-white/70">
-                  {slide.genderType || slide.services || "سالن"}
-                </span>
-
-                <h3 className="text-[18px] font-bold leading-tight text-white">
-                  {slide.name}
-                </h3>
-
-                <div className="mt-1 flex items-center gap-2">
-                  <Link
-                    href={RouteAddress.SALONS.DETAILS(slide.id)}
-                    className="rounded-full bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground"
-                  >
-                    رزرو کن
-                  </Link>
-
-                  <Link
-                    href={RouteAddress.SALONS.DETAILS(slide.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                  >
-                    <ArrowUpLeftIcon size={16} weight="bold" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">
-                <StarIcon size={14} className="text-yellow-400" weight="fill" />
-                <span className="text-[12px] font-semibold text-white">
-                  {(slide.rating ?? 0).toFixed(1)}
-                </span>
-              </div>
-            </div>
+            <SearchHeroSlide slide={slide} />
           </SwiperSlide>
         ))}
       </Swiper>

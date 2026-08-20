@@ -27,6 +27,9 @@ export const RouteAddress = {
     BASE: "/profile",
     SETTINGS: "/profile/settings",
   },
+  FAVORITES: {
+    BASE: "/favorites",
+  },
   SEARCH: {
     BASE: "/search",
   },

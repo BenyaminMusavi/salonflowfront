@@ -15,22 +15,18 @@ import { salonImageSrc } from "@/shared/utils/salonDisplay";
 
 function HomeSalonSlide({
   id,
-  salonId,
   name,
   address,
   imageUrl,
   rating,
 }: {
   id: string;
-  salonId?: number | null;
   name: string;
   address: string;
   imageUrl?: string | null;
   rating: number;
 }) {
-  const numericId = typeof salonId === "number" ? salonId : undefined;
-  const { isFavorite, canToggle, isPending, toggle } =
-    useToggleFavorite(numericId);
+  const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(id);
 
   return (
     <HomeSalonsCard
@@ -89,7 +85,6 @@ function HomeSalons() {
               <SwiperSlide key={salon.id}>
                 <HomeSalonSlide
                   id={salon.id}
-                  salonId={salon.salonId}
                   name={salon.name}
                   address={
                     [salon.genderType, salon.services]

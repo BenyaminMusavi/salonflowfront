@@ -2,11 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowUpLeftIcon,
-  BookmarkSimpleIcon,
-  StarIcon,
-} from "@phosphor-icons/react";
+import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
+import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
 
 interface HomeSalonsCardProps {
   href: string;
@@ -52,22 +49,13 @@ export default function HomeSalonsCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        disabled={!canFavorite || favoritePending}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onToggleFavorite?.();
-        }}
-        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-xl transition hover:bg-black/60 disabled:opacity-40"
-      >
-        <BookmarkSimpleIcon
-          weight={saved ? "fill" : "regular"}
-          size={22}
-          className="text-white"
-        />
-      </button>
+      <FavoriteHeartButton
+        isFavorite={saved}
+        disabled={!canFavorite}
+        pending={favoritePending}
+        onToggle={onToggleFavorite}
+        className="absolute right-4 top-4 z-10 h-10 w-10 bg-black/40 backdrop-blur-xl hover:bg-black/60"
+      />
 
       <div className="absolute bottom-4 left-4 right-4">
         <div className="flex items-center justify-between rounded-[28px] border border-white/10 bg-black/35 p-4 backdrop-blur-2xl">

@@ -10,7 +10,7 @@ export interface ISalonCard {
   rating?: number | null;
   distanceKm?: number | null;
   minPrice?: number | null;
-  /** Numeric long id when API includes it (needed for favorites). */
+  /** Numeric long id when API includes it (reviews / reports). */
   salonId?: number | null;
 }
 

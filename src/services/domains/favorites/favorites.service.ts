@@ -9,16 +9,17 @@ class FavoritesService {
     );
   }
 
-  /** `salonId` = numeric long internal id */
-  async add(salonId: number) {
+  /** `salonPublicId` = catalog Guid (`SalonCardDto.id`). POST is idempotent. */
+  async add(salonPublicId: string) {
     return await axiosInstance.post<unknown, void>(
-      API_ADDRESS.FAVORITES.BY_SALON(salonId)
+      API_ADDRESS.FAVORITES.BY_SALON(salonPublicId)
     );
   }
 
-  async remove(salonId: number) {
+  /** Always 204 (idempotent), even if the favorite does not exist. */
+  async remove(salonPublicId: string) {
     return await axiosInstance.delete<unknown, void>(
-      API_ADDRESS.FAVORITES.BY_SALON(salonId)
+      API_ADDRESS.FAVORITES.BY_SALON(salonPublicId)
     );
   }
 }

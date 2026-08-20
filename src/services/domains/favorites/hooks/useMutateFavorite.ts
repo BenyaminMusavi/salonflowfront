@@ -6,7 +6,7 @@ export const useMutateAddFavorite = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (salonId: number) => favoritesService.add(salonId),
+    mutationFn: (salonPublicId: string) => favoritesService.add(salonPublicId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FAVORITES_QUERY_KEY] });
     },
@@ -17,7 +17,8 @@ export const useMutateRemoveFavorite = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (salonId: number) => favoritesService.remove(salonId),
+    mutationFn: (salonPublicId: string) =>
+      favoritesService.remove(salonPublicId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FAVORITES_QUERY_KEY] });
     },

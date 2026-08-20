@@ -25,7 +25,7 @@ export interface ISalonWorkingHour {
 /** Public salon detail — route `id` is Guid publicId. */
 export interface ISalon {
   id: string;
-  /** Numeric long id for favorites / booking create when provided by API. */
+  /** Numeric long id for reviews / reports / booking create when provided by API. */
   salonId?: number | null;
   internalId?: number | null;
   name: string;

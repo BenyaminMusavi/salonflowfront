@@ -163,8 +163,8 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 | Policy / شرط | کاربرد UI |
 |--------------|-----------|
 | Anonymous | لیست سالن، جزئیات، اسلات‌های عمومی، OTP |
-| JWT ساده | پروفایل، favorites، media |
-| `CustomerOnly` | `POST /api/booking/create`، `GET /api/appointments/me*` |
+| JWT ساده | پروفایل، media |
+| `CustomerOnly` | `POST /api/booking/create`، `GET /api/appointments/me*`، `api/favorites` |
 | `SalonAccess` | تخته روزانه، رزرو سالن، lifecycle، Z-Report |
 | `CanCancelAppointment` | لغو نوبت (مشتری یا سالن) |
 
@@ -252,17 +252,19 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 | `offeringPublicId` | Guid | PublicId مربوط به **ServiceOffering** (نه ServiceType) |
 | `name` | string | نام نوع سرویس |
 
-**علاقه‌مندی‌ها (نیاز به JWT مشتری)**
+**علاقه‌مندی‌ها (`CustomerOnly` — JWT مشتری، بدون context سالن)**
+
+`salonPublicId` همان `id` کارت کاتالوگ (`SalonCardDto.Id` / `GET /api/salons/{id}`) است.
 
 | Method + Path | توضیح |
 |---------------|--------|
-| `GET /api/favorites` | لیست |
-| `POST /api/favorites/{salonId}` | `salonId` = long داخلی |
-| `DELETE /api/favorites/{salonId}` | 204 |
+| `GET /api/favorites` | لیست کارت‌ها؛ فقط سالن‌های **Approved** و حذف‌نشده (بقیه ساکت از خروجی حذف می‌شوند) |
+| `POST /api/favorites/{salonPublicId}` | `salonPublicId` = Guid؛ idempotent؛ تأیید سالن لازم نیست |
+| `DELETE /api/favorites/{salonPublicId}` | همیشه `204` (حتی اگر علاقه‌مندی وجود نداشته باشد) |
 
-`FavoriteSalonDto`: `id`, `salonId`, `salonName`, `createdAt`.
+`FavoriteSalonDto`: `id`, `salonId`, `salonPublicId` (Guid), `salonName`, `imageUrl`, `city`, `averageRating`, `createdAt`.
 
-> توجه: لیست سالن‌ها `id` از نوع **Guid** برمی‌گرداند؛ favorites با **long** کار می‌کند. برای favorite باید شناسهٔ عددی سالن را از مسیر دیگری (مثلاً membership/جزئیات داخلی) داشته باشید یا تا یکسان‌سازی قرارداد، این endpoint را با احتیاط map کنید.
+برای قلب روی کارت، `salonPublicId` را با `SalonCardDto.id` مچ کنید. Add سالن تأییدنشده را می‌پذیرد؛ GET آن را نشان نمی‌دهد تا وقتی Approved شود.
 
 ---
 
@@ -707,6 +709,8 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 | `keepMediaPublicIds` | string اختیاری — Guidها با ویرگول برای نگه‌داشتن رسانه‌های قبلی |
 
 آپلود عمومی‌تر: `POST /api/Media/upload/{entityType}/{entityPublicId}` (تا ~۵۰MB) با فیلدهای `file`, `mediaType`, `usageType`, `isPrimary`, `mediaPublicId?`.
+
+آپلود فعلاً برای این `entityType`ها فعال است: `1` Salon (مالک/پرسنل)، `2` ServiceType (**فقط Admin**؛ `entityPublicId` = PublicId نوع سرویس)، `4` StaffMember، `5` Customer. بقیهٔ مقادیر enum فقط برای ارجاع polymorphic رزرو شده‌اند.
 
 `EntityType`: 1 Salon, 2 ServiceType, 3 ServiceOffering, 4 StaffMember, 5 Customer, 6 Gallery (obsolete), 7 Appointment, 8 Payment, 9 Invoice, 10 SalonBranch, 11 Review, 12 PlatformInvoice, 13 SalonSubscription, 14 Tip, 15 Refund, 16 Wallet, 17 WalletTransaction, 18 SalonReport, 19 PromoCode, 20 Notification, 21 StaffPayout, 22 StaffEarning, 23 User.  
 `MediaUsageType`: 1 Cover, 2 Banner, 3 Profile, 4 Gallery.

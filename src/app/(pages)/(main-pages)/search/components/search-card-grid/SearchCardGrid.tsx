@@ -4,9 +4,62 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
 import { ISalonCard } from "@/services/domains/salons/types/salons.type";
+import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import barbershop from "@/shared/assets/images/barbershop.png";
+import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
+
+function SearchSalonCard({ salon }: { salon: ISalonCard }) {
+  const image = salonImageSrc(salon.imageUrl, barbershop.src);
+  const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(
+    salon.id
+  );
+
+  return (
+    <Link
+      href={RouteAddress.SALONS.DETAILS(salon.id)}
+      className="relative h-52 overflow-hidden rounded-[20px]"
+    >
+      <Image
+        src={image}
+        alt={salon.name}
+        fill
+        unoptimized={/^https?:\/\//i.test(image)}
+        className="object-cover"
+        sizes="(max-width:768px) 50vw, 25vw"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+      <FavoriteHeartButton
+        isFavorite={isFavorite}
+        disabled={!canToggle}
+        pending={isPending}
+        onToggle={toggle}
+        size={16}
+        className="absolute right-2 top-2 z-10 h-8 w-8 bg-black/60 backdrop-blur-sm"
+      />
+
+      <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur-sm">
+        <StarIcon size={12} weight="fill" className="text-yellow-400" />
+        <span className="text-[11px] font-semibold text-white">
+          {(salon.rating ?? 0).toFixed(1)}
+        </span>
+      </div>
+
+      <div className="absolute inset-x-4 bottom-4 z-10 flex items-center justify-between gap-2">
+        <h4 className="truncate text-[14px] font-bold text-white">
+          {salon.name}
+        </h4>
+
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground backdrop-blur-sm">
+          <ArrowUpLeftIcon size={15} weight="bold" />
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 interface SearchCardGridProps {
   salons: ISalonCard[];
@@ -46,44 +99,9 @@ export default function SearchCardGrid({
   return (
     <div className="px-safe-area">
       <div className="grid grid-cols-2 gap-3">
-        {salons.map((salon) => {
-          const image = salonImageSrc(salon.imageUrl, barbershop.src);
-          return (
-            <Link
-              key={salon.id}
-              href={RouteAddress.SALONS.DETAILS(salon.id)}
-              className="relative h-52 overflow-hidden rounded-[20px]"
-            >
-              <Image
-                src={image}
-                alt={salon.name}
-                fill
-                unoptimized={/^https?:\/\//i.test(image)}
-                className="object-cover"
-                sizes="(max-width:768px) 50vw, 25vw"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-              <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur-sm">
-                <StarIcon size={12} weight="fill" className="text-yellow-400" />
-                <span className="text-[11px] font-semibold text-white">
-                  {(salon.rating ?? 0).toFixed(1)}
-                </span>
-              </div>
-
-              <div className="absolute inset-x-4 bottom-4 z-10 flex items-center justify-between gap-2">
-                <h4 className="truncate text-[14px] font-bold text-white">
-                  {salon.name}
-                </h4>
-
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground backdrop-blur-sm">
-                  <ArrowUpLeftIcon size={15} weight="bold" />
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+        {salons.map((salon) => (
+          <SearchSalonCard key={salon.id} salon={salon} />
+        ))}
       </div>
     </div>
   );
