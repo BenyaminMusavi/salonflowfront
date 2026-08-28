@@ -23,6 +23,7 @@ import {
   TSaveBranchesEntity,
   TSaveServicesEntity,
   TSaveStaffEntity,
+  TStaffRosterEntity,
 } from "@/services/domains/salons/types/onboarding.type";
 
 class SalonService {
@@ -135,6 +136,26 @@ class SalonService {
     return await axiosInstance.post<unknown, TSaveStaffEntity>(
       API_ADDRESS.SALON.SAVE_STAFF(salonPublicId),
       { staff }
+    );
+  }
+
+  /** Server's source of truth for the current roster — replaces the old localStorage draft. */
+  async getStaff(salonPublicId: string) {
+    return await axiosInstance.get<unknown, TStaffRosterEntity>(
+      API_ADDRESS.SALON.STAFF_ROSTER(salonPublicId)
+    );
+  }
+
+  /** Only the invited user's own JWT may call these (backend returns 401 otherwise). */
+  async acceptStaffInvitation(salonPublicId: string, staffPublicId: string) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SALON.ACCEPT_STAFF_INVITATION(salonPublicId, staffPublicId)
+    );
+  }
+
+  async rejectStaffInvitation(salonPublicId: string, staffPublicId: string) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SALON.REJECT_STAFF_INVITATION(salonPublicId, staffPublicId)
     );
   }
 

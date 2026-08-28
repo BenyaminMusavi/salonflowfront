@@ -113,7 +113,11 @@ export default function DashboardView() {
 
   const offeringsQuery = useQueryCatalogOfferings(true);
   const offerings = offeringsQuery.data?.data ?? [];
-  const allOfferingIds = useMemo(() => offerings.map((o) => o.id), [offerings]);
+  // staff-for-offerings expects Guid offeringPublicIds, not the numeric catalog id.
+  const allOfferingIds = useMemo(
+    () => offerings.map((o) => o.publicId).filter(Boolean),
+    [offerings]
+  );
 
   // Board filters are independent of the quick-book drawer's own branch picker below:
   // leaving them unset must mean "show every branch/staff", not silently fall back to
@@ -132,6 +136,12 @@ export default function DashboardView() {
     { enabled: allOfferingIds.length > 0 }
   );
   const boardStaff = boardStaffQuery.data?.data ?? [];
+
+  // Unlike the agenda list (where an unset filter means "every branch"), the batch
+  // day-board endpoint is always scoped to exactly one branch, so grid mode needs a
+  // concrete choice — reuse the same filter when set, else default to the first branch.
+  const boardBranchPublicId =
+    branches.find((b) => b.id === boardBranchId)?.publicId ?? branches[0]?.publicId;
 
   const appointmentsQuery = useQuerySalonAppointments(date, {
     pageSize: 100,
@@ -159,8 +169,8 @@ export default function DashboardView() {
 
   const staffQuery = useQueryStaffForOfferings(
     salonPublicId || salonId || undefined,
-    selectedOfferingId ? [selectedOfferingId] : [],
-    { enabled: !!selectedOfferingId }
+    selectedOffering?.publicId ? [selectedOffering.publicId] : [],
+    { enabled: !!selectedOffering?.publicId }
   );
   const staff = staffQuery.data?.data ?? [];
   const [staffId, setStaffId] = useState<number | "">("");
@@ -389,15 +399,22 @@ export default function DashboardView() {
       </div>
 
       {viewMode === "grid" && (
-        <DashboardCalendarGrid date={date} staff={boardStaff} onToast={setToast} />
+        <DashboardCalendarGrid
+          date={date}
+          branchPublicId={boardBranchPublicId}
+          staff={boardStaff}
+          onToast={setToast}
+        />
       )}
 
-      {viewMode === "agenda" && branches.length > 1 && (
+      {branches.length > 1 && (
         <DashboardSelect
           value={boardBranchId}
           onChange={(e) => setBoardBranchId(Number(e.target.value) || "")}
         >
-          <option value="">همه شعبه‌ها</option>
+          {/* Grid mode's batch day-board is always scoped to one branch, so "all
+              branches" only makes sense as a filter for the agenda list. */}
+          {viewMode === "agenda" && <option value="">همه شعبه‌ها</option>}
           {branches.map((branch) => (
             <option
               key={String(branch.id ?? branch.publicId)}

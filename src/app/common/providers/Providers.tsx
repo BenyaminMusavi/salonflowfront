@@ -4,6 +4,7 @@ import { DirectionProvider } from "@radix-ui/react-direction";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import { useSyncMembershipsFromAuthMe } from "@/services/domains/auth/hooks/useSyncMembershipsFromAuthMe";
+import StaffInvitationPrompt from "@/shared/components/composites/staff-invitation-prompt/StaffInvitationPrompt";
 
 type Props = {
     children: ReactNode
@@ -51,8 +52,22 @@ export const AuthMeMembershipsSyncProvider = ({ children }: Props) => {
     return <>{children}</>;
 }
 
+/**
+ * Renders the accept/reject dialog for pendingStaffInvitations app-wide, so it
+ * surfaces right after OTP login regardless of which page the user lands on.
+ */
+export const StaffInvitationPromptProvider = ({ children }: Props) => {
+    return (
+        <>
+            <StaffInvitationPrompt />
+            {children}
+        </>
+    );
+}
+
 export const Providers = composeProvider(
     RtlDirectionProvider,
     QueryProvider,
-    AuthMeMembershipsSyncProvider
+    AuthMeMembershipsSyncProvider,
+    StaffInvitationPromptProvider
 )

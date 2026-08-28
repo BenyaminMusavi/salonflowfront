@@ -46,7 +46,11 @@ export default function StaffServicesView() {
 
   const offeringsQuery = useQueryCatalogOfferings(true);
   const offerings = offeringsQuery.data?.data ?? [];
-  const offeringIds = useMemo(() => offerings.map((x) => x.id), [offerings]);
+  // staff-for-offerings expects Guid offeringPublicIds, not the numeric catalog id.
+  const offeringIds = useMemo(
+    () => offerings.map((x) => x.publicId).filter(Boolean),
+    [offerings]
+  );
 
   const staffQuery = useQueryStaffForOfferings(
     salonPublicId || undefined,

@@ -2,6 +2,8 @@ import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
 export interface IServiceOffering {
   id: number;
+  /** ServiceOffering.PublicId — the Guid save-staff/staff-for-offerings/booking expect. */
+  publicId: string;
   salonId: number;
   branchId?: number | null;
   serviceTypeId: number;
@@ -33,8 +35,12 @@ export interface ICreateOrUpdateOfferingRequest {
 export interface IStaffService {
   id: number;
   staffMemberId: number;
+  /** Guid form of staffMemberId — added so this page never has to fetch SalonById just to resolve one. */
+  staffMemberPublicId?: string | null;
   staffName?: string | null;
   serviceOfferingId: number;
+  /** Guid form of serviceOfferingId. */
+  serviceOfferingPublicId?: string | null;
   customDurationMinutes?: number | null;
   customPrice?: number | null;
   isActive: boolean;

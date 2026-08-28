@@ -44,6 +44,12 @@ export const API_ADDRESS = {
       `/api/salons/${salonPublicId}/save-services`,
     SAVE_STAFF: (salonPublicId: string) =>
       `/api/salons/${salonPublicId}/save-staff`,
+    STAFF_ROSTER: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/staff`,
+    ACCEPT_STAFF_INVITATION: (salonPublicId: string, staffPublicId: string) =>
+      `/api/salons/${salonPublicId}/staff/${staffPublicId}/accept-invitation`,
+    REJECT_STAFF_INVITATION: (salonPublicId: string, staffPublicId: string) =>
+      `/api/salons/${salonPublicId}/staff/${staffPublicId}/reject-invitation`,
     SAVE_MEDIAS: (salonPublicId: string) =>
       `/api/salons/${salonPublicId}/save-medias`,
     SAVE_MY_SCHEDULE: (salonPublicId: string) =>
@@ -55,11 +61,6 @@ export const API_ADDRESS = {
   FAVORITES: {
     BASE: "/api/favorites",
     BY_SALON: (salonPublicId: string) => `/api/favorites/${salonPublicId}`,
-  },
-
-  SALON_OFFERING: {
-    BASE: "/api/salon-offering",
-    BY_SALON: (salonId: number) => `/api/salon-offering/salon/${salonId}`,
   },
 
   CATALOG: {
@@ -96,6 +97,8 @@ export const API_ADDRESS = {
     RESCHEDULE: (id: number) => `/api/appointments/${id}/reschedule`,
     STAFF_DAY_BOARD: (staffMemberId: number) =>
       `/api/appointments/staff/${staffMemberId}/day-board`,
+    BRANCH_DAY_BOARD: (branchPublicId: string) =>
+      `/api/appointments/branch/${branchPublicId}/day-board`,
   },
 
   REVIEWS: {

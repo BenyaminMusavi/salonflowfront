@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import appointmentsService from "@/services/domains/appointments/appointments.service";
-import { STAFF_DAY_BOARD_QUERY_KEY } from "@/services/domains/appointments/hooks/useQueryStaffDayBoard";
-import { useMutateSalonLifecycle } from "@/services/domains/appointments/hooks";
+import {
+  useMutateSalonLifecycle,
+  useQueryBranchDayBoard,
+} from "@/services/domains/appointments/hooks";
 import type { IStaffDayBoardItem } from "@/services/domains/appointments/types/appointments.type";
 import type { IStaffProfile } from "@/services/domains/staff-profile/types/staff-profile.type";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
@@ -73,22 +73,26 @@ function statusBlockClass(status: number): string {
 
 interface DashboardCalendarGridProps {
   date: string;
+  branchPublicId: string | undefined;
   staff: IStaffProfile[];
   onToast: (toast: { type: "success" | "error"; message: string }) => void;
 }
 
 export default function DashboardCalendarGrid({
   date,
+  branchPublicId,
   staff,
   onToast,
 }: DashboardCalendarGridProps) {
-  const dayBoardQueries = useQueries({
-    queries: staff.map((member) => ({
-      queryKey: [STAFF_DAY_BOARD_QUERY_KEY, member.id, date],
-      queryFn: () => appointmentsService.getStaffDayBoard(member.id!, date),
-      enabled: member.id != null && !!date,
-    })),
-  });
+  // Single request for the whole branch, replacing the old one-request-per-staff-member fan-out.
+  const dayBoardQuery = useQueryBranchDayBoard(branchPublicId, date);
+  const itemsByStaffPublicId = useMemo(() => {
+    const map = new Map<string, IStaffDayBoardItem[]>();
+    for (const group of dayBoardQuery.data?.data ?? []) {
+      map.set(group.staffMemberPublicId, group.items);
+    }
+    return map;
+  }, [dayBoardQuery.data]);
 
   const lifecycle = useMutateSalonLifecycle();
   const [rescheduleTarget, setRescheduleTarget] = useState<IStaffDayBoardItem | null>(
@@ -124,7 +128,7 @@ export default function DashboardCalendarGrid({
     }
   };
 
-  const isLoading = dayBoardQueries.some((q) => q.isLoading);
+  const isLoading = dayBoardQuery.isLoading;
 
   return (
     <div className="overflow-x-auto rounded-[16px] border border-border bg-surface">
@@ -145,15 +149,20 @@ export default function DashboardCalendarGrid({
           </div>
         </div>
 
-        {staff.length === 0 ? (
+        {!branchPublicId ? (
+          <div className="flex h-40 flex-1 items-center justify-center text-xs text-foreground-muted">
+            یک شعبه انتخاب کنید تا تخته پرسنل آن نمایش داده شود.
+          </div>
+        ) : staff.length === 0 ? (
           <div className="flex h-40 flex-1 items-center justify-center text-xs text-foreground-muted">
             پرسنلی برای نمایش نیست.
           </div>
         ) : (
           staff.map((member, index) => {
-            const items = dayBoardQueries[index]?.data?.data ?? [];
+            const staffGuid = member.staffPublicId ?? member.publicId ?? undefined;
+            const items = (staffGuid && itemsByStaffPublicId.get(staffGuid)) || [];
             return (
-              <div key={member.id ?? index} className="w-[140px] shrink-0 border-l border-border">
+              <div key={staffGuid ?? member.id ?? index} className="w-[140px] shrink-0 border-l border-border">
                 <div className="flex h-10 items-center justify-center border-b border-border px-2">
                   <p className="truncate text-xs font-bold text-foreground">
                     {staffLabel(member)}

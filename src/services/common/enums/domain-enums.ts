@@ -122,6 +122,13 @@ export enum TrustStatus {
   Suspended = 3,
 }
 
+/** StaffMember.Status — set by the two-step invitation flow (guide §3.1). */
+export enum StaffInvitationStatus {
+  Pending = 1,
+  Active = 2,
+  Rejected = 3,
+}
+
 /** Media upload entity owner (guide §3.1). */
 export enum MediaEntityType {
   Salon = 1,

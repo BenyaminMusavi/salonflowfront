@@ -114,9 +114,18 @@ export interface IStaffDayBoardItem {
   appointmentServiceId: number;
 }
 
+/** One staff member's group in the batch branch day-board response. */
+export interface IBranchDayBoardGroup {
+  staffMemberId: number;
+  staffMemberPublicId: string;
+  staffName: string;
+  items: IStaffDayBoardItem[];
+}
+
 export type TSalonAppointmentsEntity = TResponse<TPagedResult<ISalonAppointmentItem>>;
 export type TMyAppointmentsEntity = TResponse<IMyAppointmentListItem[]>;
 export type TMyAppointmentDetailEntity = TResponse<IMyAppointmentDetail>;
 export type TQuickBookEntity = TResponse<IQuickBookResult>;
 export type TCreateSalonAppointmentEntity = TResponse<number>;
 export type TStaffDayBoardEntity = TResponse<IStaffDayBoardItem[]>;
+export type TBranchDayBoardEntity = TResponse<IBranchDayBoardGroup[]>;

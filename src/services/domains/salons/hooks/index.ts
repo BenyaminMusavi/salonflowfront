@@ -8,6 +8,9 @@ import { useQuerySalonAvailableSlots } from "./useQuerySalonAvailableSlots";
 import { useMutateSalonBasicInfo } from "./useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "./useMutateSalonBranches";
 import { useMutateSalonMedia } from "./useMutateSalonMedia";
+import { useMutateSalonStaff } from "./useMutateSalonStaff";
+import { useQueryStaffRoster } from "./useQueryStaffRoster";
+import { useMutateStaffInvitation } from "./useMutateStaffInvitation";
 
 export {
   useQueryApprovedSalons,
@@ -20,4 +23,7 @@ export {
   useMutateSalonBasicInfo,
   useMutateSalonBranches,
   useMutateSalonMedia,
+  useMutateSalonStaff,
+  useQueryStaffRoster,
+  useMutateStaffInvitation,
 };

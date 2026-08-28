@@ -15,12 +15,20 @@ export interface IAuthMeMembership {
   branchId: number | null;
 }
 
+export interface IPendingStaffInvitation {
+  salonPublicId: string;
+  salonName: string;
+  staffPublicId: string;
+}
+
 export interface IAuthMe {
   userId: number;
   phone: string;
   firstName: string | null;
   lastName: string | null;
   memberships: IAuthMeMembership[];
+  /** Staff invitations (StaffMember.Status == Pending) awaiting this user's accept/reject. */
+  pendingStaffInvitations: IPendingStaffInvitation[];
 }
 
 export interface ILoginRequest {

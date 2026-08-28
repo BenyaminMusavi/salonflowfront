@@ -12,6 +12,7 @@ import {
   TMyAppointmentDetailEntity,
   TMyAppointmentsEntity,
   TStaffDayBoardEntity,
+  TBranchDayBoardEntity,
 } from "./types/appointments.type";
 
 class AppointmentsService {
@@ -96,6 +97,14 @@ class AppointmentsService {
   async getStaffDayBoard(staffMemberId: number, date: string) {
     return await axiosInstance.get<unknown, TStaffDayBoardEntity>(
       API_ADDRESS.APPOINTMENTS.STAFF_DAY_BOARD(staffMemberId),
+      { params: { date } }
+    );
+  }
+
+  /** Every staff member's day-board for one branch in a single request. */
+  async getBranchDayBoard(branchPublicId: string, date: string) {
+    return await axiosInstance.get<unknown, TBranchDayBoardEntity>(
+      API_ADDRESS.APPOINTMENTS.BRANCH_DAY_BOARD(branchPublicId),
       { params: { date } }
     );
   }

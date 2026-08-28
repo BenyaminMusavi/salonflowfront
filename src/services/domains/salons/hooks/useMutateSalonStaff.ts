@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import salonService from "../salon.service";
 import { IOnboardingStaff } from "../types/onboarding.type";
 import { STAFF_FOR_OFFERINGS_QUERY_KEY } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
+import { STAFF_ROSTER_QUERY_KEY } from "./useQueryStaffRoster";
 
 export type SaveSalonStaffVars = {
   salonPublicId: string;
@@ -20,6 +21,8 @@ export const useMutateSalonStaff = () => {
       queryClient.invalidateQueries({
         queryKey: [STAFF_FOR_OFFERINGS_QUERY_KEY],
       });
+      // The roster GET is now the source of truth for the staff editor's own screen.
+      queryClient.invalidateQueries({ queryKey: [STAFF_ROSTER_QUERY_KEY] });
     },
   });
 };

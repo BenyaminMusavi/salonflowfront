@@ -74,26 +74,28 @@
 
 **Verify OTP body**
 
-| فیلد | نوع |
-|------|-----|
-| `phone` | string |
-| `code` | string |
+| فیلد | نوع | توضیح |
+|------|-----|--------|
+| `phone` | string | |
+| `code` | string | |
+| `acceptedTerms` | bool | **الزامی وقتی این تأیید حساب کاربری جدید می‌سازد** (شماره تازه، اولین ورود). اگر `false`/حذف‌شده باشد و حساب جدید باشد، `400` با `type: "validation_error"` و `field: "AcceptedTerms"` برمی‌گردد. برای کاربر موجود (فقط ورود دوباره) نادیده گرفته می‌شود. متن قوانین و مقررات/حریم خصوصی روی فرانت‌اند میزبانی می‌شود؛ بک‌اند فقط زمان پذیرش را ثبت می‌کند. |
 
 **Verify پاسخ:** همان `AuthResponse` (access + refresh + `hasPassword`).
 
 ```json
-{ "phone": "09121234567", "code": "123456" }
+{ "phone": "09121234567", "code": "123456", "acceptedTerms": true }
 ```
 
-#### تنظیم رمز / تکمیل پروفایل پس از OTP
+#### تنظیم رمز / تغییر رمز / تکمیل پروفایل پس از OTP
 
 `POST /api/auth/set-password` — JWT
 
-| فیلد | نوع |
-|------|-----|
-| `password` | string |
-| `firstName` | string |
-| `lastName` | string |
+| فیلد | نوع | توضیح |
+|------|-----|--------|
+| `password` | string | |
+| `oldPassword` | string | **الزامی اگر کاربر از قبل رمز عبور دارد** (یعنی این درخواست "تغییر رمز" است). باید با رمز فعلی مطابقت داشته باشد؛ در غیر این صورت `401` برمی‌گردد. برای تنظیم اولیه‌ی رمز بلافاصله پس از OTP (کاربر هنوز رمزی ندارد) لازم نیست. |
+| `firstName` | string | |
+| `lastName` | string | |
 
 پاسخ: `200` خالی.
 
@@ -129,11 +131,20 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
       "roleName": "SalonOwner",
       "branchId": null
     }
+  ],
+  "pendingStaffInvitations": [
+    {
+      "salonPublicId": "b2c3d4e5-...",
+      "salonName": "سالن زیبایی نور",
+      "staffPublicId": "c3d4e5f6-..."
+    }
   ]
 }
 ```
 
 `memberships` فقط عضویت‌های **فعال** روی سالن‌های حذف‌نشده است (یک ردیف به‌ازای هر membership؛ برای Staff ممکن است چند شعبه از یک سالن بیاید). از این لیست Business Switcher را پر کنید، سپس با `salonId`/`branchId` به `switch-context` بروید تا JWT داشبورد ست شود.
+
+`pendingStaffInvitations` دعوت‌های پرسنلی این کاربر (`StaffMember.Status == Pending`) روی هر سالن است — بعد از OTP (که همیشه توکن مشتری/سراسری می‌دهد، بخش ۱.۱) این endpoint را صدا بزنید و اگر آرایه خالی نبود، UI «به [salonName] به‌عنوان پرسنل دعوت شده‌اید» را نشان دهید با گزینهٔ accept/reject (بخش ۳.۱ → روستر پرسنل و وضعیت دعوت).
 
 > برای پروفایل مبتنی بر JWT از `GET /api/auth/me` یا `GET /api/users/me` (هر دو JWT + `[Authorize]`) استفاده کنید. `users/me` شناسه را فقط از توکن می‌خواند.
 
@@ -704,6 +715,39 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 
 قابلیت پرسنل از طریق انتساب به `ServiceOffering` (`StaffMemberService`) تعریف می‌شود — فیلد `staffType` حذف شده است.
 
+#### روستر پرسنل (GET) و وضعیت دعوت
+
+`GET /api/salons/{salonPublicId}/staff` — JWT (فقط مالک؛ مثل `save-staff` با بررسی مالکیت در سرویس، نه Policy جدا).
+
+منبع حقیقت سرور برای صفحهٔ ویرایش پرسنل است — دیگر به draft محلی (`localStorage`) برای «آخرین وضعیت» تکیه نکنید؛ روستر را روی mount بگیرید و state محلی را فقط برای ویرایش‌های ذخیره‌نشدهٔ همان نشست نگه دارید.
+
+```json
+[
+  {
+    "publicId": "…",
+    "phoneNumber": "0912…",
+    "isCreator": false,
+    "branchPublicId": "…",
+    "offeringPublicIds": ["…"],
+    "hasLoggedIn": false,
+    "status": 1
+  }
+]
+```
+
+`status` مقدار `StaffInvitationStatus` است: `1` Pending (در انتظار پذیرش دعوت)، `2` Active، `3` Rejected. `hasLoggedIn` از `User.LastLoginAt != null` محاسبه می‌شود (نه یک حدس UI).
+
+**چرخهٔ دعوت:** شماره‌ای که برای اولین بار (یا بعد از Rejected قبلی) به `save-staff` اضافه می‌شود، با `status=Pending` ساخته می‌شود و تا پذیرش، از هیچ سطح رزرو/تخته‌روزی دیده نمی‌شود — نه `staff-availability`، نه تخته‌روز، نه پیکر رزرو سریع. شماره‌های موجود که دوباره در لیست فرستاده می‌شوند دست‌نخورده می‌مانند (Active یا Pending سابق‌شان حفظ می‌شود).
+
+پذیرش/رد فقط توسط خودِ دعوت‌شده (JWT کاربر مقصد، نه مالک) ممکن است:
+
+| Method + Path | توضیح |
+|---------------|--------|
+| `POST /api/salons/{salonPublicId}/staff/{staffPublicId}/accept-invitation` | `status → Active` |
+| `POST /api/salons/{salonPublicId}/staff/{staffPublicId}/reject-invitation` | `status → Rejected` |
+
+هر دو با **400** رد می‌شوند اگر `status` از قبل `Pending` نباشد، و اگر `staffPublicId` متعلق به کاربر جاری نباشد **401** می‌دهند. فرانت باید این‌ها را بلافاصله بعد از OTP بر اساس `pendingStaffInvitations` در `GET /api/auth/me` صدا بزند (بخش ۱.۲) — نه پیش از آن، چون OTP همیشه توکن مشتری/سراسری صادر می‌کند.
+
 #### رسانه (multipart، حداکثر ۱۰MB در این endpoint)
 
 | Form field | نوع |
@@ -761,6 +805,7 @@ Base: `api/catalog` — JWT + کانتکست سالن.
 | فیلد | نوع |
 |------|-----|
 | `id`, `salonId`, `branchId?`, `serviceTypeId` | number |
+| `publicId` | Guid — `ServiceOffering.PublicId`، همان مقداری که `save-staff`/رزرو انتظار دارند |
 | `serviceTypeName` | string |
 | `durationMinutes`, `bufferBeforeMinutes`, `bufferAfterMinutes` | number |
 | `basePrice`, `depositAmount?` | number |
@@ -820,7 +865,7 @@ Base: `api/catalog` — JWT + کانتکست سالن.
 }
 ```
 
-پاسخ: لیست نهایی `StaffServiceDto[]` (`id`, `staffMemberId`, `staffName`, `serviceOfferingId`, `customDurationMinutes?`, `customPrice?`, `isActive`).
+پاسخ: لیست نهایی `StaffServiceDto[]` (`id`, `staffMemberId`, `staffMemberPublicId`, `staffName`, `serviceOfferingId`, `serviceOfferingPublicId`, `customDurationMinutes?`, `customPrice?`, `isActive`). دو فیلد `*PublicId` طوری اضافه شدند که این صفحه دیگر نیازی به fetch جداگانهٔ `GET /api/salons/{id}` فقط برای resolve کردن Guid نداشته باشد.
 
 #### قوانین قیمت‌گذاری
 
@@ -891,6 +936,36 @@ Base: `api/catalog` — JWT + کانتکست سالن.
   }
 ]
 ```
+
+#### تخته روز Batch یک شعبه (همهٔ پرسنل با یک درخواست)
+
+`GET /api/appointments/branch/{branchPublicId}/day-board?date=2026-08-01` — SalonAccess
+
+جایگزین fan-out قبلی (یک درخواست به‌ازای هر پرسنل روی هر تغییر تاریخ در گرید تقویم داشبورد) — حالا یک درخواست، کل شعبه در همان روز. آیتم تخته‌روز هر پرسنل همان شکل قبلی (`StaffDayBoardItemDto`) است، فقط این‌بار گروه‌بندی‌شده:
+
+```json
+[
+  {
+    "staffMemberId": 12,
+    "staffMemberPublicId": "…",
+    "staffName": "سارا محمدی",
+    "items": [
+      {
+        "appointmentId": 501,
+        "appointmentPublicId": "…",
+        "startTime": "2026-08-01T09:00:00Z",
+        "endTime": "2026-08-01T09:45:00Z",
+        "status": 1,
+        "customerName": "…",
+        "serviceName": "…",
+        "appointmentServiceId": 9001
+      }
+    ]
+  }
+]
+```
+
+Endpoint تک‌پرسنلی بالا برای صفحه‌های شخصی (مثلاً تقویم خودِ پرسنل) همچنان باقی است — این افزودنی است، جایگزین نیست.
 
 #### رزرو از طرف سالن
 
@@ -1141,9 +1216,9 @@ Body عملیات: `{ "customerId", "amount", "description?" }`.
 | `POST /api/salon-reports/{id}/investigate` | AdminOnly | → Investigating |
 | `POST /api/salon-reports/{id}/resolve` | AdminOnly | → Resolved؛ body اختیاری `{ "adminNotes": "…" }`؛ `ActiveReportCount` −1 |
 | `POST /api/salon-reports/{id}/dismiss` | AdminOnly | → Dismissed؛ `ActiveReportCount` −1 |
-| `POST /api/salons/{id}/trust-status` | AdminOnly | `{ "trustStatus": 1\|2\|3 }` — Active / UnderReview / Suspended (جدا از onboarding approval) |
+| `POST /api/salons/{salonPublicId}/trust-status` | AdminOnly | `{ "trustStatus": 1\|2\|3 }` — Active / UnderReview / Suspended (جدا از onboarding approval) |
 
-`SalonReportStatus`: Pending=1, Investigating=2, Resolved=3, Dismissed=4. Resolve/Dismiss وضعیت اعتماد را خودکار عوض نمی‌کنند — ادمین با `trust-status` تصمیم می‌گیرد. آستانه‌های خودکار (`TrustSettings` در appsettings): میانگین کمتر از 3.0 با حداقل ۵ نظر Approved، یا `ActiveReportCount` بیشتر از 3 → `TrustStatus=UnderReview` (کاتالوگ عمومی مخفی). بازیابی فقط با `POST /api/salons/{id}/trust-status`.
+`SalonReportStatus`: Pending=1, Investigating=2, Resolved=3, Dismissed=4. Resolve/Dismiss وضعیت اعتماد را خودکار عوض نمی‌کنند — ادمین با `trust-status` تصمیم می‌گیرد. آستانه‌های خودکار (`TrustSettings` در appsettings): میانگین کمتر از 3.0 با حداقل ۵ نظر Approved، یا `ActiveReportCount` بیشتر از 3 → `TrustStatus=UnderReview` (کاتالوگ عمومی مخفی). بازیابی فقط با `POST /api/salons/{salonPublicId}/trust-status`.
 
 ---
 
