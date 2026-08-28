@@ -26,6 +26,7 @@ const OtpFormProvider = ({ children }: IProps) => {
     mode: "onChange",
     defaultValues: {
       otp: "",
+      acceptedTerms: false,
     }
   });
 
@@ -48,12 +49,15 @@ const OtpFormProvider = ({ children }: IProps) => {
       const res = await mutateAsync({
         phone,
         code: data.otp,
+        acceptedTerms: data.acceptedTerms,
       });
       clearSalon();
       setToken(res.data, true);
       router.push(resolvePostLoginRedirect());
     } catch (e) {
-      handleFormError(setError, setGeneralError)(e);
+      handleFormError(setError, setGeneralError, {
+        acceptedterms: "acceptedTerms",
+      })(e);
     }
   };
 

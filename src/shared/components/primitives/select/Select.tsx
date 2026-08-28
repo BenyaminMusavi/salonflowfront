@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { CheckIcon, ChevronDownIcon } from "@radix-ui/react-icons";
+import { CheckIcon, CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import {
@@ -104,7 +104,7 @@ const SelectTrigger = React.forwardRef<
     return (
       <button type="button" ref={ref} className={commonClass} onClick={() => setOpen(true)} {...props}>
         {triggerContent}
-        <ChevronDownIcon className="h-5 w-5 opacity-60 shrink-0" />
+        <CaretDownIcon className="h-5 w-5 opacity-60 shrink-0" />
       </button>
     );
   }
@@ -113,7 +113,7 @@ const SelectTrigger = React.forwardRef<
     <SelectPrimitive.Trigger ref={ref} className={commonClass} {...(props as any)}>
       {triggerContent}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="h-5 w-5 opacity-60 shrink-0" />
+        <CaretDownIcon className="h-5 w-5 opacity-60 shrink-0" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );

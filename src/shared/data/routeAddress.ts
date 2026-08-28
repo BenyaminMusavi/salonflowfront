@@ -26,6 +26,7 @@ export const RouteAddress = {
   PROFILE: {
     BASE: "/profile",
     SETTINGS: "/profile/settings",
+    CHANGE_PASSWORD: "/profile/settings/change-password",
   },
   FAVORITES: {
     BASE: "/favorites",

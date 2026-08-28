@@ -37,9 +37,12 @@ class AuthService {
   }
 
   async setPassword(data: ISetPasswordRequest) {
+    // A 401 here always means "oldPassword missing/incorrect", never "session expired"
+    // (BACKEND_UPDATE_REPORT.md §1.1/§2.1) — skip the refresh-and-retry flow entirely.
     return await axiosInstance.post<unknown, void>(
       API_ADDRESS.AUTH.SET_PASSWORD,
-      data
+      data,
+      { skipAuthRetry: true }
     );
   }
 

@@ -10,6 +10,22 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { setAuthLogoutReason } from "@/shared/utils/authRedirect";
 import { useFavoriteIdsStore } from "@/services/domains/favorites/store/useFavoriteIdsStore";
 
+declare module "axios" {
+  interface AxiosRequestConfig {
+    /** Internal: marks a request as already retried once after a token refresh. */
+    _retry?: boolean;
+    /**
+     * Marks a request as never eligible for the 401 refresh-and-retry flow. Use this for
+     * endpoints where a 401 always means "your input was wrong", never "your session
+     * expired" — e.g. change-password's `oldPassword` check, which now returns the exact
+     * same 401 shape as a real expired session (BACKEND_UPDATE_REPORT.md §2.1). Without
+     * this flag, a wrong old password would burn a needless refresh-token round trip
+     * before failing anyway.
+     */
+    skipAuthRetry?: boolean;
+  }
+}
+
 let isRefreshing = false;
 let queue: Array<{
   resolve: (token: string) => void;
@@ -69,9 +85,13 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
   (res) => res.data,
   async (error) => {
-    const original = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const original = error.config as AxiosRequestConfig;
 
-    if (error.response?.status !== 401 || original._retry) {
+    if (
+      error.response?.status !== 401 ||
+      original._retry ||
+      original.skipAuthRetry
+    ) {
       return Promise.reject(error);
     }
 

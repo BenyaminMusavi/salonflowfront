@@ -83,6 +83,29 @@ interface FieldErrors {
   [key: string]: string[];
 }
 
+/**
+ * The shape above (`FieldErrors`, used by `TError.errors`) assumes a dictionary
+ * ({ [field]: string[] }). Verified directly against the backend source
+ * (GlobalExceptionMiddleware.cs / ValidationActionFilter.cs) on 2026-08-28: the real
+ * response for a validation_error is an ARRAY of { field, message } objects, not a
+ * dictionary. `handleFormError.ts` and `handleValidationErrors.ts` still assume the
+ * dictionary shape and are known-broken as a result — Object.keys() on an array returns
+ * numeric indices ("0", "1"...), not field names, so setError() gets called with the
+ * wrong field key and an object (not a string) as the message. Flagged, not fixed here
+ * (owner's call). Use the two types below for any new code instead of `TError`/`FieldErrors`.
+ */
+export type TApiFieldError = {
+  field: string;
+  message: string;
+};
+
+export type TApiErrorResponse = {
+  statusCode: number;
+  type: TErrorTypeEnum;
+  message: string;
+  errors: TApiFieldError[];
+};
+
 export type TEmptyResponse = {};
 
 export type TIdAndName = {

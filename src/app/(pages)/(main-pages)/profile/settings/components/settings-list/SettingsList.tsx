@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   CaretLeft,
   House,
@@ -9,10 +10,12 @@ import {
   Phone,
   ShieldCheck,
 } from "@phosphor-icons/react";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 interface SettingsItem {
   label: string;
   icon: React.ElementType;
+  href?: string;
 }
 
 const appSettings: SettingsItem[] = [
@@ -24,15 +27,18 @@ const appSettings: SettingsItem[] = [
 ];
 
 const popular: SettingsItem[] = [
-  { label: "تنظیمات امنیتی", icon: ShieldCheck },
+  {
+    label: "تنظیمات امنیتی",
+    icon: ShieldCheck,
+    href: RouteAddress.PROFILE.CHANGE_PASSWORD,
+  },
 ];
 
-function SettingsRow({ label, icon: Icon }: SettingsItem) {
-  return (
-    <button
-      type="button"
-      className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right"
-    >
+function SettingsRow({ label, icon: Icon, href }: SettingsItem) {
+  const rowClassName =
+    "flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right";
+  const content = (
+    <>
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
         <Icon size={20} className="text-primary" />
       </div>
@@ -40,6 +46,20 @@ function SettingsRow({ label, icon: Icon }: SettingsItem) {
         {label}
       </span>
       <CaretLeft size={18} className="text-foreground-muted" />
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={rowClassName}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={rowClassName}>
+      {content}
     </button>
   );
 }

@@ -31,6 +31,12 @@ export interface ILoginRequest {
 export interface IVerifyOtpRequest {
   phone: string;
   code: string;
+  /**
+   * Required (must be true) only when this verification creates a brand-new account.
+   * Ignored for a returning user logging back in. Backend rejects new-account creation
+   * with a validation_error (field "acceptedterms") when this is false/omitted.
+   */
+  acceptedTerms: boolean;
 }
 
 export interface ISendOtpRequest {
@@ -43,8 +49,17 @@ export interface IForgetPasswordRequest {
 
 export interface ISetPasswordRequest {
   password: string;
-  firstName: string;
-  lastName: string;
+  /**
+   * Required, and must match the current password, whenever the account already has one
+   * set (i.e. any "change password" screen, not the one-time first-password-setup screen
+   * right after signup). Wrong/missing value returns a generic 401 authentication_error —
+   * the backend does not distinguish this from any other login failure in the message text.
+   */
+  oldPassword?: string;
+  /** Optional — only updates the name if sent. Corrected from required: backend accepts omission. */
+  firstName?: string;
+  /** Optional — only updates the name if sent. Corrected from required: backend accepts omission. */
+  lastName?: string;
 }
 
 export interface ISetPasswordWithOtpRequest {

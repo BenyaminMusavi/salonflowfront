@@ -6,9 +6,11 @@ import { Button } from "@/shared/components/primitives/button/Button";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
 import { InputOtpReactHookForm } from "@/shared/components/primitives/input/InputOtpReactHookForm";
 import OtpResendButton from "@/app/(pages)/auth/(with-back-button)/otp/components/OtpResendButton";
+import AcceptedTermsField from "@/app/(pages)/auth/(with-back-button)/otp/components/AcceptedTermsField";
+import { TOtpFormSchema } from "@/app/(pages)/auth/(with-back-button)/otp/components/otpFormSchema";
 
 function OtpForm() {
-  const { control } = useFormContext();
+  const { control } = useFormContext<TOtpFormSchema>();
   const isLoading = useFormLoading();
 
   return (
@@ -23,6 +25,10 @@ function OtpForm() {
             label="کد تایید"
             length={6}
           />
+        </div>
+
+        <div className={"flex w-full"}>
+          <AcceptedTermsField control={control} />
         </div>
 
         <div className={"flex flex-col gap-y-4 w-full pt-5"}>
