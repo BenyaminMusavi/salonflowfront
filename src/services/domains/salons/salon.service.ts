@@ -22,6 +22,7 @@ import {
   TSaveBasicInfoEntity,
   TSaveBranchesEntity,
   TSaveServicesEntity,
+  TSaveStaffEntity,
 } from "@/services/domains/salons/types/onboarding.type";
 
 class SalonService {
@@ -131,7 +132,7 @@ class SalonService {
   }
 
   async saveStaff(salonPublicId: string, staff: IOnboardingStaff[]) {
-    return await axiosInstance.post(
+    return await axiosInstance.post<unknown, TSaveStaffEntity>(
       API_ADDRESS.SALON.SAVE_STAFF(salonPublicId),
       { staff }
     );

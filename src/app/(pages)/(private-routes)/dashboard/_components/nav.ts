@@ -34,7 +34,8 @@ export const OWNER_NAV_GROUPS: OwnerNavGroup[] = [
     label: "عملیات",
     tabs: [
       { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
-      { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "پرسنل" },
+      { href: RouteAddress.DASHBOARD.STAFF, label: "پرسنل" },
+      { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
       { href: RouteAddress.DASHBOARD.SCHEDULES, label: "برنامه" },
       { href: RouteAddress.DASHBOARD.SALON_INFO, label: "اطلاعات سالن" },
     ],
