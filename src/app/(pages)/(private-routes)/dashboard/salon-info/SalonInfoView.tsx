@@ -11,14 +11,16 @@ import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutat
 import { useMutateSalonMedia } from "@/services/domains/salons/hooks/useMutateSalonMedia";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
-import { DashboardPage, DashboardPageHeader } from "../_components";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardToast,
+  type DashboardToastState,
+} from "../_components";
 import SalonInfoJumpNav, {
   SALON_INFO_SECTIONS,
 } from "./components/SalonInfoJumpNav";
 import SalonStatusBanner from "./components/SalonStatusBanner";
-import SalonInfoToast, {
-  type SalonInfoToastState,
-} from "./components/SalonInfoToast";
 import SalonInfoSkeleton from "./components/SalonInfoSkeleton";
 import SalonInfoEmptyState from "./components/SalonInfoEmptyState";
 import BasicInfoSection, {
@@ -124,7 +126,7 @@ export default function SalonInfoView() {
   const [initialMediaPublicIds, setInitialMediaPublicIds] = useState<string[]>(
     []
   );
-  const [toast, setToast] = useState<SalonInfoToastState>(null);
+  const [toast, setToast] = useState<DashboardToastState>(null);
 
   const dismissToast = useCallback(() => setToast(null), []);
 
@@ -505,7 +507,7 @@ export default function SalonInfoView() {
         </>
       )}
 
-      <SalonInfoToast toast={toast} onDismiss={dismissToast} />
+      <DashboardToast toast={toast} onDismiss={dismissToast} />
     </DashboardPage>
   );
 }

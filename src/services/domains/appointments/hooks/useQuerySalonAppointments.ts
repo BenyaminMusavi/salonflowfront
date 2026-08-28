@@ -9,7 +9,8 @@ export const SALON_APPOINTMENTS_QUERY_KEY = "SALON_APPOINTMENTS_QUERY_KEY";
 
 export const useQuerySalonAppointments = (
   date: string,
-  options?: Omit<ISalonAppointmentsQuery, "date" | "salonId">
+  options?: Omit<ISalonAppointmentsQuery, "date" | "salonId">,
+  config?: { enabled?: boolean }
 ) => {
   const salonId = useSalonContextStore((s) => s.salonId);
 
@@ -21,7 +22,7 @@ export const useQuerySalonAppointments = (
         date,
         ...options,
       }),
-    enabled: !!salonId && !!date,
+    enabled: !!salonId && !!date && (config?.enabled ?? true),
   });
 };
 

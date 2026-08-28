@@ -1,7 +1,12 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { CaretLeftIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react";
+import {
+  CaretLeftIcon,
+  CaretRightIcon,
+  PlusIcon,
+  WarningCircleIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import {
@@ -20,6 +25,11 @@ import {
 } from "@/shared/components/primitives/drawer/Drawer";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import { formatAppointmentDateTime } from "@/services/domains/appointments/utils/appointment-display";
+import { findConflictingAppointment } from "@/services/domains/appointments/utils/conflictCheck";
+import {
+  validateQuickBook,
+  TQuickBookFieldErrors,
+} from "@/services/domains/appointments/utils/quickBookValidation";
 import {
   useMutateQuickBook,
   useMutateSalonLifecycle,
@@ -32,6 +42,7 @@ import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hook
 import {
   getApiErrorMessage,
   SUBSCRIPTION_OWNER_LOCK_MESSAGE,
+  toBookingStartTime,
 } from "@/services/domains/booking/utils/booking-mappers";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { useQueryDashboardSummary } from "@/services/domains/reports/hooks";
@@ -90,7 +101,39 @@ export default function DashboardView() {
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("لغو توسط سالن");
 
-  const appointmentsQuery = useQuerySalonAppointments(date, { pageSize: 100 });
+  const salonDetail = useQuerySalonById(salonPublicId || undefined);
+  const branches = salonDetail.data?.data?.branches ?? [];
+  const branchFallback = branches[0]?.id;
+  const [branchId, setBranchId] = useState<number | "">("");
+  const activeBranchId = Number(branchId || branchFallback || 0);
+
+  const offeringsQuery = useQueryCatalogOfferings(true);
+  const offerings = offeringsQuery.data?.data ?? [];
+  const allOfferingIds = useMemo(() => offerings.map((o) => o.id), [offerings]);
+
+  // Board filters are independent of the quick-book drawer's own branch picker below:
+  // leaving them unset must mean "show every branch/staff", not silently fall back to
+  // the first branch the way the drawer's own picker (below) intentionally does.
+  const [boardBranchId, setBoardBranchId] = useState<number | "">("");
+  const [boardStaffId, setBoardStaffId] = useState<number | "">("");
+  const hasBoardFilters = !!boardBranchId || !!boardStaffId;
+
+  // No "all staff for a salon" endpoint exists, so this reuses the same
+  // staff-for-offerings lookup the quick-book picker relies on, scoped to every
+  // currently active offering, as the closest available proxy for "everyone
+  // bookable right now".
+  const boardStaffQuery = useQueryStaffForOfferings(
+    salonPublicId || salonId || undefined,
+    allOfferingIds,
+    { enabled: allOfferingIds.length > 0 }
+  );
+  const boardStaff = boardStaffQuery.data?.data ?? [];
+
+  const appointmentsQuery = useQuerySalonAppointments(date, {
+    pageSize: 100,
+    branchId: Number(boardBranchId) || undefined,
+    staffMemberId: Number(boardStaffId) || undefined,
+  });
   const lifecycle = useMutateSalonLifecycle();
   const quickBook = useMutateQuickBook();
   const { isEntitled, isLoading: entitlementLoading } =
@@ -106,16 +149,9 @@ export default function DashboardView() {
     asNumber(summary?.noShowRate) ??
     metricFromUnknown(summary?.operational?.noShowRate).value;
 
-  const salonDetail = useQuerySalonById(salonPublicId || undefined);
-  const branches = salonDetail.data?.data?.branches ?? [];
-  const branchFallback = branches[0]?.id;
-  const [branchId, setBranchId] = useState<number | "">("");
-  const activeBranchId = Number(branchId || branchFallback || 0);
-
-  const offeringsQuery = useQueryCatalogOfferings(true);
-  const offerings = offeringsQuery.data?.data ?? [];
   const [offeringId, setOfferingId] = useState<number | "">("");
   const selectedOfferingId = Number(offeringId || 0);
+  const selectedOffering = offerings.find((o) => o.id === selectedOfferingId);
 
   const staffQuery = useQueryStaffForOfferings(
     salonPublicId || salonId || undefined,
@@ -124,11 +160,39 @@ export default function DashboardView() {
   );
   const staff = staffQuery.data?.data ?? [];
   const [staffId, setStaffId] = useState<number | "">("");
+  const selectedStaffId = Number(staffId) || 0;
+  const selectedStaffMember = staff.find((s) => s.id === selectedStaffId);
 
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
   const [time, setTime] = useState("10:00");
   const [notes, setNotes] = useState("");
+  const [quickBookErrors, setQuickBookErrors] = useState<TQuickBookFieldErrors>({});
+  const [confirmation, setConfirmation] = useState<{
+    appointmentId: number;
+    startTimeLabel: string;
+    staffName: string;
+    serviceName: string;
+    branchName?: string;
+  } | null>(null);
+
+  // A second, narrow query (server-filtered to one staff member) just to check for a
+  // conflict before submit — the main board list only carries a display name, not a
+  // staff id, so it can't be reused for this on its own.
+  const staffDayQuery = useQuerySalonAppointments(
+    date,
+    { staffMemberId: selectedStaffId, pageSize: 50 },
+    { enabled: bookOpen && !!selectedStaffId }
+  );
+  const conflict = useMemo(() => {
+    if (!selectedStaffId || !selectedOffering || !time) return null;
+    const candidateStart = toBookingStartTime(date, time);
+    return findConflictingAppointment(
+      staffDayQuery.data?.data?.items ?? [],
+      candidateStart,
+      selectedOffering.durationMinutes
+    );
+  }, [selectedStaffId, selectedOffering, time, date, staffDayQuery.data]);
 
   const items = useMemo(() => {
     const list = [...(appointmentsQuery.data?.data?.items ?? [])];
@@ -154,24 +218,41 @@ export default function DashboardView() {
       return;
     }
 
-    if (!activeBranchId || !selectedOfferingId || !Number(staffId) || !date || !time) {
-      setToast({ type: "error", message: "همه فیلدهای رزرو سریع را تکمیل کنید." });
+    const startTime = toBookingStartTime(date, time);
+    const errors = validateQuickBook({
+      phone: phone.trim(),
+      branchId: activeBranchId,
+      offeringId: selectedOfferingId,
+      staffId: selectedStaffId,
+      startTime,
+    });
+    if (errors) {
+      setQuickBookErrors(errors);
       return;
     }
+    setQuickBookErrors({});
 
     try {
-      const startTime = `${date}T${time.length === 5 ? `${time}:00` : time}`;
       const res = await quickBook.mutateAsync({
         phone: phone.trim(),
         fullName: fullName.trim() || "میهمان",
         branchId: activeBranchId,
         startTime,
         notes: notes.trim() || null,
-        services: [{ offeringId: selectedOfferingId, staffId: Number(staffId) }],
+        services: [{ offeringId: selectedOfferingId, staffId: selectedStaffId }],
       });
-      setToast({
-        type: "success",
-        message: `رزرو ثبت شد. شماره نوبت: ${res.data?.appointmentId ?? "-"}`,
+      const staffName =
+        selectedStaffMember?.fullName ||
+        [selectedStaffMember?.firstName, selectedStaffMember?.lastName]
+          .filter(Boolean)
+          .join(" ") ||
+        "پرسنل";
+      setConfirmation({
+        appointmentId: res.data?.appointmentId ?? 0,
+        startTimeLabel: formatClock(startTime),
+        staffName,
+        serviceName: selectedOffering?.serviceTypeName || "-",
+        branchName: branches.find((b) => b.id === activeBranchId)?.name,
       });
       setPhone("");
       setFullName("");
@@ -276,6 +357,62 @@ export default function DashboardView() {
         <DashboardKpi title="عدم حضور" value={formatRate(noShowRate)} />
       </div>
 
+      {branches.length > 1 && (
+        <DashboardSelect
+          value={boardBranchId}
+          onChange={(e) => setBoardBranchId(Number(e.target.value) || "")}
+        >
+          <option value="">همه شعبه‌ها</option>
+          {branches.map((branch) => (
+            <option
+              key={String(branch.id ?? branch.publicId)}
+              value={branch.id ?? ""}
+            >
+              {branch.name}
+            </option>
+          ))}
+        </DashboardSelect>
+      )}
+
+      {boardStaff.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setBoardStaffId("")}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
+              boardStaffId === ""
+                ? "bg-primary text-primary-foreground"
+                : "bg-surface text-foreground-muted"
+            }`}
+          >
+            همه پرسنل
+          </button>
+          {boardStaff.map((member) => {
+            const label =
+              member.fullName ||
+              [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+              "پرسنل";
+            const active = Number(boardStaffId) === member.id;
+            return (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() =>
+                  setBoardStaffId(active ? "" : (member.id as number))
+                }
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface text-foreground-muted"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex gap-2 overflow-x-auto">
         {STATUS_FILTERS.map((filter) => {
           const active = statusFilter === filter.value;
@@ -305,8 +442,14 @@ export default function DashboardView() {
         />
       ) : items.length === 0 ? (
         <DashboardEmptyState
-          title="نوبتی برای این روز نیست"
-          description="رزرو سریع را از دکمه پایین ثبت کنید یا تاریخ دیگری را ببینید."
+          title={
+            hasBoardFilters ? "نوبتی با این فیلترها نیست" : "نوبتی برای این روز نیست"
+          }
+          description={
+            hasBoardFilters
+              ? "فیلتر شعبه یا پرسنل را پاک کنید یا تاریخ دیگری را ببینید."
+              : "رزرو سریع را از دکمه پایین ثبت کنید یا تاریخ دیگری را ببینید."
+          }
         />
       ) : (
         <div className="space-y-2">
@@ -416,7 +559,13 @@ export default function DashboardView() {
         </div>
       </div>
 
-      <Drawer open={bookOpen} onOpenChange={setBookOpen}>
+      <Drawer
+        open={bookOpen}
+        onOpenChange={(open) => {
+          setBookOpen(open);
+          if (open) setQuickBookErrors({});
+        }}
+      >
         <DrawerContent className="max-h-[85vh] overflow-y-auto border-border bg-background">
           <DrawerHeader className="text-right">
             <DrawerTitle>رزرو سریع</DrawerTitle>
@@ -430,60 +579,99 @@ export default function DashboardView() {
                 </Link>
               </p>
             ) : null}
-            <Input
-              placeholder="موبایل مشتری"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+            <div>
+              <Input
+                placeholder="موبایل مشتری"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                hasError={!!quickBookErrors.phone}
+              />
+              {quickBookErrors.phone && (
+                <p className="mt-1 text-xs font-medium text-error">
+                  {quickBookErrors.phone}
+                </p>
+              )}
+            </div>
             <Input
               placeholder="نام مشتری"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
-            <DashboardSelect
-              value={branchId}
-              onChange={(e) => setBranchId(Number(e.target.value))}
-            >
-              <option value="">انتخاب شعبه</option>
-              {branches.map((branch) => (
-                <option
-                  key={String(branch.id ?? branch.publicId)}
-                  value={branch.id ?? ""}
-                >
-                  {branch.name}
-                </option>
-              ))}
-            </DashboardSelect>
-            <DashboardSelect
-              value={selectedOfferingId || ""}
-              onChange={(e) => setOfferingId(Number(e.target.value))}
-            >
-              <option value="">انتخاب سرویس</option>
-              {offerings.map((offering) => (
-                <option key={offering.id} value={offering.id}>
-                  {offering.serviceTypeName}
-                </option>
-              ))}
-            </DashboardSelect>
-            <DashboardSelect
-              value={Number(staffId) || ""}
-              onChange={(e) => setStaffId(Number(e.target.value))}
-            >
-              <option value="">انتخاب پرسنل</option>
-              {staff.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.fullName ||
-                    [member.firstName, member.lastName]
-                      .filter(Boolean)
-                      .join(" ")}
-                </option>
-              ))}
-            </DashboardSelect>
+            <div>
+              <DashboardSelect
+                value={branchId}
+                onChange={(e) => setBranchId(Number(e.target.value))}
+              >
+                <option value="">انتخاب شعبه</option>
+                {branches.map((branch) => (
+                  <option
+                    key={String(branch.id ?? branch.publicId)}
+                    value={branch.id ?? ""}
+                  >
+                    {branch.name}
+                  </option>
+                ))}
+              </DashboardSelect>
+              {quickBookErrors.branchId && (
+                <p className="mt-1 text-xs font-medium text-error">
+                  {quickBookErrors.branchId}
+                </p>
+              )}
+            </div>
+            <div>
+              <DashboardSelect
+                value={selectedOfferingId || ""}
+                onChange={(e) => setOfferingId(Number(e.target.value))}
+              >
+                <option value="">انتخاب سرویس</option>
+                {offerings.map((offering) => (
+                  <option key={offering.id} value={offering.id}>
+                    {offering.serviceTypeName}
+                  </option>
+                ))}
+              </DashboardSelect>
+              {quickBookErrors.offeringId && (
+                <p className="mt-1 text-xs font-medium text-error">
+                  {quickBookErrors.offeringId}
+                </p>
+              )}
+            </div>
+            <div>
+              <DashboardSelect
+                value={selectedStaffId || ""}
+                onChange={(e) => setStaffId(Number(e.target.value))}
+              >
+                <option value="">انتخاب پرسنل</option>
+                {staff.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.fullName ||
+                      [member.firstName, member.lastName]
+                        .filter(Boolean)
+                        .join(" ")}
+                  </option>
+                ))}
+              </DashboardSelect>
+              {quickBookErrors.staffId && (
+                <p className="mt-1 text-xs font-medium text-error">
+                  {quickBookErrors.staffId}
+                </p>
+              )}
+            </div>
             <Input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
             />
+            {conflict && (
+              <div className="flex items-start gap-2 rounded-[12px] bg-warning-background px-3 py-2 text-xs text-warning-foreground">
+                <WarningCircleIcon size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  این پرسنل در این بازه نوبت دیگری دارد (
+                  {formatClock(conflict.startTime)} تا {formatClock(conflict.endTime)}
+                  ). می‌توانید ادامه دهید یا زمان دیگری انتخاب کنید.
+                </span>
+              </div>
+            )}
             <Input
               placeholder="یادداشت (اختیاری)"
               value={notes}
@@ -534,6 +722,61 @@ export default function DashboardView() {
               disabled={!cancelReason.trim()}
             >
               تأیید لغو
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!confirmation}
+        onOpenChange={(open) => {
+          if (!open) setConfirmation(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>رزرو ثبت شد</DialogTitle>
+            <DialogDescription>جزئیات نوبت جدید</DialogDescription>
+          </DialogHeader>
+          {confirmation && (
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-foreground-muted">شماره نوبت</span>
+                <span className="font-bold text-foreground">
+                  #{confirmation.appointmentId}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground-muted">ساعت</span>
+                <span className="font-bold text-foreground">
+                  {confirmation.startTimeLabel}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground-muted">پرسنل</span>
+                <span className="font-bold text-foreground">
+                  {confirmation.staffName}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground-muted">سرویس</span>
+                <span className="font-bold text-foreground">
+                  {confirmation.serviceName}
+                </span>
+              </div>
+              {confirmation.branchName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground-muted">شعبه</span>
+                  <span className="font-bold text-foreground">
+                    {confirmation.branchName}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button type="button" onClick={() => setConfirmation(null)}>
+              باشه
             </Button>
           </DialogFooter>
         </DialogContent>
