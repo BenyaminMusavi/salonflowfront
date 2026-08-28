@@ -94,6 +94,8 @@ export const API_ADDRESS = {
     COMPLETE: (id: number) => `/api/appointments/${id}/complete`,
     NO_SHOW: (id: number) => `/api/appointments/${id}/no-show`,
     RESCHEDULE: (id: number) => `/api/appointments/${id}/reschedule`,
+    STAFF_DAY_BOARD: (staffMemberId: number) =>
+      `/api/appointments/staff/${staffMemberId}/day-board`,
   },
 
   REVIEWS: {

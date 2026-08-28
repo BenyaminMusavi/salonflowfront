@@ -23,8 +23,8 @@ Salon management SPA (Farsi/RTL, Toman currency, Jalali dates). Next.js 16.2.4 +
 - **No `tailwind.config.js`** — Tailwind v4 config is CSS-based, all theme tokens in `src/shared/styles/globals.css` within `@theme inline { ... }`. Tokens are referenced as e.g. `bg-surface-tertiary`, `text-content-primary`.
 - **`@/*`** maps to `src/*`.
 - **`axios-case-converter`** is imported but **commented out** — no automatic snake_case↔camelCase conversion currently.
-- **`@radix-ui/react-icons` NOT installed** — but `Select.tsx` imports `CheckIcon`, `ChevronDownIcon` from it (will break at runtime). Use `@phosphor-icons/react` or `lucide-react` instead.
-- **`useMediaQuery` hook missing** — `Select.tsx` imports from `@/shared/hooks/useMediaQuery` which doesn't exist.
+- **Icon library: `@phosphor-icons/react` only** — the sole icon dependency; `lucide-react` and `@radix-ui/react-icons` were both removed/never installed (an earlier `Select.tsx` import from the latter, and other stray `lucide-react` imports, have been fixed — don't reintroduce either package).
+- **`useMediaQuery`** — `src/shared/hooks/useMediaQuery.ts`, exported from the `shared/hooks` barrel.
 - **ESLint: effectively disabled** — `eslint.config.mjs` has `nextVitals` and `nextTs` configs commented out.
 - **No Storybook `.storybook/` config** — packages installed but not wired up.
 

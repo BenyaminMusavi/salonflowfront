@@ -4,12 +4,14 @@ import {
   ICreateSalonAppointmentRequest,
   ICancelAppointmentRequest,
   IQuickBookRequest,
+  IRescheduleAppointmentRequest,
   ISalonAppointmentsQuery,
   TCreateSalonAppointmentEntity,
   TQuickBookEntity,
   TSalonAppointmentsEntity,
   TMyAppointmentDetailEntity,
   TMyAppointmentsEntity,
+  TStaffDayBoardEntity,
 } from "./types/appointments.type";
 
 class AppointmentsService {
@@ -80,6 +82,21 @@ class AppointmentsService {
     return await axiosInstance.post<unknown, TQuickBookEntity>(
       API_ADDRESS.APPOINTMENTS.QUICK_BOOK,
       body
+    );
+  }
+
+  /** Success: 204 No Content */
+  async reschedule(id: number, body: IRescheduleAppointmentRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.APPOINTMENTS.RESCHEDULE(id),
+      body
+    );
+  }
+
+  async getStaffDayBoard(staffMemberId: number, date: string) {
+    return await axiosInstance.get<unknown, TStaffDayBoardEntity>(
+      API_ADDRESS.APPOINTMENTS.STAFF_DAY_BOARD(staffMemberId),
+      { params: { date } }
     );
   }
 }

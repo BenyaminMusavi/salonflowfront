@@ -2,8 +2,7 @@
 import React from 'react';
 import PaginationButton from "@/shared/components/composites/pagination/PaginationButton";
 import { Button } from "@/shared/components/primitives/button/Button";
-import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
-import { MoreHorizontalIcon } from "lucide-react";
+import { CaretLeftIcon, CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react";
 
 interface IPagination {
   currentPage: number;
@@ -106,7 +105,7 @@ const NextPage: React.FC<INextPageProps> = ({isDisable, loadNextPage}) => {
   return (
     <PaginationButton
       onClick={loadNextPage}
-      icon={<ChevronLeftIcon className="size-4 min-w-4" />}
+      icon={<CaretLeftIcon className="size-4 min-w-4" />}
       isAPageNumber={false}
       isDisabled={isDisable}
     />
@@ -121,7 +120,7 @@ const PreviousPage: React.FC<IPreviousPageProps> = ({isDisable, loadPreviousPage
   return (
     <PaginationButton
       onClick={loadPreviousPage}
-      icon={<ChevronRightIcon className="size-4 min-w-4" />}
+      icon={<CaretRightIcon className="size-4 min-w-4" />}
       isAPageNumber={false}
       isDisabled={isDisable}
     />
@@ -131,7 +130,7 @@ const PreviousPage: React.FC<IPreviousPageProps> = ({isDisable, loadPreviousPage
 const Ellipsis = () => {
   return (
     <Button variant={"secondary"} size={"icon"} className="pointer-events-none flex aspect-square size-10 items-center justify-center rounded-lg px-3 py-2 text-display-sm font-semibold inner-border inner-border-secondary-10 hover:inner-border-secondary-40">
-      <MoreHorizontalIcon className="h-9 w-9 " />
+      <DotsThreeIcon className="h-9 w-9" />
     </Button>
   );
 };

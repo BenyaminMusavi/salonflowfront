@@ -98,8 +98,25 @@ export interface IQuickBookResult {
   isNewCustomer: boolean;
 }
 
+export interface IRescheduleAppointmentRequest {
+  newStartTime: string;
+}
+
+/** One staff member's day, from GET /appointments/staff/{staffMemberId}/day-board. */
+export interface IStaffDayBoardItem {
+  appointmentId: number;
+  appointmentPublicId?: string;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus | number;
+  customerName: string;
+  serviceName: string;
+  appointmentServiceId: number;
+}
+
 export type TSalonAppointmentsEntity = TResponse<TPagedResult<ISalonAppointmentItem>>;
 export type TMyAppointmentsEntity = TResponse<IMyAppointmentListItem[]>;
 export type TMyAppointmentDetailEntity = TResponse<IMyAppointmentDetail>;
 export type TQuickBookEntity = TResponse<IQuickBookResult>;
 export type TCreateSalonAppointmentEntity = TResponse<number>;
+export type TStaffDayBoardEntity = TResponse<IStaffDayBoardItem[]>;

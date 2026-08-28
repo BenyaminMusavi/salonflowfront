@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/utils/className";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -122,9 +122,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             >
               {isPasswordType ? (
                 showPassword ? (
-                  <EyeOff className="text-foreground h-5 w-5" />
+                  <EyeSlashIcon className="text-foreground h-5 w-5" />
                 ) : (
-                  <Eye className="text-foreground h-5 w-5" />
+                  <EyeIcon className="text-foreground h-5 w-5" />
                 )
               ) : (
                 endIcon

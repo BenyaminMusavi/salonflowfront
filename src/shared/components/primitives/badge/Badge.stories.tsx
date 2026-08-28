@@ -1,6 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Badge } from './Badge';
-import { Rocket, AlertCircle, CheckCircle2, Zap, Info, XCircle } from 'lucide-react';
+import {
+  RocketIcon,
+  WarningCircleIcon,
+  CheckCircleIcon,
+  LightningIcon,
+  InfoIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react';
 
 const meta: Meta<typeof Badge> = {
   title: 'Components/Badge',
@@ -134,15 +141,15 @@ export const DisabledWithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3 items-center">
       <Badge disabled variant="brand">
-        <Rocket className="size-3" />
+        <RocketIcon className="size-3" />
         New Feature
       </Badge>
       <Badge disabled variant="success">
-        <CheckCircle2 className="size-3" />
+        <CheckCircleIcon className="size-3" />
         Completed
       </Badge>
       <Badge disabled variant="error">
-        <XCircle className="size-3" />
+        <XCircleIcon className="size-3" />
         Expired
       </Badge>
     </div>
@@ -180,23 +187,23 @@ export const WithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3 items-center">
       <Badge variant="brand">
-        <Rocket className="size-3" />
+        <RocketIcon className="size-3" />
         New Feature
       </Badge>
       <Badge variant="success">
-        <CheckCircle2 className="size-3" />
+        <CheckCircleIcon className="size-3" />
         Completed
       </Badge>
       <Badge variant="warning">
-        <AlertCircle className="size-3" />
+        <WarningCircleIcon className="size-3" />
         Pending
       </Badge>
       <Badge variant="error">
-        <AlertCircle className="size-3" />
+        <WarningCircleIcon className="size-3" />
         Failed
       </Badge>
       <Badge variant="default">
-        <Info className="size-3" />
+        <InfoIcon className="size-3" />
         Info
       </Badge>
     </div>
@@ -323,7 +330,7 @@ export const FilterTags: Story = {
       <Badge variant="brand" size="sm">Engineering</Badge>
       <Badge variant="warning" size="sm">Marketing</Badge>
       <Badge variant="brand" size="sm">
-        <Zap className="size-3" />
+        <LightningIcon className="size-3" />
         Featured
       </Badge>
       <Badge variant="default" size="sm" disabled>

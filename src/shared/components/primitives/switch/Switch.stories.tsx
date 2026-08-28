@@ -1,7 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Switch } from './Switch';
 import { useState } from 'react';
-import { Moon, Sun, Bell, BellOff, Wifi, WifiOff, Lock, Unlock } from 'lucide-react';
+import {
+  MoonIcon,
+  SunIcon,
+  BellIcon,
+  BellSlashIcon,
+  WifiHighIcon,
+  WifiSlashIcon,
+  LockIcon,
+  LockOpenIcon,
+} from '@phosphor-icons/react';
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Label } from "@/shared/components/primitives/label/Label";
 
@@ -201,9 +210,9 @@ export const WithIcons: Story = {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {notifications ? (
-              <Bell className="size-4 text-surface-brand" />
+              <BellIcon className="size-4 text-surface-brand" />
             ) : (
-              <BellOff className="size-4 text-content-secondary" />
+              <BellSlashIcon className="size-4 text-content-secondary" />
             )}
             <div>
               <Label>اعلان‌ها</Label>
@@ -221,9 +230,9 @@ export const WithIcons: Story = {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {darkMode ? (
-              <Moon className="size-4 text-surface-brand" />
+              <MoonIcon className="size-4 text-surface-brand" />
             ) : (
-              <Sun className="size-4 text-content-secondary" />
+              <SunIcon className="size-4 text-content-secondary" />
             )}
             <div>
               <Label>حالت تاریک</Label>
@@ -241,9 +250,9 @@ export const WithIcons: Story = {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {wifi ? (
-              <Wifi className="size-4 text-surface-brand" />
+              <WifiHighIcon className="size-4 text-surface-brand" />
             ) : (
-              <WifiOff className="size-4 text-content-secondary" />
+              <WifiSlashIcon className="size-4 text-content-secondary" />
             )}
             <div>
               <Label>وای‌فای</Label>
@@ -261,9 +270,9 @@ export const WithIcons: Story = {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {privateMode ? (
-              <Lock className="size-4 text-surface-brand" />
+              <LockIcon className="size-4 text-surface-brand" />
             ) : (
-              <Unlock className="size-4 text-content-secondary" />
+              <LockOpenIcon className="size-4 text-content-secondary" />
             )}
             <div>
               <Label>حالت خصوصی</Label>

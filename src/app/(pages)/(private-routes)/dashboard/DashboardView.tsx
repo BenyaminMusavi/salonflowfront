@@ -4,9 +4,12 @@ import { FormEvent, useMemo, useState } from "react";
 import {
   CaretLeftIcon,
   CaretRightIcon,
+  ListIcon,
   PlusIcon,
+  SquaresFourIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
+import DashboardCalendarGrid from "./DashboardCalendarGrid";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import {
@@ -97,6 +100,7 @@ export default function DashboardView() {
   const [date, setDate] = useState(today);
   const [toast, setToast] = useState<DashboardToastState>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>("all");
+  const [viewMode, setViewMode] = useState<"agenda" | "grid">("agenda");
   const [bookOpen, setBookOpen] = useState(false);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("لغو توسط سالن");
@@ -357,7 +361,38 @@ export default function DashboardView() {
         <DashboardKpi title="عدم حضور" value={formatRate(noShowRate)} />
       </div>
 
-      {branches.length > 1 && (
+      <div className="flex justify-end gap-1 rounded-full bg-surface p-1">
+        <button
+          type="button"
+          onClick={() => setViewMode("agenda")}
+          aria-label="نمای فهرست"
+          className={`flex h-8 w-8 items-center justify-center rounded-full ${
+            viewMode === "agenda"
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground-muted"
+          }`}
+        >
+          <ListIcon size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("grid")}
+          aria-label="نمای جدول پرسنل"
+          className={`flex h-8 w-8 items-center justify-center rounded-full ${
+            viewMode === "grid"
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground-muted"
+          }`}
+        >
+          <SquaresFourIcon size={16} />
+        </button>
+      </div>
+
+      {viewMode === "grid" && (
+        <DashboardCalendarGrid date={date} staff={boardStaff} onToast={setToast} />
+      )}
+
+      {viewMode === "agenda" && branches.length > 1 && (
         <DashboardSelect
           value={boardBranchId}
           onChange={(e) => setBoardBranchId(Number(e.target.value) || "")}
@@ -374,7 +409,7 @@ export default function DashboardView() {
         </DashboardSelect>
       )}
 
-      {boardStaff.length > 0 && (
+      {viewMode === "agenda" && boardStaff.length > 0 && (
         <div className="flex gap-2 overflow-x-auto">
           <button
             type="button"
@@ -413,6 +448,8 @@ export default function DashboardView() {
         </div>
       )}
 
+      {viewMode === "agenda" && (
+      <>
       <div className="flex gap-2 overflow-x-auto">
         {STATUS_FILTERS.map((filter) => {
           const active = statusFilter === filter.value;
@@ -538,6 +575,8 @@ export default function DashboardView() {
             </DashboardCard>
           ))}
         </div>
+      )}
+      </>
       )}
 
       <p className="text-center text-xs text-foreground-muted">

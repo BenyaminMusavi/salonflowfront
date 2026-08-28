@@ -31,6 +31,12 @@ export const useMutateSalonLifecycle = () => {
     onSuccess: invalidate,
   });
 
-  return { checkIn, complete, noShow, cancel };
+  const reschedule = useMutation({
+    mutationFn: ({ id, newStartTime }: { id: number; newStartTime: string }) =>
+      appointmentsService.reschedule(id, { newStartTime }),
+    onSuccess: invalidate,
+  });
+
+  return { checkIn, complete, noShow, cancel, reschedule };
 };
 

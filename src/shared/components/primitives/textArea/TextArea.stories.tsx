@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TextArea } from './TextArea';
 import { TextAreaReactHookForm } from './TextAreaReactHookForm';
-import { MessageSquare, AlertCircle, Lock, User,} from 'lucide-react';
+import { ChatCircleIcon, WarningCircleIcon, LockIcon, UserIcon } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,7 +48,7 @@ const meta: Meta<typeof TextArea> = {
       control: 'boolean',
       description: 'Show start icon (right side in RTL)',
       mapping: {
-        true: <MessageSquare className="size-4" />,
+        true: <ChatCircleIcon className="size-4" />,
         false: undefined
       }
     },
@@ -80,7 +80,7 @@ export const Default: Story = {
 export const WithIcon: Story = {
   args: {
     placeholder: 'نظر خود را بنویسید...',
-    startIcon: <MessageSquare className="size-4" />,
+    startIcon: <ChatCircleIcon className="size-4" />,
     rows: 3
   },
   parameters: {
@@ -154,23 +154,23 @@ export const IconVariations: Story = {
     <div className="flex flex-col gap-4 w-96">
       <TextArea
         placeholder="پیام..."
-        startIcon={<MessageSquare className="size-4" />}
+        startIcon={<ChatCircleIcon className="size-4" />}
         rows={3}
       />
       <TextArea
         placeholder="توضیحات خطا..."
-        startIcon={<AlertCircle className="size-4" />}
+        startIcon={<WarningCircleIcon className="size-4" />}
         hasError
         rows={3}
       />
       <TextArea
         placeholder="متن محرمانه..."
-        startIcon={<Lock className="size-4" />}
+        startIcon={<LockIcon className="size-4" />}
         rows={3}
       />
       <TextArea
         placeholder="بیوگرافی..."
-        startIcon={<User className="size-4" />}
+        startIcon={<UserIcon className="size-4" />}
         rows={3}
       />
     </div>
@@ -233,7 +233,7 @@ export const WithReactHookForm: StoryObj<typeof TextAreaReactHookForm> = {
           name="comment"
           label="نظر شما"
           placeholder="نظر خود را اینجا بنویسید (حداقل ۱۰ کاراکتر)..."
-          startIcon={<MessageSquare className="size-4" />}
+          startIcon={<ChatCircleIcon className="size-4" />}
           rows={3}
         />
 
@@ -250,7 +250,7 @@ export const WithReactHookForm: StoryObj<typeof TextAreaReactHookForm> = {
           name="bio"
           label="بیوگرافی"
           placeholder="درباره خودتان بنویسید (حداقل ۲۰ کاراکتر)..."
-          startIcon={<User className="size-4" />}
+          startIcon={<UserIcon className="size-4" />}
           rows={4}
         />
 
@@ -315,7 +315,7 @@ export const ContactFormExample: Story = {
         <div className="w-96 p-6 text-center">
           <div className="mb-4">
             <div className="w-16 h-16 bg-surface-success rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="size-8 text-content-success" />
+              <ChatCircleIcon className="size-8 text-content-success" />
             </div>
             <h3 className="text-lg font-semibold mb-2">پیام شما ارسال شد!</h3>
             <p className="text-content-secondary">با تشکر از شما برای تماس با ما</p>
@@ -337,7 +337,7 @@ export const ContactFormExample: Story = {
           name="message"
           label="پیام شما"
           placeholder="پیام خود را با جزئیات بنویسید..."
-          startIcon={<MessageSquare className="size-4" />}
+          startIcon={<ChatCircleIcon className="size-4" />}
           rows={5}
         />
 
@@ -346,7 +346,7 @@ export const ContactFormExample: Story = {
           name="feedback"
           label="پیشنهادات (اختیاری)"
           placeholder="پیشنهادات و انتقادات خود را بنویسید..."
-          startIcon={<AlertCircle className="size-4" />}
+          startIcon={<WarningCircleIcon className="size-4" />}
           rows={3}
         />
 
@@ -423,7 +423,7 @@ export const RealTimeValidation: Story = {
           name="tweet"
           label="توییت (بدون # و @)"
           placeholder="توییت خود را بنویسید (حداکثر ۲۸۰ کاراکتر، بدون # و @)..."
-          startIcon={<MessageSquare className="size-4" />}
+          startIcon={<ChatCircleIcon className="size-4" />}
           rows={3}
         />
 

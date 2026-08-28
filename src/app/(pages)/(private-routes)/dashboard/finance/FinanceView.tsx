@@ -17,6 +17,14 @@ import { formatToman } from "@/shared/utils/salonDisplay";
 import { paymentMethodLabel } from "@/services/domains/reports/utils/report-display";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import {
+  validateRecordPayment,
+  type TPaymentFieldErrors,
+} from "@/services/domains/payments/utils/paymentValidation";
+import {
+  validateWalletOperation,
+  type TWalletFieldErrors,
+} from "@/services/domains/wallets/utils/walletValidation";
+import {
   DashboardCard,
   DashboardDateField,
   DashboardPage,
@@ -64,6 +72,7 @@ export default function FinanceView() {
   const paymentMutations = useMutatePayments();
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<number>(PaymentMethod.Cash);
+  const [paymentErrors, setPaymentErrors] = useState<TPaymentFieldErrors>({});
 
   const [customerSearch, setCustomerSearch] = useState("");
   const customersQuery = useQueryCustomers(customerSearch);
@@ -85,6 +94,7 @@ export default function FinanceView() {
   const walletTxQuery = useQueryWalletTransactions(customerId ? Number(customerId) : undefined);
   const walletMutations = useMutateWallet();
   const [walletAmount, setWalletAmount] = useState("");
+  const [walletErrors, setWalletErrors] = useState<TWalletFieldErrors>({});
 
   const offerings = useQueryCatalogOfferings(true).data?.data ?? [];
   const staff =
@@ -116,10 +126,19 @@ export default function FinanceView() {
 
   const submitPayment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedInvoiceId || !amount) {
-      setToast({ type: "error", message: "شماره فاکتور و مبلغ پرداخت الزامی است." });
+
+    const fieldErrors = validateRecordPayment({
+      invoiceId: Number(selectedInvoiceId) || 0,
+      amount: Number(amount) || 0,
+      paymentMethod,
+      paymentType: PaymentType.Full,
+    });
+    if (fieldErrors) {
+      setPaymentErrors(fieldErrors);
       return;
     }
+    setPaymentErrors({});
+
     try {
       const res = await paymentMutations.create.mutateAsync({
         invoiceId: Number(selectedInvoiceId),
@@ -143,10 +162,16 @@ export default function FinanceView() {
   };
 
   const walletOp = async (type: "charge" | "debit") => {
-    if (!customerId || !walletAmount) {
-      setToast({ type: "error", message: "مشتری و مبلغ کیف پول الزامی است." });
+    const fieldErrors = validateWalletOperation({
+      customerId: Number(customerId) || 0,
+      amount: Number(walletAmount) || 0,
+    });
+    if (fieldErrors) {
+      setWalletErrors(fieldErrors);
       return;
     }
+    setWalletErrors({});
+
     try {
       const body = {
         customerId: Number(customerId),
@@ -231,23 +256,38 @@ export default function FinanceView() {
       <DashboardCard>
         <h2 className="mb-3 text-sm font-bold text-foreground">ثبت پرداخت</h2>
         <form className="grid grid-cols-1 gap-2" onSubmit={submitPayment}>
-          <DashboardSelect
-            value={selectedInvoiceId}
-            onChange={(e) => setSelectedInvoiceId(Number(e.target.value))}
-          >
-            <option value="">انتخاب فاکتور</option>
-            {invoices.map((inv) => (
-              <option key={inv.id} value={inv.id}>
-                فاکتور #{inv.id} · مانده {formatToman(inv.outstandingAmount)}
-              </option>
-            ))}
-          </DashboardSelect>
-          <Input
-            type="number"
-            placeholder="مبلغ (تومان)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+          <div>
+            <DashboardSelect
+              value={selectedInvoiceId}
+              onChange={(e) => setSelectedInvoiceId(Number(e.target.value))}
+            >
+              <option value="">انتخاب فاکتور</option>
+              {invoices.map((inv) => (
+                <option key={inv.id} value={inv.id}>
+                  فاکتور #{inv.id} · مانده {formatToman(inv.outstandingAmount)}
+                </option>
+              ))}
+            </DashboardSelect>
+            {paymentErrors.invoiceId && (
+              <p className="mt-1 text-xs font-medium text-error">
+                {paymentErrors.invoiceId}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              type="number"
+              placeholder="مبلغ (تومان)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              hasError={!!paymentErrors.amount}
+            />
+            {paymentErrors.amount && (
+              <p className="mt-1 text-xs font-medium text-error">
+                {paymentErrors.amount}
+              </p>
+            )}
+          </div>
           <DashboardSelect
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(Number(e.target.value))}
@@ -291,6 +331,11 @@ export default function FinanceView() {
             </option>
           ))}
         </DashboardSelect>
+        {walletErrors.customerId && (
+          <p className="mt-1 text-xs font-medium text-error">
+            {walletErrors.customerId}
+          </p>
+        )}
         <p className="mt-3 text-lg font-bold text-foreground">
           {formatToman(walletQuery.data?.data?.balance)} تومان
         </p>
@@ -301,6 +346,7 @@ export default function FinanceView() {
             placeholder="مبلغ"
             value={walletAmount}
             onChange={(e) => setWalletAmount(e.target.value)}
+            hasError={!!walletErrors.amount}
           />
           <Button size="sm" onClick={() => walletOp("charge")}>
             شارژ
@@ -314,6 +360,9 @@ export default function FinanceView() {
             برداشت
           </Button>
         </div>
+        {walletErrors.amount && (
+          <p className="mt-1 text-xs font-medium text-error">{walletErrors.amount}</p>
+        )}
         <div className="mt-3 space-y-1">
           {(walletTxQuery.data?.data ?? []).slice(0, 5).map((t) => (
             <p key={t.id} className="text-xs text-foreground-muted">
