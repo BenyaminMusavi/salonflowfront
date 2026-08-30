@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
@@ -10,22 +10,12 @@ import { useQueryStaffAvailability } from "@/services/domains/salons/hooks/useQu
 import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
-import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
 import {
   IBranchService,
   ISalonBranch,
   ISalonBrowseSlot,
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
-import {
-  getApiErrorMessage,
-  toBookingStartTime,
-} from "@/services/domains/booking/utils/booking-mappers";
-import { RouteAddress } from "@/shared/data/routeAddress";
-import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
-import { getLoginHref } from "@/shared/utils/authRedirect";
 import BookProgressHeader from "./components/BookProgressHeader";
 import BookStickyCta from "./components/BookStickyCta";
 import BookBranchStep from "./components/BookBranchStep";
@@ -36,23 +26,14 @@ import BookPriceStep from "./components/BookPriceStep";
 import BookSlotsStep from "./components/BookSlotsStep";
 import BookConfirmStep from "./components/BookConfirmStep";
 import BookSuccessPanel from "./components/BookSuccessPanel";
-import {
-  clearBookDraft,
-  loadBookDraft,
-  saveBookDraft,
-} from "./utils/bookDraft";
+import { useBookDraftPersistence } from "./hooks/useBookDraftPersistence";
+import { useBookWizardNavigation } from "./hooks/useBookWizardNavigation";
+import { useBookConfirm } from "./hooks/useBookConfirm";
 import { resolveStaffFromSlotResponse } from "./utils/resolveSlotStaff";
 
 export default function BookView() {
   const params = useParams<{ id: string }>();
   const salonPublicId = params?.id;
-  const router = useRouter();
-
-  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const activeSalonContextId = useSalonContextStore((s) => s.salonId);
-  const { mutateAsync: switchContext } = useMutateSwitchContext();
-  const { mutateAsync: createBooking, isPending: isCreating } =
-    useCreateBooking();
 
   const { data: salonRes, isLoading: salonLoading } =
     useQuerySalonById(salonPublicId);
@@ -88,7 +69,8 @@ export default function BookView() {
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
 
-  const draftReadyRef = useRef(false);
+  // Shared between useBookDraftPersistence's rehydrate effect and
+  // useBookWizardNavigation's auto-skip-single-branch effect.
   const skipBranchHandledRef = useRef(false);
 
   const clearSlotAndStaffResolution = () => {
@@ -97,83 +79,6 @@ export default function BookView() {
     setResolvedStaffPublicId(null);
     setResolvedStaffName(null);
   };
-
-  // Rehydrate draft once per salon
-  useEffect(() => {
-    if (!salonPublicId || draftReadyRef.current) return;
-    const draft = loadBookDraft(salonPublicId);
-    draftReadyRef.current = true;
-    if (!draft) return;
-
-    setStep(draft.step);
-    setBranchPublicId(draft.branchPublicId);
-    setBranchName(draft.branchName);
-    setSelectedServices(draft.selectedServices ?? []);
-    setDate(draft.date);
-    setStaff(draft.staff);
-    setUseFirstAvailable(Boolean(draft.useFirstAvailable));
-    setResolvedStaffPublicId(
-      typeof draft.resolvedStaffPublicId === "string"
-        ? draft.resolvedStaffPublicId
-        : null
-    );
-    setResolvedStaffName(draft.resolvedStaffName ?? null);
-    setSlotTime(draft.slotTime);
-    setSlotEndTime(draft.slotEndTime);
-    setNotes(draft.notes ?? "");
-    if (draft.branchPublicId != null || draft.step > 1) {
-      skipBranchHandledRef.current = true;
-    }
-  }, [salonPublicId]);
-
-  // Persist draft
-  useEffect(() => {
-    if (!salonPublicId || !draftReadyRef.current || createdId != null) return;
-    saveBookDraft(salonPublicId, {
-      step,
-      branchPublicId,
-      branchName,
-      selectedServices,
-      date,
-      staff,
-      useFirstAvailable,
-      resolvedStaffPublicId,
-      resolvedStaffName,
-      slotTime,
-      slotEndTime,
-      notes,
-    });
-  }, [
-    salonPublicId,
-    step,
-    branchPublicId,
-    branchName,
-    selectedServices,
-    date,
-    staff,
-    useFirstAvailable,
-    resolvedStaffPublicId,
-    resolvedStaffName,
-    slotTime,
-    slotEndTime,
-    notes,
-    createdId,
-  ]);
-
-  // Auto-select + auto-skip single branch
-  useEffect(() => {
-    if (!draftReadyRef.current || skipBranchHandledRef.current) return;
-    if (branches.length !== 1) {
-      if (branches.length > 1) skipBranchHandledRef.current = true;
-      return;
-    }
-
-    const only = branches[0];
-    skipBranchHandledRef.current = true;
-    setBranchPublicId(only.publicId);
-    setBranchName(only.name);
-    setStep((s) => (s === 1 ? 2 : s));
-  }, [branches]);
 
   const { data: branchServicesRes, isLoading: servicesLoading } =
     useQueryBranchServices(branchPublicId);
@@ -252,73 +157,70 @@ export default function BookView() {
       : "اولین زمان آزاد"
     : staff?.fullName || resolvedStaffName || "—";
 
-  const canGoNext = (): boolean => {
-    switch (step) {
-      case 1:
-        return !!branchPublicId;
-      case 2:
-        return (
-          selectedServices.length > 0 &&
-          selectedServices.every(
-            (s) => !!s.offeringPublicId && !!s.servicePublicId
-          )
-        );
-      case 3:
-        return !!date;
-      case 4:
-        return useFirstAvailable || !!staff;
-      case 5:
-        return !!price;
-      case 6:
-        return !!slotTime && !!resolvedStaffPublicId;
-      default:
-        return true;
-    }
-  };
+  const { draftReadyRef, persistDraftNow } = useBookDraftPersistence({
+    salonPublicId,
+    createdId,
+    skipBranchHandledRef,
+    step,
+    branchPublicId,
+    branchName,
+    selectedServices,
+    date,
+    staff,
+    useFirstAvailable,
+    resolvedStaffPublicId,
+    resolvedStaffName,
+    slotTime,
+    slotEndTime,
+    notes,
+    setStep,
+    setBranchPublicId,
+    setBranchName,
+    setSelectedServices,
+    setDate,
+    setStaff,
+    setUseFirstAvailable,
+    setResolvedStaffPublicId,
+    setResolvedStaffName,
+    setSlotTime,
+    setSlotEndTime,
+    setNotes,
+  });
 
-  const goNext = () => {
-    setError("");
-    if (step === 2) {
-      const missingType = selectedServices.some((s) => !s.servicePublicId);
-      const missingOffering = selectedServices.some((s) => !s.offeringPublicId);
-      if (missingType) {
-        setError(
-          "شناسه نوع سرویس برای تاریخ‌ها در دسترس نیست. لطفاً بعداً دوباره تلاش کنید."
-        );
-        return;
-      }
-      if (missingOffering) {
-        setError(
-          "شناسه offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
-        );
-        return;
-      }
-    }
-    if (step === 6 && !resolvedStaffPublicId) {
-      setError(
-        "پرسنل این ساعت مشخص نشد. پرسنل دیگری انتخاب کنید یا دوباره تلاش کنید."
-      );
-      return;
-    }
-    if (!canGoNext()) {
-      setError("لطفاً این مرحله را تکمیل کنید.");
-      return;
-    }
-    setStep((s) => Math.min(7, s + 1));
-  };
+  const { canGoNext, goNext, goBack } = useBookWizardNavigation({
+    salonPublicId,
+    branches,
+    step,
+    branchPublicId,
+    selectedServices,
+    date,
+    staff,
+    useFirstAvailable,
+    price,
+    slotTime,
+    resolvedStaffPublicId,
+    draftReadyRef,
+    skipBranchHandledRef,
+    setStep,
+    setBranchPublicId,
+    setBranchName,
+    setError,
+  });
 
-  const goBack = () => {
-    setError("");
-    if (step === 1) {
-      router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
-      return;
-    }
-    if (step === 2 && branches.length === 1) {
-      router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
-      return;
-    }
-    setStep((s) => Math.max(1, s - 1));
-  };
+  const { handleConfirm, isCreating, isLoggedIn } = useBookConfirm({
+    salonPublicId,
+    branchPublicId,
+    date,
+    slotTime,
+    resolvedStaffPublicId,
+    offeringPublicIds,
+    selectedServices,
+    notes,
+    persistDraftNow,
+    setError,
+    setCreatedId,
+    setStep,
+  });
 
   const selectBranch = (branch: ISalonBranch) => {
     setBranchPublicId(branch.publicId);
@@ -381,84 +283,6 @@ export default function BookView() {
     setResolvedStaffPublicId(null);
     setResolvedStaffName(null);
     setError("شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید.");
-  };
-
-  const ensureCustomerContext = async () => {
-    if (activeSalonContextId != null) {
-      await switchContext({ salonId: null, branchId: null });
-    }
-  };
-
-  const persistDraftNow = () => {
-    if (!salonPublicId) return;
-    saveBookDraft(salonPublicId, {
-      step,
-      branchPublicId,
-      branchName,
-      selectedServices,
-      date,
-      staff,
-      useFirstAvailable,
-      resolvedStaffPublicId,
-      resolvedStaffName,
-      slotTime,
-      slotEndTime,
-      notes,
-    });
-  };
-
-  const handleConfirm = async () => {
-    setError("");
-
-    if (!isLoggedIn) {
-      persistDraftNow();
-      router.push(getLoginHref(RouteAddress.SALONS.BOOK(salonPublicId!)));
-      return;
-    }
-
-    if (
-      !salonPublicId ||
-      !branchPublicId ||
-      !date ||
-      !slotTime ||
-      !resolvedStaffPublicId
-    ) {
-      setError("اطلاعات رزرو ناقص است.");
-      return;
-    }
-
-    if (
-      offeringPublicIds.length === 0 ||
-      offeringPublicIds.length !== selectedServices.length
-    ) {
-      setError("شناسه offering برای برخی خدمات یافت نشد.");
-      return;
-    }
-
-    try {
-      await ensureCustomerContext();
-      const res = await createBooking({
-        salonPublicId,
-        branchPublicId,
-        startTime: toBookingStartTime(date, slotTime),
-        notes: notes.trim() || null,
-        services: offeringPublicIds.map((offeringPublicId) => ({
-          offeringPublicId,
-          staffPublicId: resolvedStaffPublicId,
-        })),
-      });
-      clearBookDraft(salonPublicId);
-      setCreatedId(res.data);
-      setStep(7);
-    } catch (e) {
-      setError(
-        getApiErrorMessage(
-          e,
-          "ثبت نوبت ناموفق بود. موجودی کیف‌پول یا آزاد بودن اسلات را بررسی کنید.",
-          { audience: "customer" }
-        )
-      );
-    }
   };
 
   if (salonLoading) {
