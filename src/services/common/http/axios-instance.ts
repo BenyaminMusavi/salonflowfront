@@ -5,7 +5,6 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { API_ADDRESS, API_BASE_URL } from "@/services/common/apiAddress";
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import { IAuth } from "@/services/domains/auth/types/auth.type";
-import { getCookie } from "cookies-next";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { setAuthLogoutReason } from "@/shared/utils/authRedirect";
 import { useFavoriteIdsStore } from "@/services/domains/favorites/store/useFavoriteIdsStore";
@@ -44,6 +43,7 @@ const rejectQueue = (error: unknown) => {
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_DOMAIN,
+  timeout: 15000,
   headers: {
     Accept: "application/json",
   },
@@ -70,8 +70,7 @@ function logoutReasonFromRefreshError(error: unknown): "membership" | "expired" 
 
 /* ---------- REQUEST ---------- */
 axiosInstance.interceptors.request.use((config) => {
-  const token =
-    useTokenStore.getState().token?.accessToken || getCookie("accessToken");
+  const token = useTokenStore.getState().token?.accessToken;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
