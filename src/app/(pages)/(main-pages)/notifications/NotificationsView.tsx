@@ -39,7 +39,7 @@ export default function NotificationsView({ title }: IProps) {
                 <p className="text-[11px] text-foreground-muted">
                   {n.createdAt ? new Date(n.createdAt).toLocaleString("fa-IR") : ""}
                 </p>
-                {!n.isRead ? (
+                {!n.readAt ? (
                   <Button size="sm" onClick={() => mutate.read.mutate(n.id)}>
                     خواندم
                   </Button>

@@ -28,16 +28,8 @@ type TRow = {
   customDurationMinutes?: number | null;
 };
 
-function staffLabel(member: {
-  fullName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-}) {
-  return (
-    member.fullName ||
-    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-    "پرسنل"
-  );
+function staffLabel(member: { firstName?: string | null }) {
+  return member.firstName || "پرسنل";
 }
 
 export default function StaffServicesView() {
@@ -135,7 +127,7 @@ export default function StaffServicesView() {
         >
           <option value="">انتخاب پرسنل</option>
           {staff.map((member) => (
-            <option key={member.id} value={member.id}>
+            <option key={member.staffMemberId} value={member.staffMemberId}>
               {staffLabel(member)}
             </option>
           ))}

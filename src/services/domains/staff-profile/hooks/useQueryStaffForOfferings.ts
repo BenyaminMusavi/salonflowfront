@@ -4,8 +4,9 @@ import staffProfileService from "@/services/domains/staff-profile/staff-profile.
 export const STAFF_FOR_OFFERINGS_QUERY_KEY = "STAFF_FOR_OFFERINGS_QUERY_KEY";
 
 /**
- * Customer booking passes Guid offeringPublicIds.
- * Salon dashboard may still pass numeric catalog offering ids until that surface is Guid-migrated.
+ * The backend endpoint requires Guid offeringPublicIds (query is mandatory Guid[]) —
+ * every caller, customer booking and salon dashboard alike, must pass ServiceOffering.PublicId,
+ * never the numeric catalog offering id (SF-QA-015).
  */
 export const useQueryStaffForOfferings = (
   salonPublicId: string | number | undefined,

@@ -114,6 +114,7 @@ export const API_ADDRESS = {
     PLANS: "/api/subscriptions/plans",
     ME: "/api/subscriptions/me",
     ENTITLEMENT: "/api/subscriptions/me/entitlement",
+    ENTITLEMENT_BY_SALON: "/api/subscriptions/entitlement/salon",
     TRIAL: "/api/subscriptions/trial",
     CHECKOUT: "/api/subscriptions/checkout",
     INVOICES_ME: "/api/subscriptions/invoices/me",

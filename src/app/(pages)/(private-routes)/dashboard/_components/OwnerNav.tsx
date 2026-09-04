@@ -9,7 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
 import {
-  OWNER_NAV_GROUPS,
+  getVisibleNavGroups,
   isOwnerNavGroupActive,
   type OwnerNavGroup,
 } from "./nav";
@@ -21,14 +21,24 @@ const ICONS = {
   money: WalletIcon,
 } as const;
 
-export function OwnerBottomNav({ pathname }: { pathname: string }) {
+export function OwnerBottomNav({
+  pathname,
+  isStaff = false,
+}: {
+  pathname: string;
+  isStaff?: boolean;
+}) {
+  const groups = getVisibleNavGroups(isStaff);
   return (
     <nav
       aria-label="منوی پنل سالن‌دار"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur"
     >
-      <div className="mx-auto grid max-w-[720px] grid-cols-4 px-safe-area pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
-        {OWNER_NAV_GROUPS.map((group) => {
+      <div
+        className="mx-auto grid px-safe-area pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1"
+        style={{ maxWidth: 720, gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))` }}
+      >
+        {groups.map((group) => {
           const Icon = ICONS[group.id];
           const active = isOwnerNavGroupActive(group, pathname);
           return (
@@ -63,15 +73,18 @@ export function OwnerBottomNav({ pathname }: { pathname: string }) {
 export function OwnerSubnav({
   group,
   pathname,
+  isStaff = false,
 }: {
   group: OwnerNavGroup | null;
   pathname: string;
+  isStaff?: boolean;
 }) {
-  if (!group || group.tabs.length === 0) return null;
+  const tabs = group?.tabs.filter((tab) => !isStaff || !tab.ownerOnly) ?? [];
+  if (!group || tabs.length === 0) return null;
 
   return (
     <div className="flex gap-2 overflow-x-auto px-safe-area py-2">
-      {group.tabs.map((tab) => {
+      {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link

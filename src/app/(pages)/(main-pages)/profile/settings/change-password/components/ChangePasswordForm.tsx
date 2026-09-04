@@ -6,28 +6,33 @@ import { InputReactHookForm } from "@/shared/components/primitives/input/InputRe
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
 import { TChangePasswordFormSchema } from "./changePasswordFormSchema";
+import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 
 function ChangePasswordForm() {
   const { control } = useFormContext<TChangePasswordFormSchema>();
   const isLoading = useFormLoading();
+  // SF-QA-034: an OTP-only user setting their first password has no current one to enter.
+  const hasPassword = useTokenStore((s) => s.token?.hasPassword ?? true);
 
   return (
     <div className={"w-full flex justify-center"}>
       <div
         className={"w-full py-6 items-center flex flex-col gap-x-2 gap-y-4 "}
       >
-        <div className={"flex w-full"}>
-          <InputReactHookForm
-            startIcon={<LockKey size={20} />}
-            label={"رمز عبور فعلی"}
-            placeholder={"رمز عبور فعلی خود را وارد کنید"}
-            className={"h-full"}
-            control={control}
-            name={"oldPassword"}
-            type={"password"}
-            autoComplete={"current-password"}
-          />
-        </div>
+        {hasPassword && (
+          <div className={"flex w-full"}>
+            <InputReactHookForm
+              startIcon={<LockKey size={20} />}
+              label={"رمز عبور فعلی"}
+              placeholder={"رمز عبور فعلی خود را وارد کنید"}
+              className={"h-full"}
+              control={control}
+              name={"oldPassword"}
+              type={"password"}
+              autoComplete={"current-password"}
+            />
+          </div>
+        )}
 
         <div className={"flex w-full"}>
           <InputReactHookForm

@@ -94,7 +94,7 @@ export default function ReservationDetailView() {
     setError("");
     const trimmed = reason.trim() || "تغییر برنامه";
     try {
-      await cancel({ id: appointment.id, reason: trimmed });
+      await cancel({ id: appointment.numericId, reason: trimmed });
       setCancelled(true);
       setShowCancelForm(false);
     } catch (e) {

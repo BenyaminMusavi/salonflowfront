@@ -14,7 +14,6 @@ import SalonReviewsSection from "./components/salon-reviews-section/SalonReviews
 import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
-import { resolveNumericSalonId } from "@/services/domains/salons/types/salon.type";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
 import { useParams } from "next/navigation";
@@ -27,7 +26,7 @@ export default function SalonsDetailView() {
   const { data, isLoading, isError } = useQuerySalonById(salonPublicId);
   const salon = data?.data;
 
-  const numericSalonId = salon ? resolveNumericSalonId(salon) : undefined;
+  const numericSalonId = salon?.salonId;
   const { isFavorite, canToggle, isPending, toggle } =
     useToggleFavorite(salonPublicId);
 

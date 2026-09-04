@@ -59,7 +59,7 @@ export default function DashboardNotificationsView() {
                     ? new Date(n.createdAt).toLocaleString("fa-IR")
                     : ""}
                 </p>
-                {!n.isRead ? (
+                {!n.readAt ? (
                   <Button size="sm" onClick={() => mutate.read.mutate(n.id)}>
                     خواندم
                   </Button>

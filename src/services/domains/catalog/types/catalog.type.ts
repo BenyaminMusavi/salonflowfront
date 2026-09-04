@@ -19,8 +19,7 @@ export interface IServiceOffering {
   color?: string | null;
 }
 
-export interface ICreateOrUpdateOfferingRequest {
-  serviceTypeId: number;
+interface IOfferingRequestCommon {
   branchId?: number | null;
   durationMinutes: number;
   basePrice: number;
@@ -31,6 +30,18 @@ export interface ICreateOrUpdateOfferingRequest {
   depositAmount?: number | null;
   color?: string | null;
 }
+
+/**
+ * The service type can only be chosen at creation — the update endpoint has no field
+ * for it at all (UpdateServiceOfferingRequest never had one; SF-QA-037/EPIC-01's F12).
+ * ServiceTypePublicId (not a numeric id) because GET api/service-type only ever returns
+ * the type's Guid PublicId under `id` — there is no numeric id a client could send here.
+ */
+export interface ICreateOfferingRequest extends IOfferingRequestCommon {
+  serviceTypePublicId: string;
+}
+
+export type IUpdateOfferingRequest = IOfferingRequestCommon;
 
 export interface IStaffService {
   id: number;
@@ -55,10 +66,37 @@ export interface IStaffServicesSyncRequest {
   }>;
 }
 
+/** PricingPolicyType: 1 Standard (whole salon), 2 BranchSpecific, 3 StaffSpecific. */
+export const PricingRuleScopeType = {
+  Standard: 1,
+  BranchSpecific: 2,
+  StaffSpecific: 3,
+} as const;
+
 export interface IPricingRule {
   id: number;
+  serviceTypeId: number;
+  serviceOfferingId?: number | null;
+  branchId?: number | null;
+  staffMemberId?: number | null;
+  price: number;
+  durationMinutes?: number | null;
+  isActive: boolean;
+  validFrom?: string | null;
+  validTo?: string | null;
   scopeType: number;
-  [key: string]: unknown;
+}
+
+export interface ICreatePricingRuleRequest {
+  serviceTypeId: number;
+  scopeType: number;
+  price: number;
+  serviceOfferingId?: number | null;
+  branchId?: number | null;
+  staffMemberId?: number | null;
+  durationMinutes?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
 }
 
 export type TCatalogOfferingsEntity = TResponse<IServiceOffering[]>;

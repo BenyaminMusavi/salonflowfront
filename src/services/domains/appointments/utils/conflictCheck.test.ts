@@ -9,7 +9,7 @@ function appt(
   endTime: string
 ): ISalonAppointmentItem {
   return {
-    id,
+    numericId: id,
     startTime,
     endTime,
     status: AppointmentStatus.Scheduled,
@@ -46,19 +46,19 @@ describe("findConflictingAppointment", () => {
       "2026-08-30T10:00:00.000Z",
       30 // 10:00–10:30, overlaps 10:15–11:00
     );
-    expect(result?.id).toBe(1);
+    expect(result?.numericId).toBe(1);
   });
 
   it("flags a conflict when the candidate is fully contained inside an existing appointment", () => {
     const existing = [appt(1, "2026-08-30T09:00:00.000Z", "2026-08-30T12:00:00.000Z")];
     const result = findConflictingAppointment(existing, "2026-08-30T10:00:00.000Z", 15);
-    expect(result?.id).toBe(1);
+    expect(result?.numericId).toBe(1);
   });
 
   it("flags a conflict when the candidate fully contains an existing appointment", () => {
     const existing = [appt(1, "2026-08-30T10:00:00.000Z", "2026-08-30T10:15:00.000Z")];
     const result = findConflictingAppointment(existing, "2026-08-30T09:00:00.000Z", 180);
-    expect(result?.id).toBe(1);
+    expect(result?.numericId).toBe(1);
   });
 
   it("returns the first conflicting appointment when several exist that day", () => {
@@ -68,7 +68,7 @@ describe("findConflictingAppointment", () => {
       appt(3, "2026-08-30T10:15:00.000Z", "2026-08-30T10:45:00.000Z"),
     ];
     const result = findConflictingAppointment(existing, "2026-08-30T10:10:00.000Z", 10);
-    expect(result?.id).toBe(2);
+    expect(result?.numericId).toBe(2);
   });
 
   it("treats a non-positive duration as 'nothing to book' rather than throwing", () => {
@@ -88,6 +88,6 @@ describe("findConflictingAppointment", () => {
       appt(2, "2026-08-30T10:00:00.000Z", "2026-08-30T10:30:00.000Z"),
     ];
     const result = findConflictingAppointment(existing, "2026-08-30T10:10:00.000Z", 10);
-    expect(result?.id).toBe(2);
+    expect(result?.numericId).toBe(2);
   });
 });

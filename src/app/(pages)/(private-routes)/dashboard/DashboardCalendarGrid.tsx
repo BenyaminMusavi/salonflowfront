@@ -49,11 +49,7 @@ function formatClock(iso: string): string {
 }
 
 function staffLabel(member: IStaffProfile): string {
-  return (
-    member.fullName ||
-    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-    "پرسنل"
-  );
+  return member.firstName || "پرسنل";
 }
 
 function statusBlockClass(status: number): string {
@@ -158,11 +154,11 @@ export default function DashboardCalendarGrid({
             پرسنلی برای نمایش نیست.
           </div>
         ) : (
-          staff.map((member, index) => {
-            const staffGuid = member.staffPublicId ?? member.publicId ?? undefined;
+          staff.map((member) => {
+            const staffGuid = member.staffPublicId ?? undefined;
             const items = (staffGuid && itemsByStaffPublicId.get(staffGuid)) || [];
             return (
-              <div key={staffGuid ?? member.id ?? index} className="w-[140px] shrink-0 border-l border-border">
+              <div key={member.staffMemberId} className="w-[140px] shrink-0 border-l border-border">
                 <div className="flex h-10 items-center justify-center border-b border-border px-2">
                   <p className="truncate text-xs font-bold text-foreground">
                     {staffLabel(member)}

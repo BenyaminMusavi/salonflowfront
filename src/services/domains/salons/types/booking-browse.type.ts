@@ -3,6 +3,8 @@ import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 /** Salon branch from public detail — identify by publicId (Guid). */
 export interface ISalonBranch {
   publicId: string;
+  /** Required for numeric-only endpoints (GET /api/appointments?branchId=, quick-book) — use publicId where a Guid is expected (e.g. branch day-board). */
+  branchId: number;
   name: string;
   city?: string | null;
   address?: string | null;
@@ -10,8 +12,6 @@ export interface ISalonBranch {
   latitude?: number | null;
   longitude?: number | null;
   genderType?: number | string | null;
-  /** @deprecated Legacy numeric id if API still sends it */
-  id?: number | null;
 }
 
 /** Branch catalog line — Guid-first for customer booking. */

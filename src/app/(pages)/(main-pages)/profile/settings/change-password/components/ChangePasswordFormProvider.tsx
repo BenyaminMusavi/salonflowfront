@@ -10,6 +10,7 @@ import {
 import { useSetPassword } from "@/services/domains/auth/hooks/useMutateSetPassword";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
+import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -21,8 +22,9 @@ interface IProps {
 const WRONG_OLD_PASSWORD_MESSAGE = "رمز عبور فعلی وارد شده صحیح نیست.";
 
 const ChangePasswordFormProvider = ({ children }: IProps) => {
+  const hasPassword = useTokenStore((s) => s.token?.hasPassword ?? true);
   const methods = useForm<TChangePasswordFormSchema>({
-    resolver: zodResolver(changePasswordFormSchema()),
+    resolver: zodResolver(changePasswordFormSchema(hasPassword)),
     mode: "onChange",
     defaultValues: {
       oldPassword: "",

@@ -128,14 +128,8 @@ export default function StaffView() {
     if (rosterMatch.status === StaffInvitationStatus.Pending) return "در انتظار پذیرش دعوت";
     if (!rosterMatch.hasLoggedIn) return "در انتظار ورود اولیه";
 
-    const matchedProfile = staffProfiles.find(
-      (p) => p.staffPublicId === row.publicId || p.publicId === row.publicId
-    );
-    return (
-      matchedProfile?.fullName ||
-      [matchedProfile?.firstName, matchedProfile?.lastName].filter(Boolean).join(" ") ||
-      "فعال"
-    );
+    const matchedProfile = staffProfiles.find((p) => p.staffPublicId === row.publicId);
+    return matchedProfile?.firstName || "فعال";
   };
 
   const onSave = async () => {

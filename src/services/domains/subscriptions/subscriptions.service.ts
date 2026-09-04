@@ -34,6 +34,13 @@ class SubscriptionsService {
     );
   }
 
+  /** Salon-scoped entitlement — for Staff, whose own personal subscription is never purchased. */
+  async getEntitlementForSalon(salonId: number) {
+    return await axiosInstance.get<unknown, TEntitlementEntity>(
+      `${API_ADDRESS.SUBSCRIPTIONS.ENTITLEMENT_BY_SALON}/${salonId}`
+    );
+  }
+
   async startTrial(body: IStartTrialRequest) {
     return await axiosInstance.post<unknown, TSubscriptionEntity>(
       API_ADDRESS.SUBSCRIPTIONS.TRIAL,

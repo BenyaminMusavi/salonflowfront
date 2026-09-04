@@ -122,19 +122,7 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      // Bare axios — avoids interceptor recursion / circular import with authService.
-      // Context lives on the server refresh-token session; body is refreshToken only.
-      const refreshRes = await axios.post<TResponse<IAuth>>(
-        API_ADDRESS.AUTH.REFRESH,
-        { refreshToken },
-        {
-          baseURL: API_BASE_URL ?? process.env.NEXT_PUBLIC_API_DOMAIN,
-          headers: { Accept: "application/json" },
-        }
-      );
-
-      const auth = refreshRes.data.data;
-      useTokenStore.getState().setToken(auth, true);
+      const auth = await refreshTokenAcrossTabs(refreshToken);
 
       resolveQueue(auth.accessToken);
       original.headers = original.headers ?? {};
@@ -149,5 +137,43 @@ axiosInstance.interceptors.response.use(
     }
   }
 );
+
+/**
+ * `isRefreshing` above only dedupes concurrent 401s within this tab. Two tabs can
+ * still race to rotate the same (single-use) refresh token at once, and the loser's
+ * rotation fails, force-logging out both (SF-QA-016). The Web Locks API serializes
+ * the actual refresh call across every same-origin tab; a tab that loses the race
+ * re-reads the token another tab just rotated (synced in by useTokenStore's `storage`
+ * listener) instead of retrying with the now-dead refresh token itself.
+ */
+async function refreshTokenAcrossTabs(staleRefreshToken: string): Promise<IAuth> {
+  const doRefresh = async (): Promise<IAuth> => {
+    const latest = useTokenStore.getState().token;
+    if (latest && latest.refreshToken !== staleRefreshToken) {
+      // Another tab already rotated it while we were waiting for the lock/queue.
+      return latest;
+    }
+
+    // Bare axios — avoids interceptor recursion / circular import with authService.
+    // Context lives on the server refresh-token session; body is refreshToken only.
+    const refreshRes = await axios.post<TResponse<IAuth>>(
+      API_ADDRESS.AUTH.REFRESH,
+      { refreshToken: staleRefreshToken },
+      {
+        baseURL: API_BASE_URL ?? process.env.NEXT_PUBLIC_API_DOMAIN,
+        headers: { Accept: "application/json" },
+      }
+    );
+
+    const auth = refreshRes.data.data;
+    useTokenStore.getState().setToken(auth, true);
+    return auth;
+  };
+
+  if (typeof navigator !== "undefined" && "locks" in navigator) {
+    return navigator.locks.request("salon-flow-token-refresh", doRefresh);
+  }
+  return doRefresh();
+}
 
 export default axiosInstance;

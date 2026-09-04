@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import catalogService from "../catalog.service";
 import {
-  ICreateOrUpdateOfferingRequest,
+  ICreateOfferingRequest,
+  ICreatePricingRuleRequest,
   IStaffServicesSyncRequest,
+  IUpdateOfferingRequest,
 } from "../types/catalog.type";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 
@@ -28,12 +30,12 @@ export const useMutateCatalogOfferings = () => {
 
   return {
     create: useMutation({
-      mutationFn: (body: ICreateOrUpdateOfferingRequest) =>
+      mutationFn: (body: ICreateOfferingRequest) =>
         catalogService.createOffering(body),
       onSuccess: invalidate,
     }),
     update: useMutation({
-      mutationFn: ({ id, body }: { id: number; body: ICreateOrUpdateOfferingRequest }) =>
+      mutationFn: ({ id, body }: { id: number; body: IUpdateOfferingRequest }) =>
         catalogService.updateOffering(id, body),
       onSuccess: invalidate,
     }),
@@ -67,7 +69,7 @@ export const useMutatePricingRules = () => {
 
   return {
     create: useMutation({
-      mutationFn: (body: Record<string, unknown>) =>
+      mutationFn: (body: ICreatePricingRuleRequest) =>
         catalogService.createPricingRule(body),
       onSuccess: invalidate,
     }),

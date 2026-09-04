@@ -112,7 +112,7 @@ export default function DashboardView() {
   // day-board endpoint is always scoped to exactly one branch, so grid mode needs a
   // concrete choice — reuse the same filter when set, else default to the first branch.
   const boardBranchPublicId =
-    branches.find((b) => b.id === boardBranchId)?.publicId ?? branches[0]?.publicId;
+    branches.find((b) => b.branchId === boardBranchId)?.publicId ?? branches[0]?.publicId;
 
   const appointmentsQuery = useQuerySalonAppointments(date, {
     pageSize: 100,
@@ -277,10 +277,7 @@ export default function DashboardView() {
               branches" only makes sense as a filter for the agenda list. */}
           {viewMode === "agenda" && <option value="">همه شعبه‌ها</option>}
           {branches.map((branch) => (
-            <option
-              key={String(branch.id ?? branch.publicId)}
-              value={branch.id ?? ""}
-            >
+            <option key={branch.publicId} value={branch.branchId}>
               {branch.name}
             </option>
           ))}
@@ -301,17 +298,14 @@ export default function DashboardView() {
             همه پرسنل
           </button>
           {boardStaff.map((member) => {
-            const label =
-              member.fullName ||
-              [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-              "پرسنل";
-            const active = Number(boardStaffId) === member.id;
+            const label = member.firstName || "پرسنل";
+            const active = Number(boardStaffId) === member.staffMemberId;
             return (
               <button
-                key={member.id}
+                key={member.staffMemberId}
                 type="button"
                 onClick={() =>
-                  setBoardStaffId(active ? "" : (member.id as number))
+                  setBoardStaffId(active ? "" : member.staffMemberId)
                 }
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
                   active
@@ -369,7 +363,7 @@ export default function DashboardView() {
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
-            <DashboardCard key={item.id} className="p-3">
+            <DashboardCard key={item.numericId} className="p-3">
               <div className="flex items-start gap-3">
                 <div className="min-w-[4.5rem] text-right">
                   <p className="text-base font-bold text-foreground">
@@ -400,7 +394,7 @@ export default function DashboardView() {
                         <Button
                           size="sm"
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("checkin", item.id)}
+                          onClick={() => void doLifecycle("checkin", item.numericId)}
                         >
                           ورود
                         </Button>
@@ -409,7 +403,7 @@ export default function DashboardView() {
                           variant="outline"
                           className={dashboardQuietButtonClass}
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("noshow", item.id)}
+                          onClick={() => void doLifecycle("noshow", item.numericId)}
                         >
                           عدم حضور
                         </Button>
@@ -418,7 +412,7 @@ export default function DashboardView() {
                           variant="outline"
                           className={dashboardQuietButtonClass}
                           disabled={lifecycleBusy}
-                          onClick={() => setCancelId(item.id)}
+                          onClick={() => setCancelId(item.numericId)}
                         >
                           لغو
                         </Button>
@@ -429,7 +423,7 @@ export default function DashboardView() {
                         <Button
                           size="sm"
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("complete", item.id)}
+                          onClick={() => void doLifecycle("complete", item.numericId)}
                         >
                           انجام شد
                         </Button>
@@ -438,7 +432,7 @@ export default function DashboardView() {
                           variant="outline"
                           className={dashboardQuietButtonClass}
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("noshow", item.id)}
+                          onClick={() => void doLifecycle("noshow", item.numericId)}
                         >
                           عدم حضور
                         </Button>

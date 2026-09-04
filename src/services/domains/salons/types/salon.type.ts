@@ -25,9 +25,8 @@ export interface ISalonWorkingHour {
 /** Public salon detail — route `id` is Guid publicId. */
 export interface ISalon {
   id: string;
-  /** Numeric long id for reviews / reports / booking create when provided by API. */
-  salonId?: number | null;
-  internalId?: number | null;
+  /** Salon.Id — required by GET /api/reviews?salonId= and POST /api/salon-reports, which still take long, not Guid. */
+  salonId: number;
   name: string;
   description?: string | null;
   address?: string | null;
@@ -47,19 +46,10 @@ export interface ISalon {
   genderType?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /** SalonApprovalStatus: 1 Pending, 2 Approved, 3 Rejected, 4 Draft. */
+  approvalStatus?: number | null;
+  /** Admin-provided reason, set only when approvalStatus is Rejected. */
+  rejectionReason?: string | null;
 }
 
 export type TSalonEntity = TResponse<ISalon>;
-
-export function resolveNumericSalonId(salon: {
-  salonId?: number | null;
-  internalId?: number | null;
-}): number | undefined {
-  if (typeof salon.salonId === "number" && Number.isFinite(salon.salonId)) {
-    return salon.salonId;
-  }
-  if (typeof salon.internalId === "number" && Number.isFinite(salon.internalId)) {
-    return salon.internalId;
-  }
-  return undefined;
-}

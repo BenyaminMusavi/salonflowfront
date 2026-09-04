@@ -178,10 +178,7 @@ export default function AnalyticsView() {
         >
           <option value="">همه شعبه‌ها</option>
           {branches.map((branch) => (
-            <option
-              key={String(branch.id ?? branch.publicId)}
-              value={branch.id ?? ""}
-            >
+            <option key={branch.publicId} value={branch.branchId}>
               {branch.name}
             </option>
           ))}

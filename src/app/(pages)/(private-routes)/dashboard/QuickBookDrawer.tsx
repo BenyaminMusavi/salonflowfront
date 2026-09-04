@@ -70,7 +70,7 @@ export default function QuickBookDrawer({
 
   const salonDetail = useQuerySalonById(salonPublicId || undefined);
   const branches = salonDetail.data?.data?.branches ?? [];
-  const branchFallback = branches[0]?.id;
+  const branchFallback = branches[0]?.branchId;
   const [branchId, setBranchId] = useState<number | "">("");
   const activeBranchId = Number(branchId || branchFallback || 0);
 
@@ -94,7 +94,7 @@ export default function QuickBookDrawer({
   const staff = staffQuery.data?.data ?? [];
   const [staffId, setStaffId] = useState<number | "">("");
   const selectedStaffId = Number(staffId) || 0;
-  const selectedStaffMember = staff.find((s) => s.id === selectedStaffId);
+  const selectedStaffMember = staff.find((s) => s.staffMemberId === selectedStaffId);
 
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
@@ -158,18 +158,13 @@ export default function QuickBookDrawer({
         notes: notes.trim() || null,
         services: [{ offeringId: selectedOfferingId, staffId: selectedStaffId }],
       });
-      const staffName =
-        selectedStaffMember?.fullName ||
-        [selectedStaffMember?.firstName, selectedStaffMember?.lastName]
-          .filter(Boolean)
-          .join(" ") ||
-        "پرسنل";
+      const staffName = selectedStaffMember?.firstName || "پرسنل";
       setConfirmation({
         appointmentId: res.data?.appointmentId ?? 0,
         startTimeLabel: formatClock(startTime),
         staffName,
         serviceName: selectedOffering?.serviceTypeName || "-",
-        branchName: branches.find((b) => b.id === activeBranchId)?.name,
+        branchName: branches.find((b) => b.branchId === activeBranchId)?.name,
       });
       setPhone("");
       setFullName("");
@@ -232,10 +227,7 @@ export default function QuickBookDrawer({
               >
                 <option value="">انتخاب شعبه</option>
                 {branches.map((branch) => (
-                  <option
-                    key={String(branch.id ?? branch.publicId)}
-                    value={branch.id ?? ""}
-                  >
+                  <option key={branch.publicId} value={branch.branchId}>
                     {branch.name}
                   </option>
                 ))}
@@ -271,11 +263,8 @@ export default function QuickBookDrawer({
               >
                 <option value="">انتخاب پرسنل</option>
                 {staff.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.fullName ||
-                      [member.firstName, member.lastName]
-                        .filter(Boolean)
-                        .join(" ")}
+                  <option key={member.staffMemberId} value={member.staffMemberId}>
+                    {member.firstName || "پرسنل"}
                   </option>
                 ))}
               </DashboardSelect>

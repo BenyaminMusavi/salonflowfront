@@ -104,6 +104,19 @@ export default function OnboardingView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
 
+  // SF-QA-038: useTokenStore rehydrates isLoggedIn from localStorage asynchronously, so it
+  // reads as false for a moment on every fresh load (hard refresh, direct link) even for an
+  // already-logged-in user — checking it before rehydration finishes redirected them straight
+  // to Login. Mirrors the same tokenReady gate DashboardLayoutClient already uses.
+  const [tokenReady, setTokenReady] = useState(false);
+  useEffect(() => {
+    const persist = useTokenStore.persist;
+    if (!persist) return;
+    const unsub = persist.onFinishHydration(() => setTokenReady(true));
+    if (persist.hasHydrated()) setTokenReady(true);
+    return unsub;
+  }, []);
+
   const {
     canCreateSalon,
     isLoading: entitlementLoading,
@@ -122,6 +135,7 @@ export default function OnboardingView() {
   const hasDraft = !!draft.salonPublicId;
 
   useEffect(() => {
+    if (!tokenReady) return;
     if (!isLoggedIn) {
       router.replace(getLoginHref(RouteAddress.ONBOARDING.BASE));
       return;
@@ -132,6 +146,7 @@ export default function OnboardingView() {
       setGateBlocked(true);
     }
   }, [
+    tokenReady,
     isLoggedIn,
     entitlementFetched,
     entitlementLoading,
@@ -402,7 +417,7 @@ export default function OnboardingView() {
     );
   }
 
-  if (!isLoggedIn || (entitlementLoading && !hasDraft)) {
+  if (!tokenReady || !isLoggedIn || (entitlementLoading && !hasDraft)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-sm text-foreground-muted">
         در حال بارگذاری…

@@ -102,6 +102,12 @@ export enum ReviewTargetType {
   Staff = 2,
 }
 
+/** Salon membership role names — must match SalonFlow.Application.Auths.Policies.AuthorizationPolicies.RoleNames on the backend. */
+export const SalonRoleName = {
+  Staff: "Staff",
+  SalonOwner: "SalonOwner",
+} as const;
+
 export enum SalonReportReason {
   Misconduct = 1,
   Scam = 2,

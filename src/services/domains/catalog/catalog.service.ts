@@ -1,8 +1,10 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
-  ICreateOrUpdateOfferingRequest,
+  ICreateOfferingRequest,
+  ICreatePricingRuleRequest,
   IStaffServicesSyncRequest,
+  IUpdateOfferingRequest,
   TCatalogOfferingEntity,
   TCatalogOfferingsEntity,
   TCatalogStaffServicesEntity,
@@ -24,14 +26,14 @@ class CatalogService {
     );
   }
 
-  async createOffering(body: ICreateOrUpdateOfferingRequest) {
+  async createOffering(body: ICreateOfferingRequest) {
     return await axiosInstance.post<unknown, TCatalogOfferingEntity>(
       API_ADDRESS.CATALOG.OFFERINGS,
       body
     );
   }
 
-  async updateOffering(id: number, body: ICreateOrUpdateOfferingRequest) {
+  async updateOffering(id: number, body: IUpdateOfferingRequest) {
     return await axiosInstance.put<unknown, TCatalogOfferingEntity>(
       API_ADDRESS.CATALOG.OFFERING_BY_ID(id),
       body
@@ -74,7 +76,7 @@ class CatalogService {
     );
   }
 
-  async createPricingRule(body: Record<string, unknown>) {
+  async createPricingRule(body: ICreatePricingRuleRequest) {
     return await axiosInstance.post<unknown, TPricingRuleEntity>(
       API_ADDRESS.CATALOG.PRICING_RULES,
       body

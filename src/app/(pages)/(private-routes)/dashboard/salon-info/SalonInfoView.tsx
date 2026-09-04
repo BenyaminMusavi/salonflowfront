@@ -186,9 +186,16 @@ export default function SalonInfoView() {
 
   const onJump = (id: string) => {
     setActiveSectionId(id);
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+    // Deferred to the next frame: called straight from the click handler, this
+    // scrollIntoView was consistently a no-op (window.scrollY stayed 0) even though
+    // the identical call worked when re-run manually from the console a moment later —
+    // the classic sign of racing the browser's own layout/paint for this click, not a
+    // wrong target (SF-QA-033). rAF lets that settle first.
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     });
   };
 
@@ -445,7 +452,13 @@ export default function SalonInfoView() {
 
       {salon && (
         <>
-          <SalonStatusBanner show={isIncompleteDraft} />
+          <SalonStatusBanner
+            show={isIncompleteDraft}
+            approvalStatus={salon.approvalStatus}
+            rejectionReason={salon.rejectionReason}
+            salonPublicId={salonPublicId}
+            onToast={setToast}
+          />
 
           <BasicInfoSection values={basicInfo} onChange={setBasicInfo} />
           <ContactSocialSection

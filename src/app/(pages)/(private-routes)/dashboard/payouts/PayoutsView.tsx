@@ -24,17 +24,8 @@ import {
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
-function staffLabel(member: {
-  id?: number;
-  fullName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-}) {
-  return (
-    member.fullName ||
-    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-    (member.id != null ? `پرسنل #${member.id}` : "پرسنل")
-  );
+function staffLabel(member: { staffMemberId: number; firstName?: string | null }) {
+  return member.firstName || `پرسنل #${member.staffMemberId}`;
 }
 
 function earningStatus(status: number): { label: string; className: string } {
@@ -71,7 +62,7 @@ export default function PayoutsView() {
   const staff =
     useQueryStaffForOfferings(
       salonPublicId || undefined,
-      offerings.map((o) => o.id),
+      offerings.map((o) => o.publicId),
       { enabled: offerings.length > 0 }
     ).data?.data ?? [];
 
@@ -88,7 +79,7 @@ export default function PayoutsView() {
   const [planJson, setPlanJson] = useState(JSON.stringify({ name: "طرح جدید" }, null, 2));
 
   const staffNameById = useMemo(
-    () => new Map(staff.map((s) => [s.id, staffLabel(s)])),
+    () => new Map(staff.map((s) => [s.staffMemberId, staffLabel(s)])),
     [staff]
   );
 
@@ -181,7 +172,7 @@ export default function PayoutsView() {
           >
             <option value="">انتخاب پرسنل</option>
             {staff.map((s) => (
-              <option key={s.id} value={s.id}>
+              <option key={s.staffMemberId} value={s.staffMemberId}>
                 {staffLabel(s)}
               </option>
             ))}

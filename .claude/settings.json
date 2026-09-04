@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git check-ignore *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/this-route-does-not-exist-xyz)",
+      "Bash(curl -s http://localhost:3000/this-route-does-not-exist-xyz)",
+      "Bash(cd d:/SourceSalonFront/salonflowfront && tail -60 /tmp/dev-server.log)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/this-route-does-not-exist-xyz)",
+      "Bash(curl -s http://localhost:3001/this-route-does-not-exist-xyz)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/auth/login)",
+      "Bash(tail -50 /tmp/dev-server2.log; echo \"---procs---\"; ps aux | grep -i \"next\\\\|node\" | grep -v grep)",
+      "Bash(break)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/auth/login)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Read(//c/Program Files/Google/Chrome/Application//**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application//**)",
+      "Read(//c/Program Files/Microsoft/Edge/**)",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/dashboard)",
+      "Bash(curl -s http://localhost:3000/dashboard)",
+      "Bash(node \"C:\\\\Users\\\\Benyamin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SourceSalonFront-salonflowfront\\\\fc88026a-20e9-40ae-b7ac-49d12596518b\\\\scratchpad\\\\smoke-dashboard.mjs\")",
+      "Bash(node _smoke.mjs)",
+      "Bash(rm -f _smoke.mjs)",
+      "Bash(mkdir -p \"d:/SourceSalonFront/salonflowfront/src/app/\\(pages\\)/\\(main-pages\\)/salons/[id]/book/hooks\" && echo ok)",
+      "Bash(curl -sk https://localhost:7232/api/home/salons)",
+      "Bash(curl -sk -o /dev/null -w \"exit_status_curl=%{exitcode} http_code=%{http_code}\\\\n\" https://localhost:7232/api/home/salons)"
+    ],
+    "additionalDirectories": [
+      "d:\\SourceSalonFront\\salonflowfront\\src\\app\\(pages)\\(main-pages)\\salons\\[id]\\book"
+    ]
+  }
+}

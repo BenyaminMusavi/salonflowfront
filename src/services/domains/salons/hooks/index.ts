@@ -11,6 +11,7 @@ import { useMutateSalonMedia } from "./useMutateSalonMedia";
 import { useMutateSalonStaff } from "./useMutateSalonStaff";
 import { useQueryStaffRoster } from "./useQueryStaffRoster";
 import { useMutateStaffInvitation } from "./useMutateStaffInvitation";
+import { useMutateSubmitForReview } from "./useMutateSubmitForReview";
 
 export {
   useQueryApprovedSalons,
@@ -26,4 +27,5 @@ export {
   useMutateSalonStaff,
   useQueryStaffRoster,
   useMutateStaffInvitation,
+  useMutateSubmitForReview,
 };

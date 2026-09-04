@@ -22,12 +22,12 @@ function BottomNavigation() {
   const currentPath = getPurePath(pathname);
 
   const navItems = [
-    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon },
-    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon },
-    { href: RouteAddress.FAVORITES.BASE, icon: HeartIcon },
-    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon },
-    { href: RouteAddress.WALLET.BASE, icon: WalletIcon },
-    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon },
+    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon, label: "خانه" },
+    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon, label: "جستجو" },
+    { href: RouteAddress.FAVORITES.BASE, icon: HeartIcon, label: "علاقه‌مندی‌ها" },
+    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon, label: "نوبت‌های من" },
+    { href: RouteAddress.WALLET.BASE, icon: WalletIcon, label: "کیف پول" },
+    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon, label: "پروفایل" },
   ];
 
   const isMainPage = navItems.some(
@@ -39,13 +39,15 @@ function BottomNavigation() {
   return (
     <div className="fixed bottom-4 inset-x-0 flex justify-center z-40 px-safe-area">
       <div className="relative flex items-center px-1 w-fit h-[64px] rounded-full border border-foreground/10 bg-foreground/5 backdrop-blur-md">
-        {navItems.map(({ href, icon: Icon }) => {
+        {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = currentPath === getPurePath(href);
 
           return (
             <Link
               key={href}
               href={href}
+              aria-label={label}
+              aria-current={isActive ? "page" : undefined}
               className="relative flex flex-1 items-center justify-center h-full"
             >
               {/* ACTIVE BACKGROUND PILL */}

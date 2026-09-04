@@ -36,17 +36,8 @@ import {
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
-function staffLabel(member: {
-  id?: number;
-  fullName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-}) {
-  return (
-    member.fullName ||
-    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-    (member.id != null ? `پرسنل #${member.id}` : "پرسنل")
-  );
+function staffLabel(member: { staffMemberId: number; firstName?: string | null }) {
+  return member.firstName || `پرسنل #${member.staffMemberId}`;
 }
 
 export default function FinanceView() {
@@ -100,7 +91,7 @@ export default function FinanceView() {
   const staff =
     useQueryStaffForOfferings(
       salonPublicId || undefined,
-      offerings.map((o) => o.id),
+      offerings.map((o) => o.publicId),
       { enabled: offerings.length > 0 }
     ).data?.data ?? [];
 
@@ -234,13 +225,13 @@ export default function FinanceView() {
         <div className="space-y-2">
           {completedAppointments.map((a) => (
             <div
-              key={a.id}
+              key={a.numericId}
               className="flex items-center justify-between gap-2 rounded-[12px] border border-border p-3"
             >
               <span className="text-xs text-foreground-muted">
-                نوبت #{a.id} · {a.staffNames || "بدون پرسنل"}
+                نوبت #{a.numericId} · {a.staffNames || "بدون پرسنل"}
               </span>
-              <Button size="sm" onClick={() => issueInvoice(a.id)}>
+              <Button size="sm" onClick={() => issueInvoice(a.numericId)}>
                 صدور فاکتور
               </Button>
             </div>
@@ -383,7 +374,7 @@ export default function FinanceView() {
           >
             <option value="">انتخاب پرسنل</option>
             {staff.map((member) => (
-              <option key={member.id} value={member.id}>
+              <option key={member.staffMemberId} value={member.staffMemberId}>
                 {staffLabel(member)}
               </option>
             ))}
@@ -402,8 +393,8 @@ export default function FinanceView() {
           >
             <option value="">نوبت (اختیاری)</option>
             {completedAppointments.map((a) => (
-              <option key={a.id} value={a.id}>
-                نوبت #{a.id} · {a.staffNames || "بدون پرسنل"}
+              <option key={a.numericId} value={a.numericId}>
+                نوبت #{a.numericId} · {a.staffNames || "بدون پرسنل"}
               </option>
             ))}
           </DashboardSelect>

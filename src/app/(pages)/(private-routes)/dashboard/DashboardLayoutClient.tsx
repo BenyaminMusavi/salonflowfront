@@ -15,6 +15,7 @@ import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapA
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { ArrowLeftIcon, BellIcon } from "@phosphor-icons/react";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
+import { SalonRoleName } from "@/services/common/enums/domain-enums";
 import SubscriptionLockBanner from "@/shared/components/composites/subscription-lock-banner/SubscriptionLockBanner";
 import {
   OwnerBottomNav,
@@ -254,6 +255,8 @@ export default function DashboardLayoutClient({
   }
 
   const activeGroup = getOwnerNavGroup(pathname);
+  const activeRoleName = memberships.find((m) => m.salonId === salonId)?.roleName;
+  const isStaff = activeRoleName === SalonRoleName.Staff;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col bg-background">
@@ -283,10 +286,12 @@ export default function DashboardLayoutClient({
           </div>
         </div>
       </header>
-      <OwnerSubnav group={activeGroup} pathname={pathname} />
-      {!entitlementLoading && !isEntitled ? <SubscriptionLockBanner /> : null}
+      <OwnerSubnav group={activeGroup} pathname={pathname} isStaff={isStaff} />
+      {!isStaff && !entitlementLoading && !isEntitled ? (
+        <SubscriptionLockBanner />
+      ) : null}
       <div className="w-full flex-1">{children}</div>
-      <OwnerBottomNav pathname={pathname} />
+      <OwnerBottomNav pathname={pathname} isStaff={isStaff} />
     </div>
   );
 }

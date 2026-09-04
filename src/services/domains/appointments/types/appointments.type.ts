@@ -3,8 +3,10 @@ import { TPagedResult } from "@/services/common/data-types/SharedDataTypes";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export interface IMyAppointmentListItem {
-  /** Appointment.PublicId (Guid) */
+  /** Appointment.PublicId (Guid) — for GET .../me/{id} detail lookups. */
   id: string;
+  /** Appointment's internal numeric id — required by the cancel/check-in/complete/no-show {id:long} lifecycle routes. */
+  numericId: number;
   startTime: string;
   endTime: string;
   status: AppointmentStatus | number;
@@ -24,6 +26,8 @@ export interface IMyAppointmentService {
 export interface IMyAppointmentDetail {
   /** Appointment.PublicId (Guid) */
   id: string;
+  /** Appointment's internal numeric id — required by the cancel/check-in/complete/no-show {id:long} lifecycle routes. */
+  numericId: number;
   startTime: string;
   endTime: string;
   status: AppointmentStatus | number;
@@ -47,7 +51,8 @@ export interface ISalonAppointmentServiceLine {
 }
 
 export interface ISalonAppointmentItem {
-  id: number;
+  /** Appointment's internal numeric id — required by the cancel/check-in/complete/no-show {id:long} lifecycle routes. */
+  numericId: number;
   publicId?: string;
   startTime: string;
   endTime: string;

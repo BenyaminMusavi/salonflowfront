@@ -10,7 +10,9 @@ import {
   DrawerTitle,
 } from "@/shared/components/primitives/drawer/Drawer";
 import { useQueryCatalogOfferings, useMutateCatalogOfferings, useMutatePricingRules, useQueryPricingRules } from "@/services/domains/catalog/hooks";
+import { PricingRuleScopeType } from "@/services/domains/catalog/types/catalog.type";
 import { useQueryServiceTypes } from "@/services/domains/service-type/hooks/useQueryServiceTypes";
+import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
@@ -18,6 +20,7 @@ import { formatToman } from "@/shared/utils/salonDisplay";
 import {
   DashboardAdvanced,
   DashboardCard,
+  DashboardDateField,
   DashboardEmptyState,
   DashboardPage,
   DashboardPageHeader,
@@ -28,6 +31,12 @@ import {
   type DashboardToastState,
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
+
+const SCOPE_LABELS: Record<number, string> = {
+  [PricingRuleScopeType.Standard]: "کل سالن",
+  [PricingRuleScopeType.BranchSpecific]: "هر شعبه",
+  [PricingRuleScopeType.StaffSpecific]: "هر پرسنل",
+};
 
 export default function CatalogView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
@@ -43,7 +52,10 @@ export default function CatalogView() {
   const salonDetail = useQuerySalonById(salonPublicId || undefined);
   const branches = salonDetail.data?.data?.branches ?? [];
 
-  const [serviceTypeId, setServiceTypeId] = useState<number | "">("");
+  // Only used when creating — the update endpoint has no service-type field at all,
+  // so an existing offering's service type can never be changed (SF-QA-037).
+  const [serviceTypePublicId, setServiceTypePublicId] = useState("");
+  const [editingServiceTypeName, setEditingServiceTypeName] = useState("");
   const [branchId, setBranchId] = useState<number | "">("");
   const [basePrice, setBasePrice] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("45");
@@ -54,17 +66,52 @@ export default function CatalogView() {
   const pricingRulesQuery = useQueryPricingRules();
   const pricingRules = pricingRulesQuery.data?.data ?? [];
   const pricingMutations = useMutatePricingRules();
-  const [pricingRuleJson, setPricingRuleJson] = useState(
-    JSON.stringify({ scopeType: 1 }, null, 2)
-  );
 
-  const serviceTypeById = useMemo(
-    () => new Map(serviceTypes.map((x) => [Number(x.id), x.name])),
-    [serviceTypes]
+  const allOfferingPublicIds = useMemo(
+    () => offerings.map((o) => o.publicId).filter(Boolean),
+    [offerings]
+  );
+  const ruleStaffQuery = useQueryStaffForOfferings(
+    salonPublicId || undefined,
+    allOfferingPublicIds,
+    { enabled: allOfferingPublicIds.length > 0 }
+  );
+  const ruleStaff = ruleStaffQuery.data?.data ?? [];
+
+  const [ruleServiceTypeId, setRuleServiceTypeId] = useState<number | "">("");
+  const [ruleScopeType, setRuleScopeType] = useState<number>(
+    PricingRuleScopeType.Standard
+  );
+  const [ruleBranchId, setRuleBranchId] = useState<number | "">("");
+  const [ruleStaffMemberId, setRuleStaffMemberId] = useState<number | "">("");
+  const [rulePrice, setRulePrice] = useState("");
+  const [ruleDuration, setRuleDuration] = useState("");
+  const [ruleValidFrom, setRuleValidFrom] = useState("");
+  const [ruleValidTo, setRuleValidTo] = useState("");
+
+  const resetPricingRuleForm = () => {
+    setRuleServiceTypeId("");
+    setRuleScopeType(PricingRuleScopeType.Standard);
+    setRuleBranchId("");
+    setRuleStaffMemberId("");
+    setRulePrice("");
+    setRuleDuration("");
+    setRuleValidFrom("");
+    setRuleValidTo("");
+  };
+
+  // GET api/service-type only ever returns each type's Guid PublicId under `id` — there is
+  // no numeric id to key this by from that endpoint. Offerings, however, carry both their
+  // numeric serviceTypeId and its denormalized serviceTypeName, so derive the lookup from
+  // there instead (used for e.g. showing a pricing rule's service type name).
+  const serviceTypeNameById = useMemo(
+    () => new Map(offerings.map((o) => [o.serviceTypeId, o.serviceTypeName])),
+    [offerings]
   );
 
   const resetOfferingForm = () => {
-    setServiceTypeId("");
+    setServiceTypePublicId("");
+    setEditingServiceTypeName("");
     setBranchId("");
     setBasePrice("");
     setDurationMinutes("45");
@@ -80,7 +127,8 @@ export default function CatalogView() {
 
   const openEdit = (offering: (typeof offerings)[number]) => {
     setEditingId(offering.id);
-    setServiceTypeId(offering.serviceTypeId);
+    setServiceTypePublicId("");
+    setEditingServiceTypeName(offering.serviceTypeName);
     setBranchId(offering.branchId ?? "");
     setBasePrice(String(offering.basePrice));
     setDurationMinutes(String(offering.durationMinutes));
@@ -92,12 +140,11 @@ export default function CatalogView() {
   const onSubmitOffering = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      if (!serviceTypeId) {
+      if (!editingId && !serviceTypePublicId) {
         throw new Error("نوع سرویس را انتخاب کنید.");
       }
 
-      const body = {
-        serviceTypeId: Number(serviceTypeId),
+      const commonBody = {
         branchId: branchId ? Number(branchId) : null,
         durationMinutes: Number(durationMinutes),
         basePrice: Number(basePrice),
@@ -110,10 +157,13 @@ export default function CatalogView() {
       };
 
       if (editingId) {
-        await offeringMutations.update.mutateAsync({ id: editingId, body });
+        await offeringMutations.update.mutateAsync({ id: editingId, body: commonBody });
         setToast({ type: "success", message: "سرویس با موفقیت ویرایش شد." });
       } else {
-        await offeringMutations.create.mutateAsync(body);
+        await offeringMutations.create.mutateAsync({
+          ...commonBody,
+          serviceTypePublicId,
+        });
         setToast({ type: "success", message: "سرویس جدید با موفقیت ثبت شد." });
       }
       resetOfferingForm();
@@ -127,10 +177,42 @@ export default function CatalogView() {
   };
 
   const onCreatePricingRule = async () => {
+    if (!ruleServiceTypeId) {
+      setToast({ type: "error", message: "نوع سرویس را انتخاب کنید." });
+      return;
+    }
+    if (!rulePrice || Number(rulePrice) < 0) {
+      setToast({ type: "error", message: "قیمت معتبر وارد کنید." });
+      return;
+    }
+    if (ruleScopeType === PricingRuleScopeType.BranchSpecific && !ruleBranchId) {
+      setToast({ type: "error", message: "برای این محدوده، شعبه را انتخاب کنید." });
+      return;
+    }
+    if (ruleScopeType === PricingRuleScopeType.StaffSpecific && !ruleStaffMemberId) {
+      setToast({ type: "error", message: "برای این محدوده، پرسنل را انتخاب کنید." });
+      return;
+    }
+
     try {
-      const body = JSON.parse(pricingRuleJson) as Record<string, unknown>;
-      await pricingMutations.create.mutateAsync(body);
+      await pricingMutations.create.mutateAsync({
+        serviceTypeId: Number(ruleServiceTypeId),
+        scopeType: ruleScopeType,
+        price: Number(rulePrice),
+        branchId:
+          ruleScopeType === PricingRuleScopeType.BranchSpecific
+            ? Number(ruleBranchId)
+            : null,
+        staffMemberId:
+          ruleScopeType === PricingRuleScopeType.StaffSpecific
+            ? Number(ruleStaffMemberId)
+            : null,
+        durationMinutes: ruleDuration ? Number(ruleDuration) : null,
+        validFrom: ruleValidFrom ? new Date(ruleValidFrom).toISOString() : null,
+        validTo: ruleValidTo ? new Date(ruleValidTo).toISOString() : null,
+      });
       setToast({ type: "success", message: "قانون قیمت‌گذاری ثبت شد." });
+      resetPricingRuleForm();
     } catch (err) {
       setToast({
         type: "error",
@@ -175,7 +257,7 @@ export default function CatalogView() {
                   />
                   <p className="text-sm font-bold text-foreground">
                     {offering.serviceTypeName ||
-                      serviceTypeById.get(offering.serviceTypeId) ||
+                      serviceTypeNameById.get(offering.serviceTypeId) ||
                       "سرویس"}
                   </p>
                 </div>
@@ -224,13 +306,89 @@ export default function CatalogView() {
 
       <DashboardAdvanced title="قوانین قیمت‌گذاری">
         <p className="mb-2 text-xs text-foreground-muted">
-          بدنه قانون را به صورت JSON وارد کنید.
+          برای یک نوع سرویس، قیمت جایگزین برای کل سالن، یک شعبه یا یک پرسنل مشخص تعریف کنید.
         </p>
-        <textarea
-          className="min-h-36 w-full rounded-[2px] border border-input-border bg-input p-3 text-xs text-foreground"
-          value={pricingRuleJson}
-          onChange={(e) => setPricingRuleJson(e.target.value)}
-        />
+        <div className="grid grid-cols-1 gap-2">
+          <DashboardSelect
+            value={ruleServiceTypeId}
+            onChange={(e) => setRuleServiceTypeId(Number(e.target.value))}
+          >
+            <option value="">نوع سرویس</option>
+            {serviceTypes.map((serviceType) => (
+              <option key={serviceType.id} value={Number(serviceType.id)}>
+                {serviceType.name}
+              </option>
+            ))}
+          </DashboardSelect>
+
+          <DashboardSelect
+            value={ruleScopeType}
+            onChange={(e) => {
+              setRuleScopeType(Number(e.target.value));
+              setRuleBranchId("");
+              setRuleStaffMemberId("");
+            }}
+          >
+            {Object.entries(SCOPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </DashboardSelect>
+
+          {ruleScopeType === PricingRuleScopeType.BranchSpecific && (
+            <DashboardSelect
+              value={ruleBranchId}
+              onChange={(e) => setRuleBranchId(Number(e.target.value))}
+            >
+              <option value="">انتخاب شعبه</option>
+              {branches.map((branch) => (
+                <option key={branch.publicId} value={branch.branchId}>
+                  {branch.name}
+                </option>
+              ))}
+            </DashboardSelect>
+          )}
+
+          {ruleScopeType === PricingRuleScopeType.StaffSpecific && (
+            <DashboardSelect
+              value={ruleStaffMemberId}
+              onChange={(e) => setRuleStaffMemberId(Number(e.target.value))}
+            >
+              <option value="">انتخاب پرسنل</option>
+              {ruleStaff.map((member) => (
+                <option key={member.staffMemberId} value={member.staffMemberId}>
+                  {member.firstName || "پرسنل"}
+                </option>
+              ))}
+            </DashboardSelect>
+          )}
+
+          <Input
+            type="number"
+            placeholder="قیمت (تومان)"
+            value={rulePrice}
+            onChange={(e) => setRulePrice(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="مدت اختصاصی به دقیقه (اختیاری)"
+            value={ruleDuration}
+            onChange={(e) => setRuleDuration(e.target.value)}
+          />
+          <DashboardDateField
+            name="pricing-rule-valid-from"
+            value={ruleValidFrom}
+            onChange={setRuleValidFrom}
+            label="شروع اعتبار (اختیاری)"
+          />
+          <DashboardDateField
+            name="pricing-rule-valid-to"
+            value={ruleValidTo}
+            onChange={setRuleValidTo}
+            label="پایان اعتبار (اختیاری)"
+          />
+        </div>
         <div className="mt-2">
           <Button
             size="sm"
@@ -241,21 +399,41 @@ export default function CatalogView() {
           </Button>
         </div>
         <div className="mt-3 space-y-2">
-          {pricingRules.map((rule) => (
-            <div key={rule.id} className="rounded-[12px] border border-border p-2 text-xs">
-              <pre className="overflow-x-auto whitespace-pre-wrap text-foreground-muted">
-                {JSON.stringify(rule, null, 2)}
-              </pre>
-              <Button
-                className={`mt-2 ${dashboardQuietButtonClass}`}
-                size="sm"
-                variant="outline"
-                onClick={() => pricingMutations.remove.mutate(rule.id)}
+          {pricingRules.map((rule) => {
+            const scopeDetail =
+              rule.scopeType === PricingRuleScopeType.BranchSpecific
+                ? branches.find((b) => b.branchId === rule.branchId)?.name
+                : rule.scopeType === PricingRuleScopeType.StaffSpecific
+                  ? ruleStaff.find((s) => s.staffMemberId === rule.staffMemberId)
+                      ?.firstName
+                  : null;
+            return (
+              <div
+                key={rule.id}
+                className="flex items-center justify-between gap-2 rounded-[12px] border border-border p-3 text-xs"
               >
-                حذف
-              </Button>
-            </div>
-          ))}
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {serviceTypeNameById.get(rule.serviceTypeId) || "سرویس"} ·{" "}
+                    {formatToman(rule.price)} تومان
+                  </p>
+                  <p className="mt-0.5 text-foreground-muted">
+                    {SCOPE_LABELS[rule.scopeType] || "-"}
+                    {scopeDetail ? ` (${scopeDetail})` : ""}
+                    {rule.durationMinutes ? ` · ${rule.durationMinutes} دقیقه` : ""}
+                  </p>
+                </div>
+                <Button
+                  className={dashboardQuietButtonClass}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => pricingMutations.remove.mutate(rule.id)}
+                >
+                  حذف
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </DashboardAdvanced>
 
@@ -271,27 +449,30 @@ export default function CatalogView() {
             <DrawerTitle>{editingId ? "ویرایش سرویس" : "سرویس جدید"}</DrawerTitle>
           </DrawerHeader>
           <form className="grid grid-cols-1 gap-2 px-4 pb-6" onSubmit={onSubmitOffering}>
-            <DashboardSelect
-              value={serviceTypeId}
-              onChange={(e) => setServiceTypeId(Number(e.target.value))}
-            >
-              <option value="">نوع سرویس</option>
-              {serviceTypes.map((serviceType) => (
-                <option key={serviceType.id} value={Number(serviceType.id)}>
-                  {serviceType.name}
-                </option>
-              ))}
-            </DashboardSelect>
+            {editingId ? (
+              <div className="flex h-12 w-full items-center rounded-[2px] border border-input-border bg-input px-3 text-sm text-foreground-muted">
+                نوع سرویس: {editingServiceTypeName || "-"} (غیرقابل تغییر)
+              </div>
+            ) : (
+              <DashboardSelect
+                value={serviceTypePublicId}
+                onChange={(e) => setServiceTypePublicId(e.target.value)}
+              >
+                <option value="">نوع سرویس</option>
+                {serviceTypes.map((serviceType) => (
+                  <option key={String(serviceType.id)} value={String(serviceType.id)}>
+                    {serviceType.name}
+                  </option>
+                ))}
+              </DashboardSelect>
+            )}
             <DashboardSelect
               value={branchId}
               onChange={(e) => setBranchId(Number(e.target.value))}
             >
               <option value="">شعبه (اختیاری)</option>
               {branches.map((branch) => (
-                <option
-                  key={String(branch.id ?? branch.publicId)}
-                  value={branch.id ?? ""}
-                >
+                <option key={branch.publicId} value={branch.branchId}>
                   {branch.name}
                 </option>
               ))}
