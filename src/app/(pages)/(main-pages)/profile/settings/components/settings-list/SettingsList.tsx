@@ -1,16 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CaretLeft,
-  House,
-  Briefcase,
-  ShareNetwork,
-  Shield,
-  Phone,
-  ShieldCheck,
-} from "@phosphor-icons/react";
+import { CaretLeft, MoonIcon, ShieldCheck, SunIcon } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { Switch } from "@/shared/components/primitives/switch/Switch";
+import { useThemeStore } from "@/services/theme-store/useThemeStore";
 
 interface SettingsItem {
   label: string;
@@ -18,14 +12,9 @@ interface SettingsItem {
   href?: string;
 }
 
-const appSettings: SettingsItem[] = [
-  { label: "افزودن خانه", icon: House },
-  { label: "افزودن محل کار", icon: Briefcase },
-  { label: "میانبرها", icon: ShareNetwork },
-  { label: "حریم خصوصی", icon: Shield },
-  { label: "ارتباطات", icon: Phone },
-];
-
+// SF-QA-019: "افزودن خانه/محل کار"، "میانبرها"، "حریم خصوصی" و "ارتباطات" حذف شدند —
+// هیچ صفحه‌ی مقصدی برایشان پیاده نشده بود، پس هر ردیف بی‌واکنش می‌ماند. وقتی صفحه‌ی
+// مقصد هرکدام آماده شد، با href واقعی به این لیست برگردانده شوند.
 const popular: SettingsItem[] = [
   {
     label: "تنظیمات امنیتی",
@@ -64,20 +53,35 @@ function SettingsRow({ label, icon: Icon, href }: SettingsItem) {
   );
 }
 
+function ThemeToggleRow() {
+  const theme = useThemeStore((state) => state.theme);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const isLight = theme === "light";
+
+  return (
+    <div className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
+        {isLight ? (
+          <SunIcon size={20} className="text-primary" />
+        ) : (
+          <MoonIcon size={20} className="text-primary" />
+        )}
+      </div>
+      <span className="flex-1 text-[14px] font-bold text-foreground">
+        حالت روشن
+      </span>
+      <Switch
+        checked={isLight}
+        onCheckedChange={toggleTheme}
+        aria-label="تغییر تم روشن و تاریک"
+      />
+    </div>
+  );
+}
+
 export default function SettingsList() {
   return (
     <div className="flex flex-col gap-6 px-safe-area">
-      <section>
-        <h2 className="mb-3 text-[13px] font-semibold text-foreground-muted">
-          تنظیمات برنامه
-        </h2>
-        <div className="flex flex-col gap-2">
-          {appSettings.map((item) => (
-            <SettingsRow key={item.label} {...item} />
-          ))}
-        </div>
-      </section>
-
       <section>
         <h2 className="mb-3 text-[13px] font-semibold text-foreground-muted">
           محبوب
@@ -86,6 +90,15 @@ export default function SettingsList() {
           {popular.map((item) => (
             <SettingsRow key={item.label} {...item} />
           ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[13px] font-semibold text-foreground-muted">
+          ظاهر
+        </h2>
+        <div className="flex flex-col gap-2">
+          <ThemeToggleRow />
         </div>
       </section>
     </div>

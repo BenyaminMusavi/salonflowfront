@@ -35,13 +35,31 @@ const ravi = localFont({
   display: "swap",
 });
 
+const THEME_INIT_SCRIPT = `(function () {
+  try {
+    var stored = JSON.parse(localStorage.getItem("salon_flow_theme_state"));
+    var theme = stored && stored.state && stored.state.theme === "light" ? "light" : "dark";
+    document.documentElement.dataset.theme = theme;
+  } catch (e) {
+    document.documentElement.dataset.theme = "dark";
+  }
+})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir={"rtl"} className={`${ravi.variable} font-sans`}>
+    <html
+      lang="fa"
+      dir={"rtl"}
+      className={`${ravi.variable} font-sans`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background">
         {children}
       </body>

@@ -1,10 +1,11 @@
 "use client"
-import React, {ReactNode} from 'react';
+import React, {ReactNode, useEffect} from 'react';
 import { DirectionProvider } from "@radix-ui/react-direction";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import { useSyncMembershipsFromAuthMe } from "@/services/domains/auth/hooks/useSyncMembershipsFromAuthMe";
 import StaffInvitationPrompt from "@/shared/components/composites/staff-invitation-prompt/StaffInvitationPrompt";
+import { useThemeStore } from "@/services/theme-store/useThemeStore";
 
 type Props = {
     children: ReactNode
@@ -20,13 +21,25 @@ export const composeProvider = (...p: Provider[]) => (
     )
 )
 
+/** Keeps <html data-theme> in sync with the store after mount (the inline
+ * script in the root layout sets the initial value before paint). */
+export const ThemeSyncProvider = ({ children }: Props) => {
+    const theme = useThemeStore((state) => state.theme);
+
+    useEffect(() => {
+        document.documentElement.dataset.theme = theme;
+    }, [theme]);
+
+    return <>{children}</>;
+}
+
 export const RtlDirectionProvider = ({ children }: Props) => (
     <DirectionProvider dir="rtl">
         {children}
     </DirectionProvider>
 )
 
-export const DEFAULT_STALE_TIME = 5 * 1000; // 5 seconds
+export const DEFAULT_STALE_TIME = 60 * 1000; // 60 seconds
 export const globalQueryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -66,6 +79,7 @@ export const StaffInvitationPromptProvider = ({ children }: Props) => {
 }
 
 export const Providers = composeProvider(
+    ThemeSyncProvider,
     RtlDirectionProvider,
     QueryProvider,
     AuthMeMembershipsSyncProvider,

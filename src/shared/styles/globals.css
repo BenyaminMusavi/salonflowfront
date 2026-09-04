@@ -6,47 +6,47 @@
        Brand
     ========================== */
 
-    --color-primary: #9be955;
-    --color-primary-hover: #8ddd3b;
-    --color-primary-active: #79c728;
-    --color-primary-foreground: #060e02;
+    --color-primary: #4fa39a;
+    --color-primary-hover: color-mix(in srgb, var(--color-primary) 85%, white);
+    --color-primary-active: color-mix(in srgb, var(--color-primary) 80%, black);
+    --color-primary-foreground: #000000;
 
     /* ==========================
        Backgrounds
     ========================== */
 
-    --color-background: #060e02;
-    --color-background-secondary: #0c1707;
-    --color-background-tertiary: #13220d;
-    --color-background-elevated: #182b11;
+    --color-background: #00182f;
+    --color-background-secondary: color-mix(in srgb, var(--color-background) 94%, var(--color-foreground));
+    --color-background-tertiary: color-mix(in srgb, var(--color-background) 88%, var(--color-foreground));
+    --color-background-elevated: color-mix(in srgb, var(--color-background) 82%, var(--color-foreground));
     --color-background-overlay: rgba(0, 0, 0, 0.7);
 
     /* ==========================
        Foregrounds
     ========================== */
 
-    --color-foreground: #f6f9f2;
-    --color-foreground-secondary: #d6dfd0;
-    --color-foreground-muted: #9cad95;
-    --color-foreground-disabled: #697765;
-    --color-foreground-inverse: #060e02;
+    --color-foreground: #e3e3e7;
+    --color-foreground-secondary: color-mix(in srgb, var(--color-foreground) 85%, var(--color-background));
+    --color-foreground-muted: color-mix(in srgb, var(--color-foreground) 62%, var(--color-background));
+    --color-foreground-disabled: #687875;
+    --color-foreground-inverse: var(--color-background);
 
     /* ==========================
        Borders
     ========================== */
 
-    --color-border: #22341d;
-    --color-border-hover: #355129;
-    --color-border-strong: #486c38;
+    --color-border: #00070d;
+    --color-border-hover: color-mix(in srgb, var(--color-border) 55%, var(--color-foreground));
+    --color-border-strong: color-mix(in srgb, var(--color-border) 30%, var(--color-foreground));
 
     /* ==========================
        Surfaces
     ========================== */
 
-    --color-surface: #0c1707;
-    --color-surface-hover: #152510;
-    --color-surface-active: #1c3216;
-    --color-surface-disabled: #0a1108;
+    --color-surface: #00182f;
+    --color-surface-hover: #82d0c8;
+    --color-surface-active: color-mix(in srgb, var(--color-surface-hover) 65%, var(--color-background));
+    --color-surface-disabled: #263431;
     --color-surface-secondary: var(--color-surface);
     --color-surface-tertiary: var(--color-background-tertiary);
     --color-surface-quaternary: var(--color-background-elevated);
@@ -57,60 +57,60 @@
        Success
     ========================== */
 
-    --color-success: #3ddc84;
-    --color-success-hover: #2cc972;
-    --color-success-background: rgba(61, 220, 132, 0.12);
-    --color-success-border: #2fa962;
-    --color-success-foreground: #dffbea;
+    --color-success: #009067;
+    --color-success-hover: color-mix(in srgb, var(--color-success) 85%, white);
+    --color-success-background: #003324;
+    --color-success-border: #007654;
+    --color-success-foreground: #4dc2a1;
 
     /* ==========================
        Error
     ========================== */
 
-    --color-error: #ff5d73;
-    --color-error-hover: #ef415b;
-    --color-error-background: rgba(255, 93, 115, 0.12);
-    --color-error-border: #c93d4f;
-    --color-error-foreground: #ffe6ea;
+    --color-error: #c52c40;
+    --color-error-hover: color-mix(in srgb, var(--color-error) 85%, white);
+    --color-error-background: #491017;
+    --color-error-border: #a12434;
+    --color-error-foreground: #f25569;
 
     /* ==========================
        Warning
     ========================== */
 
-    --color-warning: #ffb547;
-    --color-warning-hover: #f39c12;
-    --color-warning-background: rgba(255, 181, 71, 0.12);
-    --color-warning-border: #d98b0b;
-    --color-warning-foreground: #fff3dc;
+    --color-warning: #e57d2e;
+    --color-warning-hover: color-mix(in srgb, var(--color-warning) 85%, white);
+    --color-warning-background: #522d10;
+    --color-warning-border: #ad5e23;
+    --color-warning-foreground: #ed9b5f;
 
     /* ==========================
        Info
     ========================== */
 
-    --color-info: #4ea8ff;
-    --color-info-hover: #2f93ff;
-    --color-info-background: rgba(78, 168, 255, 0.12);
-    --color-info-border: #2d7cd3;
-    --color-info-foreground: #e7f4ff;
+    --color-info: #0077d9;
+    --color-info-hover: color-mix(in srgb, var(--color-info) 85%, white);
+    --color-info-background: #003780;
+    --color-info-border: #0063bf;
+    --color-info-foreground: #33aaff;
 
     /* ==========================
        Neutral
     ========================== */
 
-    --color-neutral: #7b8b75;
-    --color-neutral-hover: #95a38f;
-    --color-neutral-background: rgba(123, 139, 117, 0.1);
-    --color-neutral-border: #4c5b47;
+    --color-neutral: color-mix(in srgb, var(--color-foreground) 55%, var(--color-background));
+    --color-neutral-hover: color-mix(in srgb, var(--color-foreground) 68%, var(--color-background));
+    --color-neutral-background: color-mix(in srgb, var(--color-neutral) 10%, transparent);
+    --color-neutral-border: var(--color-border-strong);
 
     /* ==========================
        Inputs
     ========================== */
 
-    --color-input: #13220d;
-    --color-input-hover: #182b11;
-    --color-input-focus: #223d18;
-    --color-input-border: #27401f;
-    --color-input-placeholder: #73826d;
+    --color-input: var(--color-surface);
+    --color-input-hover: var(--color-surface-hover);
+    --color-input-focus: color-mix(in srgb, var(--color-surface) 85%, var(--color-primary) 15%);
+    --color-input-border: var(--color-border);
+    --color-input-placeholder: var(--color-foreground-disabled);
 
     /* ==========================
        Buttons
@@ -121,17 +121,27 @@
     --color-button-primary-active: var(--color-primary-active);
     --color-button-primary-foreground: var(--color-primary-foreground);
 
-    --color-button-secondary: #152510;
-    --color-button-secondary-hover: #1c3216;
-    --color-button-secondary-active: #24411d;
-    --color-button-secondary-foreground: #f6f9f2;
+    --color-button-secondary: #0d1413;
+    --color-button-secondary-hover: color-mix(in srgb, var(--color-button-secondary) 85%, var(--color-foreground));
+    --color-button-secondary-active: color-mix(in srgb, var(--color-button-secondary) 70%, var(--color-foreground));
+    --color-button-secondary-foreground: var(--color-foreground);
 
     /* ==========================
        Focus Ring
     ========================== */
 
-    --color-ring: #9be955;
-    --color-ring-offset: #060e02;
+    --color-ring: var(--color-primary);
+    --color-ring-offset: var(--color-background);
+
+    /* ==========================
+       Accent palette (tags / illustrations)
+    ========================== */
+
+    --color-accent-purple: #9a85c8;
+    --color-accent-turquoise: #57d1e1;
+    --color-accent-orange: #ed9b5f;
+    --color-accent-yellow: #f6c986;
+    --color-accent-pink: #e04e8c;
 
     /* ==========================
        Surface tints / content aliases
@@ -180,6 +190,74 @@
     );
 
     --spacing-safe-area: 14px;
+}
+
+/* ==========================
+   Extra brand tokens (Figma values with no current utility usage).
+   Declared as plain custom properties, not inside @theme, because
+   Tailwind v4 only keeps @theme variables that a scanned utility class
+   references — an unused @theme token gets tree-shaken out of the
+   compiled CSS entirely. Reference these with arbitrary-value syntax,
+   e.g. `text-[var(--color-link)]`, `border-[var(--color-primary-border)]`,
+   `bg-[var(--color-button-disabled)]`.
+========================== */
+:root {
+    --color-primary-border: #29403d;
+    --color-link: #67c1b8;
+    --color-button-disabled: #f1f2f3;
+    --color-button-disabled-foreground: var(--color-foreground-disabled);
+}
+
+/* ==========================
+   Light theme overrides
+   Applied when <html data-theme="light">. Every value below is a
+   directly-designed Figma light-mode value; everything else in the
+   @theme block above is derived from these via color-mix() and adapts
+   automatically.
+========================== */
+:root[data-theme="light"] {
+    --color-primary: #185851;
+    --color-primary-foreground: #ffffff;
+    --color-primary-border: #d6e2df;
+    --color-link: #185851;
+
+    --color-background: #ffffff;
+    --color-foreground: #2a2e39;
+    --color-foreground-disabled: #8a9693;
+
+    --color-border: #e0e3eb;
+
+    --color-surface: #ffffff;
+    --color-surface-hover: #124640;
+    --color-surface-disabled: #e3eae8;
+
+    --color-success: #07a35d;
+    --color-success-background: #e6f6ee;
+    --color-success-border: #cdeddf;
+    --color-success-foreground: #00702a;
+
+    --color-error: #ff4d5b;
+    --color-error-background: #ffedee;
+    --color-error-border: #ffdbde;
+    --color-error-foreground: #cc1a28;
+
+    --color-warning: #f36f32;
+    --color-warning-background: #fef6e8;
+    --color-warning-border: #feedd1;
+    --color-warning-foreground: #c03c00;
+
+    --color-info: #0095ff;
+    --color-info-background: #e5f4ff;
+    --color-info-border: #cceaff;
+    --color-info-foreground: #0062cc;
+
+    --color-button-secondary: #ffffff;
+    --color-button-disabled: #f9f9fb;
+
+    --color-accent-purple: #765ccc;
+    --color-accent-orange: #f36f32;
+    --color-accent-yellow: #ffcd03;
+    --color-accent-pink: #ff1867;
 }
 
 /*!* 4. Declare your custom “children” variant *!*/
