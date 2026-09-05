@@ -1,7 +1,19 @@
+/**
+ * The backend's booking-create/quick-book endpoints require startTime as a UTC ISO
+ * instant (see docs/FRONTEND_INTEGRATION_GUIDE.md — "startTime | datetime | UTC/ISO").
+ * `date`/`time` here are wall-clock values in the salon's local time (e.g. the
+ * "HH:mm:ss" produced from GET /api/booking/slots), so they must be interpreted as
+ * local and converted to UTC — not sent as a bare, timezone-less string, which the
+ * backend would otherwise misinterpret as already being UTC and silently shift by
+ * the local offset (e.g. "10:00" local becoming a check against 13:30 local in
+ * Asia/Tehran), corrupting which slot actually gets booked.
+ */
 export function toBookingStartTime(date: string, time: string): string {
   const normalized =
     time.length === 5 ? `${time}:00` : time.length === 8 ? time : `${time}:00`;
-  return `${date}T${normalized}`;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes, seconds] = normalized.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, seconds).toISOString();
 }
 
 export const SUBSCRIPTION_OWNER_LOCK_MESSAGE =
