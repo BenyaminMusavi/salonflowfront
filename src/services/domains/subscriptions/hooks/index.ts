@@ -4,4 +4,5 @@ export { useSubscriptionEntitlement } from "./useSubscriptionEntitlement";
 export {
   useMutateStartTrial,
   useMutateCheckout,
+  useMutatePreviewCheckout,
 } from "./useMutateSubscriptions";

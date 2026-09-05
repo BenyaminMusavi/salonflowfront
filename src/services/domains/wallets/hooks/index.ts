@@ -10,17 +10,19 @@ export const WALLET_ME_TRANSACTIONS_QUERY_KEY = "WALLET_ME_TRANSACTIONS_QUERY_KE
 export const WALLET_BY_CUSTOMER_QUERY_KEY = "WALLET_BY_CUSTOMER_QUERY_KEY";
 export const WALLET_TRANSACTIONS_QUERY_KEY = "WALLET_TRANSACTIONS_QUERY_KEY";
 
-export const useQueryMyWallet = () => {
+export const useQueryMyWallet = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: [WALLET_ME_QUERY_KEY],
     queryFn: () => walletsService.getMine(),
+    enabled: options?.enabled ?? true,
   });
 };
 
-export const useQueryMyWalletTransactions = () => {
+export const useQueryMyWalletTransactions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: [WALLET_ME_TRANSACTIONS_QUERY_KEY],
     queryFn: () => walletsService.getMyTransactions(),
+    enabled: options?.enabled ?? true,
   });
 };
 

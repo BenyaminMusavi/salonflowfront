@@ -116,6 +116,7 @@ export const API_ADDRESS = {
     ENTITLEMENT_BY_SALON: "/api/subscriptions/entitlement/salon",
     TRIAL: "/api/subscriptions/trial",
     CHECKOUT: "/api/subscriptions/checkout",
+    CHECKOUT_PREVIEW: "/api/subscriptions/checkout/preview",
     INVOICES_ME: "/api/subscriptions/invoices/me",
   },
 

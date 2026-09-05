@@ -2,20 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
-import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
+import {
+  ArrowRightIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  CheckCircleIcon,
+  CreditCardIcon,
+  HandshakeIcon,
+  PercentIcon,
+  ReceiptIcon,
+} from "@phosphor-icons/react";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
-import { useQuerySubscriptionMe } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionMe";
-import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import {
   useMutateCheckout,
-  useMutateStartTrial,
+  useMutatePreviewCheckout,
 } from "@/services/domains/subscriptions/hooks/useMutateSubscriptions";
-import { ISubscriptionPlan } from "@/services/domains/subscriptions/types/subscriptions.type";
 import {
-  effectivePlanPrice,
-  subscriptionStatusLabel,
-} from "@/services/domains/subscriptions/utils/subscription-display";
+  ICheckoutPreviewResult,
+  ISubscriptionPlan,
+} from "@/services/domains/subscriptions/types/subscriptions.type";
+import { effectivePlanPrice } from "@/services/domains/subscriptions/utils/subscription-display";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -23,357 +29,443 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 
+const FAQ_ITEMS: { question: string; answer: string }[] = [
+  {
+    question: "سالن فلو دقیقاً چه خدماتی ارائه می‌دهد؟",
+    answer:
+      "سالن فلو مدیریت نوبت‌دهی، مشتریان، کارکنان و گزارش‌های مالی سالن شما را در یک اپلیکیشن یکپارچه در اختیارتان می‌گذارد.",
+  },
+  {
+    question: "با خرید اشتراک، به چه بخش‌هایی از اپ دسترسی خواهم داشت؟",
+    answer:
+      "با خرید اشتراک، پنل کامل مدیریت سالن شامل رزرو آنلاین، مدیریت کارکنان و گزارش‌گیری برای شما فعال می‌شود.",
+  },
+  {
+    question: "آیا امکانات همه اشتراک‌ها یکسان است یا با مدت اشتراک فرق می‌کند؟",
+    answer:
+      "امکانات اصلی در همه طرح‌ها یکسان است؛ تفاوت اصلی در مدت زمان و صرفه‌جویی قیمتی طرح‌های بلندمدت‌تر است.",
+  },
+  {
+    question: "آیا می‌توانم قبل از خرید، سالن فلو را امتحان کنم؟",
+    answer:
+      "بله، امکان استفاده آزمایشی پیش از خرید نهایی برای شما فراهم است تا با محیط کار آشنا شوید.",
+  },
+  {
+    question: "آیا امکان لغو اشتراک وجود دارد؟",
+    answer:
+      "بله، می‌توانید از بخش پشتیبانی درخواست لغو اشتراک را ثبت کنید و طبق قوانین بازگشت وجه بررسی می‌شود.",
+  },
+  {
+    question: "محتوای سالن فلو برای چه سطحی از دانش مالی مناسب است؟",
+    answer:
+      "سالن فلو برای همه سطوح طراحی شده و نیازی به دانش تخصصی مالی یا حسابداری ندارید.",
+  },
+];
+
+/** Every plan the backend returns, ordered shortest-duration first — whatever exists is shown, nothing is filtered out. */
+function sortPlansForDisplay(plans: ISubscriptionPlan[]) {
+  return [...plans].sort(
+    (a, b) => a.durationMonths - b.durationMonths || a.price - b.price
+  );
+}
+
 export default function SubscriptionsView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
 
   const { data: plansRes, isLoading: plansLoading, isError: plansError } =
     useQuerySubscriptionPlans();
-  const { data: meRes } = useQuerySubscriptionMe();
-  const {
-    entitlement,
-    canCreateSalon,
-    isEntitled,
-    maxSalons,
-    ownedSalonCount,
-    remainingSalonSlots,
-    status,
-    isLoading: entitlementLoading,
-  } = useSubscriptionEntitlement();
-
-  const { mutateAsync: startTrial, isPending: trialPending } =
-    useMutateStartTrial();
   const { mutateAsync: checkout, isPending: checkoutPending } =
     useMutateCheckout();
+  const { mutateAsync: previewCheckout, isPending: previewPending } =
+    useMutatePreviewCheckout();
 
   const plans = plansRes?.data ?? [];
-  const subscription = meRes?.data;
+  const displayPlans = useMemo(() => sortPlansForDisplay(plans), [plans]);
 
-  const [selectedPlan, setSelectedPlan] = useState<ISubscriptionPlan | null>(
-    null
-  );
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [checkoutInvoiceId, setCheckoutInvoiceId] = useState<number | null>(
-    null
-  );
+  const [invoiceId, setInvoiceId] = useState<number | null>(null);
+  const [invoiceAmount, setInvoiceAmount] = useState<number | null>(null);
 
-  const trialPlan = useMemo(() => {
-    const withTrial = plans.filter((p) => (p.trialDays ?? 0) > 0);
-    if (withTrial.length === 0) return plans[0] ?? null;
-    return [...withTrial].sort(
-      (a, b) => a.durationMonths - b.durationMonths || a.price - b.price
-    )[0];
-  }, [plans]);
+  // The last successfully-validated code, tied to the plan+text it was checked against —
+  // editing either one invalidates it until "ثبت" is pressed again.
+  const [appliedPromo, setAppliedPromo] = useState<{
+    planId: number;
+    code: string;
+    result: ICheckoutPreviewResult;
+  } | null>(null);
+  const [promoError, setPromoError] = useState("");
 
-  /** Group plans by name for tier display (e.g. Basic 4/8/12 months). */
-  const tiers = useMemo(() => {
-    const map = new Map<string, ISubscriptionPlan[]>();
-    for (const plan of plans) {
-      const key = plan.name.trim();
-      const list = map.get(key) ?? [];
-      list.push(plan);
-      map.set(key, list);
+  const selectedPlan =
+    displayPlans.find((p) => p.id === selectedPlanId) ?? displayPlans[0] ?? null;
+
+  const trimmedPromoCode = promoCode.trim();
+  const appliedPromoMatchesSelection =
+    !!appliedPromo &&
+    !!selectedPlan &&
+    appliedPromo.planId === selectedPlan.id &&
+    appliedPromo.code === trimmedPromoCode;
+
+  // Discounts are never guessed client-side: outside of a matching preview, this is just
+  // the plan's own price (with any campaign the backend already put on it).
+  const totalPrice = selectedPlan
+    ? appliedPromoMatchesSelection
+      ? appliedPromo.result.finalPrice
+      : effectivePlanPrice(selectedPlan)
+    : null;
+
+  const selectPlan = (planId: number) => {
+    setSelectedPlanId(planId);
+    setAppliedPromo(null);
+    setPromoError("");
+  };
+
+  const handlePromoCodeChange = (value: string) => {
+    setPromoCode(value);
+    setAppliedPromo(null);
+    setPromoError("");
+  };
+
+  const handleApplyPromoCode = async () => {
+    setPromoError("");
+    if (!selectedPlan) {
+      setPromoError("ابتدا یک طرح اشتراک را انتخاب کنید.");
+      return;
     }
-    return Array.from(map.entries()).map(([name, items]) => ({
-      name,
-      items: [...items].sort((a, b) => a.durationMonths - b.durationMonths),
-    }));
-  }, [plans]);
+    if (!trimmedPromoCode) {
+      setAppliedPromo(null);
+      return;
+    }
+    try {
+      const res = await previewCheckout({
+        planId: selectedPlan.id,
+        promoCode: trimmedPromoCode,
+      });
+      if (!res.data?.valid) {
+        setAppliedPromo(null);
+        setPromoError("کد وارد شده معتبر نیست.");
+        return;
+      }
+      setAppliedPromo({
+        planId: selectedPlan.id,
+        code: trimmedPromoCode,
+        result: res.data,
+      });
+    } catch (e) {
+      setAppliedPromo(null);
+      setPromoError(getApiErrorMessage(e, "کد وارد شده معتبر نیست."));
+    }
+  };
 
-  const requireAuth = () => {
+  const handlePurchase = async () => {
+    setError("");
     if (!isLoggedIn) {
       router.push(getLoginHref(RouteAddress.SUBSCRIPTIONS.BASE));
-      return false;
+      return;
     }
-    return true;
-  };
-
-  const handleTrial = async () => {
-    setError("");
-    setSuccessMsg("");
-    if (!requireAuth() || !trialPlan) return;
-    try {
-      await startTrial({ planId: trialPlan.id });
-      setSuccessMsg(
-        `دوره آزمایشی ${trialPlan.trialDays ?? 30} روزه برای طرح «${trialPlan.name}» فعال شد.`
-      );
-    } catch (e) {
-      setError(
-        getApiErrorMessage(
-          e,
-          "فعال‌سازی دوره آزمایشی ناموفق بود (ممکن است قبلاً استفاده شده باشد)."
-        )
-      );
+    if (!selectedPlan) {
+      setError("لطفاً یکی از طرح‌های اشتراک را انتخاب کنید.");
+      return;
     }
-  };
-
-  const openCheckout = (plan: ISubscriptionPlan) => {
-    setSelectedPlan(plan);
-    setPromoCode("");
-    setCheckoutInvoiceId(null);
-    setError("");
-    setSuccessMsg("");
-    setCheckoutOpen(true);
-  };
-
-  const handleCheckout = async () => {
-    setError("");
-    if (!requireAuth() || !selectedPlan) return;
     try {
       const res = await checkout({
         planId: selectedPlan.id,
         promoCode: promoCode.trim() || null,
       });
-      setCheckoutInvoiceId(res.data?.id ?? null);
-      setSuccessMsg(
-        "فاکتور اشتراک ساخته شد و در وضعیت Pending است. پس از تأیید پرداخت توسط ادمین، اشتراک فعال می‌شود."
-      );
+      setInvoiceId(res.data?.id ?? null);
+      setInvoiceAmount(res.data?.amount ?? null);
     } catch (e) {
       setError(getApiErrorMessage(e, "ثبت سفارش اشتراک ناموفق بود."));
     }
   };
 
   return (
-    <div className="flex flex-col gap-5 px-safe-area pb-32 pt-4">
-      <TopNavigation>اشتراک پلتفرم</TopNavigation>
-
-      <p className="text-sm text-foreground-muted">
-        برای ایجاد سالن، ابتدا اشتراک billable (آزمایشی / فعال / مهلت) بگیرید.
-        پرداخت فعلاً دستی است و ادمین فاکتور را تأیید می‌کند.
-      </p>
-
-      {/* Entitlement summary */}
-      <section className="rounded-[20px] bg-surface-tertiary p-4">
-        <h2 className="text-sm font-bold text-foreground">وضعیت entitlement</h2>
-        {!isLoggedIn && (
-          <p className="mt-2 text-xs text-foreground-muted">
-            برای مشاهده وضعیت وارد شوید.
-          </p>
-        )}
-        {isLoggedIn && entitlementLoading && (
-          <p className="mt-2 text-xs text-foreground-muted">در حال بارگذاری…</p>
-        )}
-        {isLoggedIn && !entitlementLoading && (
-          <div className="mt-3 flex flex-col gap-1.5 text-sm">
-            <p>
-              <span className="text-foreground-muted">وضعیت: </span>
-              {subscriptionStatusLabel(status ?? subscription?.status)}
-            </p>
-            <p>
-              <span className="text-foreground-muted">مجاز: </span>
-              {isEntitled ? "بله" : "خیر"}
-            </p>
-            <p>
-              <span className="text-foreground-muted">سالن‌ها: </span>
-              {ownedSalonCount} / {maxSalons || "—"}
-              {entitlement && (
-                <span className="text-foreground-muted">
-                  {" "}
-                  (باقی‌مانده: {remainingSalonSlots})
-                </span>
-              )}
-            </p>
-            <p
-              className={cn(
-                "mt-1 text-xs font-semibold",
-                canCreateSalon ? "text-primary" : "text-orange-400"
-              )}
-            >
-              {canCreateSalon
-                ? "می‌توانید سالن جدید ایجاد کنید."
-                : "ایجاد سالن جدید فعلاً مسدود است."}
-            </p>
-          </div>
-        )}
-      </section>
-
-      {error && (
-        <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
-          {error}
-        </p>
-      )}
-      {successMsg && (
-        <p className="rounded-2xl bg-primary/10 px-4 py-3 text-xs text-foreground">
-          {successMsg}
-        </p>
-      )}
-
-      {/* Trial / continue CTA */}
-      {isEntitled ? (
+    <div className="flex flex-col gap-6 px-safe-area pb-40 pt-5">
+      <div className="flex items-center gap-x-3">
         <button
           type="button"
-          onClick={() => router.push(RouteAddress.ONBOARDING.BASE)}
-          className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground"
+          onClick={() => router.back()}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
+          aria-label="بازگشت"
         >
-          ادامه به ثبت‌نام سالن
+          <ArrowRightIcon size={20} className="text-foreground" />
         </button>
+        <h1 className="text-[18px] font-bold text-foreground">خرید اشتراک</h1>
+      </div>
+
+      {invoiceId != null ? (
+        <section className="rounded-[24px] bg-primary/10 p-5 text-center">
+          <p className="text-sm font-bold text-foreground">
+            فاکتور اشتراک شما ثبت شد.
+          </p>
+          <p className="mt-2 text-xs text-foreground-muted">
+            شماره فاکتور: {invoiceId}
+            {invoiceAmount != null
+              ? ` — مبلغ: ${formatToman(invoiceAmount)} تومان`
+              : ""}{" "}
+            — پس از تأیید پرداخت توسط پشتیبانی، اشتراک شما فعال می‌شود.
+          </p>
+        </section>
       ) : (
-        trialPlan && (
-          <button
-            type="button"
-            disabled={trialPending}
-            onClick={handleTrial}
-            className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
-          >
-            {trialPending
-              ? "در حال فعال‌سازی…"
-              : `شروع دوره آزمایشی ${trialPlan.trialDays ?? 30} روزه رایگان`}
-          </button>
-        )
-      )}
+        <>
+          {/* Plans */}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">
+              انتخاب طرح اشتراک
+            </h2>
 
-      {/* Plans */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-base font-bold text-foreground">طرح‌ها</h2>
-        {plansLoading && (
-          <p className="text-sm text-foreground-muted">در حال بارگذاری طرح‌ها…</p>
-        )}
-        {plansError && (
-          <p className="text-sm text-error">خطا در دریافت طرح‌ها</p>
-        )}
-        {!plansLoading && tiers.length === 0 && (
-          <p className="text-sm text-foreground-muted">طرحی یافت نشد.</p>
-        )}
+            {plansLoading && (
+              <p className="text-sm text-foreground-muted">
+                در حال بارگذاری طرح‌ها…
+              </p>
+            )}
+            {plansError && (
+              <p className="text-sm text-error">خطا در دریافت طرح‌ها</p>
+            )}
+            {!plansLoading && !plansError && displayPlans.length === 0 && (
+              <p className="text-sm text-foreground-muted">طرحی یافت نشد.</p>
+            )}
 
-        {tiers.map((tier) => (
-          <div
-            key={tier.name}
-            className="rounded-[24px] bg-surface-tertiary p-4"
-          >
-            <h3 className="text-[15px] font-bold text-foreground">
-              {tier.name}
-            </h3>
-            <p className="mt-1 text-xs text-foreground-muted">
-              تا {tier.items[0]?.maxSalons ?? "—"} سالن
-              {tier.items[0]?.trialDays
-                ? ` · ${tier.items[0].trialDays} روز آزمایشی`
-                : ""}
-            </p>
-
-            <div className="mt-4 flex flex-col gap-2">
-              {tier.items.map((plan) => {
+            <div className="flex flex-col gap-3">
+              {displayPlans.map((plan) => {
+                const selected = selectedPlan?.id === plan.id;
                 const price = effectivePlanPrice(plan);
                 const hasCampaign =
                   typeof plan.campaignPrice === "number" &&
                   plan.campaignPrice < plan.price;
+
                 return (
-                  <div
+                  <button
                     key={plan.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-background-secondary px-3 py-3"
+                    type="button"
+                    onClick={() => selectPlan(plan.id)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-[20px] px-4 py-4 text-right transition",
+                      selected
+                        ? "bg-primary/15 ring-1 ring-primary"
+                        : "bg-surface-tertiary"
+                    )}
                   >
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {plan.durationMonths} ماهه
-                      </p>
-                      <p className="text-xs text-foreground-muted">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[15px] font-bold text-foreground">
+                        {plan.name} · {plan.durationMonths} ماهه
+                      </span>
+                      <span className="text-sm">
                         {hasCampaign && (
-                          <span className="me-2 line-through opacity-60">
+                          <span className="me-2 text-xs text-foreground-muted line-through opacity-60">
                             {formatToman(plan.price)}
                           </span>
                         )}
                         <span className="font-bold text-foreground">
                           {formatToman(price)} تومان
                         </span>
-                        {plan.campaignName && (
-                          <span className="ms-2 text-primary">
-                            {plan.campaignName}
-                          </span>
-                        )}
-                      </p>
+                      </span>
                     </div>
+                    {plan.description && (
+                      <p className="text-xs text-foreground-muted">
+                        {plan.description}
+                      </p>
+                    )}
+                    {hasCampaign && plan.campaignName && (
+                      <p className="mt-1 text-xs text-primary">
+                        {plan.campaignName}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Payment methods (decorative / disabled) */}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">
+              روش‌های پرداخت
+            </h2>
+            <div className="flex flex-col gap-2">
+              <div className="flex cursor-not-allowed items-center gap-3 rounded-[16px] bg-surface-tertiary p-4 opacity-60">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
+                  <CreditCardIcon size={20} className="text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[14px] font-bold text-foreground">
+                    پرداخت آنلاین با کارت بانکی
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-foreground-muted">
+                    پرداخت امن از طریق درگاه بانکی
+                  </p>
+                </div>
+              </div>
+              <div className="flex cursor-not-allowed items-center gap-3 rounded-[16px] bg-surface-tertiary p-4 opacity-60">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
+                  <ReceiptIcon size={20} className="text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[14px] font-bold text-foreground">
+                    پرداخت کارت به کارت
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-foreground-muted">
+                    ارسال رسید واریز برای بررسی توسط پشتیبانی
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Discount code accordion */}
+          <section className="rounded-[20px] bg-surface-tertiary p-4">
+            <button
+              type="button"
+              onClick={() => setDiscountOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 text-right"
+            >
+              <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <PercentIcon size={18} className="text-primary" />
+                کد تخفیف دارید؟
+              </span>
+              {discountOpen ? (
+                <CaretUpIcon size={18} className="text-foreground-muted" />
+              ) : (
+                <CaretDownIcon size={18} className="text-foreground-muted" />
+              )}
+            </button>
+            {discountOpen && (
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    value={promoCode}
+                    onChange={(e) => handlePromoCodeChange(e.target.value)}
+                    placeholder="کد تخفیف را وارد کنید"
+                    className="flex-1 rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={previewPending || !trimmedPromoCode}
+                    onClick={handleApplyPromoCode}
+                    className="shrink-0 rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+                  >
+                    {previewPending ? "در حال بررسی…" : "ثبت"}
+                  </button>
+                </div>
+                {promoError && (
+                  <p className="text-xs text-error">{promoError}</p>
+                )}
+                {appliedPromoMatchesSelection && appliedPromo && (
+                  <p className="text-xs text-primary">
+                    کد تخفیف معتبر است
+                    {appliedPromo.result.campaignName
+                      ? ` (${appliedPromo.result.campaignName})`
+                      : ""}
+                    — {formatToman(appliedPromo.result.discountAmount)} تومان
+                    تخفیف اعمال شد.
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* Consultation (decorative / disabled) */}
+          <section className="flex items-center gap-3 rounded-[20px] bg-surface-tertiary p-4 opacity-60">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
+              <HandshakeIcon size={20} className="text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-foreground">
+                برای خرید نیاز به مشاوره دارید؟
+              </p>
+              <p className="mt-0.5 text-[12px] text-foreground-muted">
+                این بخش به‌زودی فعال می‌شود.
+              </p>
+            </div>
+          </section>
+
+          {/* FAQ accordion */}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-bold text-foreground">
+              در مورد خرید اشتراک سوالی دارید؟
+            </h2>
+            <div className="flex flex-col gap-2">
+              {FAQ_ITEMS.map((item, i) => {
+                const open = openFaqIndex === i;
+                return (
+                  <div
+                    key={item.question}
+                    className="rounded-[16px] bg-surface-tertiary p-4"
+                  >
                     <button
                       type="button"
-                      onClick={() => openCheckout(plan)}
-                      className="shrink-0 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+                      onClick={() => setOpenFaqIndex(open ? null : i)}
+                      className="flex w-full items-center justify-between gap-3 text-right"
                     >
-                      خرید طرح
+                      <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        {open && (
+                          <CheckCircleIcon
+                            size={16}
+                            weight="fill"
+                            className="shrink-0 text-primary"
+                          />
+                        )}
+                        {item.question}
+                      </span>
+                      {open ? (
+                        <CaretUpIcon
+                          size={16}
+                          className="shrink-0 text-foreground-muted"
+                        />
+                      ) : (
+                        <CaretDownIcon
+                          size={16}
+                          className="shrink-0 text-foreground-muted"
+                        />
+                      )}
                     </button>
+                    {open && (
+                      <p className="mt-3 text-xs leading-6 text-foreground-muted">
+                        {item.answer}
+                      </p>
+                    )}
                   </div>
                 );
               })}
             </div>
+          </section>
+
+          {error && (
+            <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
+              {error}
+            </p>
+          )}
+        </>
+      )}
+
+      {invoiceId == null && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
+          <div className="flex w-full max-w-[600px] flex-col gap-2">
+            <p className="text-center text-xs text-foreground-muted">
+              مبلغ قابل پرداخت:{" "}
+              <span className="font-bold text-foreground">
+                {totalPrice != null ? `${formatToman(totalPrice)} تومان` : "—"}
+              </span>
+            </p>
+            <button
+              type="button"
+              disabled={checkoutPending || !selectedPlan}
+              onClick={handlePurchase}
+              className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+            >
+              {checkoutPending
+                ? "در حال ثبت…"
+                : isLoggedIn
+                  ? "خرید اشتراک"
+                  : "ورود و خرید اشتراک"}
+            </button>
           </div>
-        ))}
-      </section>
-
-      <BottomSheet
-        open={checkoutOpen}
-        onClose={() => {
-          setCheckoutOpen(false);
-          setCheckoutInvoiceId(null);
-        }}
-      >
-        {selectedPlan && (
-          <div className="flex flex-col gap-4 pb-4">
-            <h3 className="text-base font-bold text-foreground">
-              خلاصه خرید — {selectedPlan.name}
-            </h3>
-            <div className="rounded-2xl bg-background-secondary p-4 text-sm">
-              <p>
-                مدت: <strong>{selectedPlan.durationMonths} ماه</strong>
-              </p>
-              <p className="mt-1">
-                سقف سالن: <strong>{selectedPlan.maxSalons}</strong>
-              </p>
-              <p className="mt-1">
-                مبلغ:{" "}
-                <strong>
-                  {formatToman(effectivePlanPrice(selectedPlan))} تومان
-                </strong>
-              </p>
-              <p className="mt-3 text-xs text-foreground-muted">
-                درگاه واقعی هنوز فعال نیست. با تأیید، فاکتور Pending ساخته
-                می‌شود و ادمین بعداً آن را Paid می‌کند.
-              </p>
-            </div>
-
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="text-foreground-muted">کد تخفیف (اختیاری)</span>
-              <input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                className="rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
-                placeholder="مثلاً SAVE20"
-                disabled={checkoutInvoiceId != null}
-              />
-            </label>
-
-            {checkoutInvoiceId != null && (
-              <p className="text-xs text-primary">
-                شماره فاکتور: {checkoutInvoiceId}
-              </p>
-            )}
-
-            {error && (
-              <p className="rounded-2xl bg-error/10 px-3 py-2 text-xs text-error">
-                {error}
-              </p>
-            )}
-
-            {checkoutInvoiceId == null ? (
-              <button
-                type="button"
-                disabled={checkoutPending}
-                onClick={handleCheckout}
-                className="rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-40"
-              >
-                {checkoutPending ? "در حال ثبت…" : "ادامه و پرداخت"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(false)}
-                className="rounded-full bg-surface-tertiary py-3 text-sm font-bold text-foreground"
-              >
-                بستن
-              </button>
-            )}
-          </div>
-        )}
-      </BottomSheet>
+        </div>
+      )}
     </div>
   );
 }

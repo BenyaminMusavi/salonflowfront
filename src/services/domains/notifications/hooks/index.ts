@@ -9,10 +9,13 @@ export const useQueryNotifications = (params?: {
   unreadOnly?: boolean;
   page?: number;
   pageSize?: number;
+  enabled?: boolean;
 }) => {
+  const { enabled = true, ...listParams } = params ?? {};
   return useQuery({
-    queryKey: [NOTIFICATIONS_QUERY_KEY, params],
-    queryFn: () => notificationsService.list(params),
+    queryKey: [NOTIFICATIONS_QUERY_KEY, listParams],
+    queryFn: () => notificationsService.list(listParams),
+    enabled,
   });
 };
 

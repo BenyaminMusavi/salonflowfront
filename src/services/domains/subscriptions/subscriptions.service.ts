@@ -1,9 +1,11 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
+  ICheckoutPreviewRequest,
   ICheckoutRequest,
   IStartTrialRequest,
   TCheckoutEntity,
+  TCheckoutPreviewEntity,
   TEntitlementEntity,
   TPlatformInvoicesEntity,
   TSubscriptionEntity,
@@ -51,6 +53,14 @@ class SubscriptionsService {
   async checkout(body: ICheckoutRequest) {
     return await axiosInstance.post<unknown, TCheckoutEntity>(
       API_ADDRESS.SUBSCRIPTIONS.CHECKOUT,
+      body
+    );
+  }
+
+  /** Pure calculation, no invoice created — used to validate a promo code and preview its price before checkout. */
+  async previewCheckout(body: ICheckoutPreviewRequest) {
+    return await axiosInstance.post<unknown, TCheckoutPreviewEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.CHECKOUT_PREVIEW,
       body
     );
   }

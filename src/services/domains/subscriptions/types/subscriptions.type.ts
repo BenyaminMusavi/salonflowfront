@@ -8,6 +8,7 @@ export interface ISubscriptionPlan {
   id: number;
   publicId?: string;
   name: string;
+  description?: string | null;
   durationMonths: number;
   price: number;
   currency?: string;
@@ -49,6 +50,25 @@ export interface ICheckoutRequest {
   promoCode?: string | null;
 }
 
+export interface ICheckoutPreviewRequest {
+  planId: number;
+  promoCode?: string | null;
+}
+
+/** Pure calculation — no invoice is created. `discountAmount` is campaign + code combined. */
+export interface ICheckoutPreviewResult {
+  planId: number;
+  valid: boolean;
+  originalPrice: number;
+  finalPrice: number;
+  discountAmount: number;
+  campaignDiscount?: number;
+  promoDiscount?: number;
+  campaignName?: string | null;
+  promoCode?: string | null;
+  currency?: string;
+}
+
 export interface IPlatformInvoice {
   id: number;
   planId?: number;
@@ -63,4 +83,5 @@ export type TSubscriptionPlansEntity = TResponse<ISubscriptionPlan[]>;
 export type TSubscriptionEntity = TResponse<ISubscription | null>;
 export type TEntitlementEntity = TResponse<ISubscriptionEntitlement>;
 export type TCheckoutEntity = TResponse<IPlatformInvoice>;
+export type TCheckoutPreviewEntity = TResponse<ICheckoutPreviewResult>;
 export type TPlatformInvoicesEntity = TResponse<IPlatformInvoice[]>;

@@ -34,3 +34,13 @@ export function effectivePlanPrice(plan: {
   }
   return plan.price;
 }
+
+/** Whole days left until `endDate`, or null if there is no end date to count down to. */
+export function remainingSubscriptionDays(
+  endDate: string | null | undefined
+): number | null {
+  if (!endDate) return null;
+  const end = new Date(endDate).getTime();
+  if (Number.isNaN(end)) return null;
+  return Math.max(0, Math.ceil((end - Date.now()) / 86_400_000));
+}

@@ -1,13 +1,39 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQueryMyWallet, useQueryMyWalletTransactions } from "@/services/domains/wallets/hooks";
+import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { RouteAddress } from "@/shared/data/routeAddress";
+import { getLoginHref } from "@/shared/utils/authRedirect";
 import { formatToman } from "@/shared/utils/salonDisplay";
 
 export default function WalletView() {
-  const walletQuery = useQueryMyWallet();
-  const txQuery = useQueryMyWalletTransactions();
+  const router = useRouter();
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const walletQuery = useQueryMyWallet({ enabled: isLoggedIn });
+  const txQuery = useQueryMyWalletTransactions({ enabled: isLoggedIn });
   const wallet = walletQuery.data?.data;
   const txs = txQuery.data?.data ?? [];
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
+        <h1 className="text-lg font-bold text-foreground">کیف پول من</h1>
+        <p className="text-sm text-foreground-muted">
+          برای مشاهده موجودی و تراکنش‌ها وارد حساب کاربری شوید.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            router.push(getLoginHref(RouteAddress.WALLET.BASE));
+          }}
+          className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+        >
+          ورود
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 px-safe-area pb-24 pt-5">
