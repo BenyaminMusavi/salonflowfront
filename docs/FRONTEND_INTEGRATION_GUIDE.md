@@ -201,7 +201,7 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 | `pageSize` | number | 20 | |
 | `search` | string? | — | |
 | `genderType` | number? | — | |
-| `serviceTypeId` | number? | — | |
+| `serviceTypePublicId` | Guid? | — | |
 | `minPrice` / `maxPrice` | number? | — | |
 | `minRating` | number? | — | |
 

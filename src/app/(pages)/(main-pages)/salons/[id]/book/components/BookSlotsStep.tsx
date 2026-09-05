@@ -17,18 +17,22 @@ interface BookSlotsStepProps {
   slots: ISalonBrowseSlot[];
   selectedTime: string | null;
   isLoading?: boolean;
+  isError?: boolean;
   onSelect: (slot: ISalonBrowseSlot) => void;
   onChangeDate?: () => void;
   onChangeStaff?: () => void;
+  onRetry?: () => void;
 }
 
 export default function BookSlotsStep({
   slots,
   selectedTime,
   isLoading = false,
+  isError = false,
   onSelect,
   onChangeDate,
   onChangeStaff,
+  onRetry,
 }: BookSlotsStepProps) {
   return (
     <section className="flex flex-col gap-3">
@@ -45,7 +49,27 @@ export default function BookSlotsStep({
         </div>
       ) : null}
 
-      {!isLoading && slots.length === 0 ? (
+      {!isLoading && isError ? (
+        <div className="rounded-[24px] bg-error/10 px-4 py-8 text-center">
+          <p className="text-base font-bold text-foreground">
+            دریافت ساعت‌های خالی ناموفق بود
+          </p>
+          <p className="mt-2 text-sm text-foreground-muted">
+            مشکلی در ارتباط با سرور پیش آمد. دوباره تلاش کنید.
+          </p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-5 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+            >
+              تلاش دوباره
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && slots.length === 0 ? (
         <div className="rounded-[24px] bg-surface px-4 py-8 text-center">
           <p className="text-base font-bold text-foreground">
             ظرفیتی برای این انتخاب نیست

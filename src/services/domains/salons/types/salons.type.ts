@@ -21,7 +21,8 @@ export interface IGetApprovedSalonsParams {
   pageSize?: number;
   search?: string;
   genderType?: number;
-  serviceTypeId?: number | string;
+  /** Guid (ServiceType.PublicId) — the salons list filter, matching every other endpoint's convention. */
+  serviceTypePublicId?: string;
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;

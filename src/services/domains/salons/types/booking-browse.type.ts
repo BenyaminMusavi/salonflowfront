@@ -79,9 +79,11 @@ export interface ISalonAvailableSlots {
 }
 
 export interface IGetSalonAvailableSlotsParams {
+  salonPublicId: string;
   branchPublicId: string;
   date: string;
-  serviceTypePublicIds: string[];
+  /** ServiceOffering Guids (not service-type Guids) — required by GET /api/booking/slots. */
+  offeringPublicIds: string[];
   staffProfilePublicId?: string | null;
 }
 

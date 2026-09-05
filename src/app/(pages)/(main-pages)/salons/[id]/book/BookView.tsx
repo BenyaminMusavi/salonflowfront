@@ -129,14 +129,19 @@ export default function BookView() {
     step >= 5
   );
 
-  const { data: slotsRes, isLoading: slotsLoading } =
-    useQuerySalonAvailableSlots({
-      branchPublicId: branchPublicId ?? undefined,
-      date: date ?? undefined,
-      serviceTypePublicIds,
-      staffProfilePublicId: useFirstAvailable ? null : staff?.staffPublicId,
-      enabled: step >= 6,
-    });
+  const {
+    data: slotsRes,
+    isLoading: slotsLoading,
+    isError: slotsError,
+    refetch: refetchSlots,
+  } = useQuerySalonAvailableSlots({
+    salonPublicId: salonPublicId ?? undefined,
+    branchPublicId: branchPublicId ?? undefined,
+    date: date ?? undefined,
+    offeringPublicIds,
+    staffProfilePublicId: useFirstAvailable ? null : staff?.staffPublicId,
+    enabled: step >= 6,
+  });
 
   const { data: staffProfilesRes } = useQueryStaffForOfferings(
     salonPublicId,
@@ -403,9 +408,13 @@ export default function BookView() {
             slots={slots}
             selectedTime={slotTime}
             isLoading={slotsLoading}
+            isError={slotsError}
             onSelect={selectSlot}
             onChangeDate={() => setStep(3)}
             onChangeStaff={() => setStep(4)}
+            onRetry={() => {
+              void refetchSlots();
+            }}
           />
         )}
 

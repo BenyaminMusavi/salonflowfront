@@ -1,5 +1,6 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
+import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import {
   IGetApprovedSalonsParams,
   TSalonsEntity,
@@ -7,12 +8,14 @@ import {
 import { TSalonEntity } from "@/services/domains/salons/types/salon.type";
 import {
   IGetSalonAvailableSlotsParams,
+  ISalonBrowseSlot,
   TAvailableDatesEntity,
   TBranchServicesEntity,
   TCalculatePriceEntity,
   TSalonAvailableSlotsEntity,
   TStaffAvailabilityEntity,
 } from "@/services/domains/salons/types/booking-browse.type";
+import { TimeSlotDto } from "@/services/domains/booking/types/booking.type";
 import {
   IOnboardingBranch,
   IOnboardingService,
@@ -38,7 +41,7 @@ class SalonService {
           pageSize: params.pageSize ?? 20,
           search: params.search || undefined,
           genderType: params.genderType,
-          serviceTypeId: params.serviceTypeId,
+          serviceTypePublicId: params.serviceTypePublicId,
           minPrice: params.minPrice,
           maxPrice: params.maxPrice,
           minRating: params.minRating,
@@ -94,19 +97,36 @@ class SalonService {
     );
   }
 
+  /**
+   * GET /api/salons/available-slots was removed from the backend (SF-QA-022) — its logic
+   * was a duplicate adapter over the same AvailabilityEngine behind GET /api/booking/slots,
+   * which is [AllowAnonymous] and is the one endpoint that actually exists. Call that
+   * endpoint here and adapt its response (a flat array of UTC start/end instants) back into
+   * the ISalonAvailableSlots shape (local "HH:mm:ss" strings) the booking-wizard UI expects,
+   * so BookSlotsStep / resolveSlotStaff don't need to change.
+   */
   async getAvailableSlots(params: IGetSalonAvailableSlotsParams) {
-    return await axiosInstance.get<unknown, TSalonAvailableSlotsEntity>(
-      API_ADDRESS.SALON.AVAILABLE_SLOTS,
+    const res = await axiosInstance.get<unknown, TResponse<TimeSlotDto[]>>(
+      API_ADDRESS.BOOKING.SLOTS,
       {
         params: {
+          salonPublicId: params.salonPublicId,
           branchPublicId: params.branchPublicId,
+          staffPublicId: params.staffProfilePublicId || undefined,
+          offeringPublicIds: params.offeringPublicIds,
           date: params.date,
-          serviceTypePublicIds: params.serviceTypePublicIds,
-          staffProfilePublicId: params.staffProfilePublicId || undefined,
         },
         paramsSerializer: { indexes: null },
       }
     );
+
+    const slots: ISalonBrowseSlot[] = (res.data ?? []).map((item) => ({
+      time: toLocalTimeString(item.start),
+      endTime: toLocalTimeString(item.end),
+      staffPublicId: item.staffPublicId ?? null,
+    }));
+
+    return { ...res, data: { slots } } satisfies TSalonAvailableSlotsEntity;
   }
 
   /* ---------- Onboarding ---------- */
@@ -194,3 +214,16 @@ class SalonService {
 
 const salonService = new SalonService();
 export default salonService;
+
+/**
+ * GET /api/booking/slots returns UTC instants (e.g. "2026-09-05T05:30:00Z"). The rest of
+ * the booking wizard (date step, create-booking payload in booking-mappers.ts) works with
+ * plain local "HH:mm:ss" wall-clock strings, matching the existing app-wide convention of
+ * reading Date getters in the browser's own local time (see DashboardCalendarGrid.tsx's
+ * formatClock) rather than converting through an explicit IANA zone.
+ */
+function toLocalTimeString(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}

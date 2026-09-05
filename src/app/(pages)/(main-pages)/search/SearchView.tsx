@@ -15,7 +15,7 @@ export default function SearchView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get("search") ?? "";
-  const urlServiceTypeId = searchParams.get("serviceTypeId");
+  const urlServiceTypePublicId = searchParams.get("serviceTypePublicId");
 
   const [activeTab, setActiveTab] = useState<"new" | "recommended">("new");
   const [draftSearch, setDraftSearch] = useState(urlSearch);
@@ -25,21 +25,21 @@ export default function SearchView() {
   }, [urlSearch]);
 
   const syncUrl = useCallback(
-    (next: { search?: string; serviceTypeId?: string | number | null }) => {
+    (next: { search?: string; serviceTypePublicId?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString());
       const search =
         next.search !== undefined ? next.search.trim() : urlSearch.trim();
       if (search) params.set("search", search);
       else params.delete("search");
 
-      const serviceTypeId =
-        next.serviceTypeId !== undefined
-          ? next.serviceTypeId
-          : urlServiceTypeId;
-      if (serviceTypeId != null && serviceTypeId !== "") {
-        params.set("serviceTypeId", String(serviceTypeId));
+      const serviceTypePublicId =
+        next.serviceTypePublicId !== undefined
+          ? next.serviceTypePublicId
+          : urlServiceTypePublicId;
+      if (serviceTypePublicId != null && serviceTypePublicId !== "") {
+        params.set("serviceTypePublicId", serviceTypePublicId);
       } else {
-        params.delete("serviceTypeId");
+        params.delete("serviceTypePublicId");
       }
 
       const qs = params.toString();
@@ -47,14 +47,14 @@ export default function SearchView() {
         qs ? `${RouteAddress.SEARCH.BASE}?${qs}` : RouteAddress.SEARCH.BASE
       );
     },
-    [router, searchParams, urlSearch, urlServiceTypeId]
+    [router, searchParams, urlSearch, urlServiceTypePublicId]
   );
 
   const { data: salonsRes, isLoading, isError } = useQueryApprovedSalons({
     page: 1,
     pageSize: 20,
     search: urlSearch || undefined,
-    serviceTypeId: urlServiceTypeId || undefined,
+    serviceTypePublicId: urlServiceTypePublicId || undefined,
   });
 
   const { data: serviceTypesRes, isLoading: typesLoading } =
@@ -73,9 +73,11 @@ export default function SearchView() {
       <SearchHero salons={salons} />
       <SearchCategories
         categories={categories}
-        selectedId={urlServiceTypeId}
+        selectedId={urlServiceTypePublicId}
         isLoading={typesLoading}
-        onSelect={(id) => syncUrl({ serviceTypeId: id })}
+        onSelect={(id) =>
+          syncUrl({ serviceTypePublicId: id != null ? String(id) : null })
+        }
       />
       <SearchSegmentedToggle activeTab={activeTab} onTabChange={setActiveTab} />
       <SearchCardGrid
