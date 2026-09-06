@@ -16,6 +16,7 @@ import { getLoginHref } from "@/shared/utils/authRedirect";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import barbershop from "@/shared/assets/images/barbershop.png";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
+import PullToRefresh from "@/shared/components/composites/pull-to-refresh/PullToRefresh";
 
 function FavoriteSalonCard({ salon }: { salon: IFavoriteSalon }) {
   const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(
@@ -80,8 +81,7 @@ export default function FavoritesView() {
   const activeSalonId = useSalonContextStore((s) => s.salonId);
   const { mutate: switchToCustomer, isPending: isSwitchingContext } =
     useMutateSwitchContext();
-  const { data, isLoading, isError, refetch, isFetching } =
-    useQueryFavorites();
+  const { data, isLoading, isError, refetch } = useQueryFavorites();
 
   const salons = data?.data ?? [];
   const waitingForCustomerContext =
@@ -113,18 +113,9 @@ export default function FavoritesView() {
   }
 
   return (
+    <PullToRefresh onRefresh={() => refetch()}>
     <div className="flex flex-col gap-4 px-safe-area pb-32 pt-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-foreground">علاقه‌مندی‌های من</h1>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="text-xs text-primary disabled:opacity-40"
-        >
-          بروزرسانی
-        </button>
-      </div>
+      <h1 className="text-lg font-bold text-foreground">علاقه‌مندی‌های من</h1>
 
       {(isLoading || waitingForCustomerContext) && (
         <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
@@ -159,5 +150,6 @@ export default function FavoritesView() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
