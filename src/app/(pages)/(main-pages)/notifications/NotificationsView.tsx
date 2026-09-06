@@ -6,6 +6,7 @@ import { useMutateNotifications, useQueryNotifications } from "@/services/domain
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
+import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 
 interface IProps {
   title: string;
@@ -20,9 +21,9 @@ export default function NotificationsView({ title }: IProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="mx-auto flex w-full max-w-[600px] flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
-        <h1 className="text-sm font-bold text-foreground">{title}</h1>
-        <p className="text-sm text-foreground-muted">
+      <div className="mx-auto flex w-full max-w-[600px] flex-col items-center gap-4 pb-32 pt-5 text-center">
+        <BackHeader title={title} fallbackHref={RouteAddress.PROFILE.BASE} />
+        <p className="px-safe-area text-sm text-foreground-muted">
           برای مشاهده اعلان‌ها وارد حساب کاربری شوید.
         </p>
         <button
@@ -41,18 +42,22 @@ export default function NotificationsView({ title }: IProps) {
   const hasUnread = notifications.some((n) => !n.readAt);
 
   return (
-    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 px-safe-area pb-32 pt-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-foreground">{title}</h1>
-        <button
-          type="button"
-          disabled={!hasUnread || mutate.readAll.isPending}
-          onClick={() => mutate.readAll.mutate()}
-          className="text-xs font-bold text-primary disabled:opacity-40"
-        >
-          {mutate.readAll.isPending ? "در حال ثبت…" : "خواندن همه"}
-        </button>
-      </div>
+    <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 pb-32 pt-5">
+      <BackHeader
+        title={title}
+        fallbackHref={RouteAddress.PROFILE.BASE}
+        action={
+          <button
+            type="button"
+            disabled={!hasUnread || mutate.readAll.isPending}
+            onClick={() => mutate.readAll.mutate()}
+            className="text-xs font-bold text-primary disabled:opacity-40"
+          >
+            {mutate.readAll.isPending ? "در حال ثبت…" : "خواندن همه"}
+          </button>
+        }
+      />
+      <div className="flex flex-col gap-4 px-safe-area">
 
       {query.isLoading ? (
         <p className="text-sm text-foreground-muted">در حال دریافت اعلان‌ها…</p>
@@ -114,6 +119,7 @@ export default function NotificationsView({ title }: IProps) {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

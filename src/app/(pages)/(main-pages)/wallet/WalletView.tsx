@@ -6,6 +6,7 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 
 export default function WalletView() {
   const router = useRouter();
@@ -17,9 +18,9 @@ export default function WalletView() {
 
   if (!isLoggedIn) {
     return (
-      <div className="flex flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
-        <h1 className="text-lg font-bold text-foreground">کیف پول من</h1>
-        <p className="text-sm text-foreground-muted">
+      <div className="flex flex-col items-center gap-4 pb-32 pt-5 text-center">
+        <BackHeader title="کیف پول من" fallbackHref={RouteAddress.PROFILE.BASE} />
+        <p className="px-safe-area text-sm text-foreground-muted">
           برای مشاهده موجودی و تراکنش‌ها وارد حساب کاربری شوید.
         </p>
         <button
@@ -36,17 +37,17 @@ export default function WalletView() {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-safe-area pb-24 pt-5">
-      <h1 className="text-center text-sm font-bold text-foreground">کیف پول من</h1>
+    <div className="flex flex-col gap-4 pb-24 pt-5">
+      <BackHeader title="کیف پول من" fallbackHref={RouteAddress.PROFILE.BASE} />
 
-      <div className="rounded-2xl bg-gradient-to-br from-primary via-primary-hover to-primary-active p-5">
+      <div className="mx-safe-area rounded-2xl bg-gradient-to-br from-primary via-primary-hover to-primary-active p-5">
         <p className="text-xs text-primary-foreground/70">موجودی فعلی</p>
         <p className="mt-1 text-2xl font-bold text-primary-foreground">
           {formatToman(wallet?.balance)} تومان
         </p>
       </div>
 
-      <div className="rounded-lg bg-surface-secondary p-3">
+      <div className="mx-safe-area rounded-lg bg-surface-secondary p-3">
         <h2 className="mb-2 text-sm font-bold text-foreground">تراکنش‌ها</h2>
         {txQuery.isLoading ? (
           <p className="text-xs text-foreground-muted">در حال دریافت تراکنش‌ها...</p>

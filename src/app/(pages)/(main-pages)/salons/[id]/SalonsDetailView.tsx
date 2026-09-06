@@ -17,6 +17,7 @@ import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalon
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
 import { useParams } from "next/navigation";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 export default function SalonsDetailView() {
   const params = useParams<{ id: string }>();
@@ -33,7 +34,7 @@ export default function SalonsDetailView() {
   if (isLoading) {
     return (
       <div className="-mt-20 flex flex-col pb-32">
-        <TopNavigation>جزئیات</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
         <div className="flex h-[40vh] items-center justify-center text-sm text-foreground-muted">
           در حال بارگذاری…
         </div>
@@ -44,7 +45,7 @@ export default function SalonsDetailView() {
   if (isError || !salon) {
     return (
       <div className="-mt-20 flex flex-col pb-32">
-        <TopNavigation>جزئیات</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
         <div className="flex h-[40vh] items-center justify-center px-safe-area text-center text-sm text-error">
           سالن یافت نشد یا در کاتالوگ عمومی در دسترس نیست.
         </div>
@@ -58,7 +59,7 @@ export default function SalonsDetailView() {
 
   return (
     <div className="-mt-20 flex flex-col pb-32">
-      <TopNavigation>جزئیات</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
       <SalonsDetailHero salon={salon} />
       <div className="mt-5 flex flex-col">
         <SalonsDetailIdentity

@@ -16,7 +16,7 @@ export default function BookSuccessPanel({
 }: BookSuccessPanelProps) {
   return (
     <div className="flex flex-col gap-6 px-safe-area pb-24 pt-4">
-      <TopNavigation>رزرو موفق</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.SALONS.DETAILS(salonId)}>رزرو موفق</TopNavigation>
       <div className="rounded-[24px] bg-surface px-6 py-10 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
           <CheckCircleIcon size={36} weight="fill" />

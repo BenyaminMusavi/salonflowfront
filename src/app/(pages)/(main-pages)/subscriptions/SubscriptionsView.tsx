@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRightIcon,
   CaretDownIcon,
   CaretUpIcon,
   CheckCircleIcon,
@@ -12,6 +11,7 @@ import {
   PercentIcon,
   ReceiptIcon,
 } from "@phosphor-icons/react";
+import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
   useMutateCheckout,
@@ -185,17 +185,7 @@ export default function SubscriptionsView() {
 
   return (
     <div className="flex flex-col gap-6 px-safe-area pb-40 pt-5">
-      <div className="flex items-center gap-x-3">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
-          aria-label="بازگشت"
-        >
-          <ArrowRightIcon size={20} className="text-foreground" />
-        </button>
-        <h1 className="text-[18px] font-bold text-foreground">خرید اشتراک</h1>
-      </div>
+      <BackHeader title="خرید اشتراک" fallbackHref={RouteAddress.PROFILE.BASE} />
 
       {invoiceId != null ? (
         <section className="rounded-[24px] bg-primary/10 p-5 text-center">
@@ -256,7 +246,7 @@ export default function SubscriptionsView() {
                       </span>
                       <span className="text-sm">
                         {hasCampaign && (
-                          <span className="me-2 text-xs text-foreground-muted line-through opacity-60">
+                          <span className="me-2 text-xs text-error line-through">
                             {formatToman(plan.price)}
                           </span>
                         )}

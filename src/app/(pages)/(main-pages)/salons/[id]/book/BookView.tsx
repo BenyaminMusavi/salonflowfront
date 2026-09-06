@@ -30,6 +30,7 @@ import { useBookDraftPersistence } from "./hooks/useBookDraftPersistence";
 import { useBookWizardNavigation } from "./hooks/useBookWizardNavigation";
 import { useBookConfirm } from "./hooks/useBookConfirm";
 import { resolveStaffFromSlotResponse } from "./utils/resolveSlotStaff";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 export default function BookView() {
   const params = useParams<{ id: string }>();
@@ -319,7 +320,7 @@ export default function BookView() {
 
   return (
     <div className="flex flex-col pb-28">
-      <TopNavigation>رزرو نوبت</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.SALONS.DETAILS(salonPublicId!)}>رزرو نوبت</TopNavigation>
       {salon.name ? (
         <p className="-mt-1 px-safe-area text-xs text-foreground-muted">
           {salon.name}

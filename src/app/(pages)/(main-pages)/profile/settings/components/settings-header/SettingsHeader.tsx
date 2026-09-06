@@ -4,9 +4,11 @@ import { ArrowRight, SignOut } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useMutateLogout } from "@/services/domains/auth/hooks/useMutateLogout";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { useSmartBack } from "@/shared/hooks";
 
 export default function SettingsHeader() {
   const router = useRouter();
+  const goBack = useSmartBack(RouteAddress.PROFILE.BASE);
   const { mutateAsync: logout, isPending: isLoggingOut } = useMutateLogout();
 
   const handleLogout = async () => {
@@ -21,7 +23,7 @@ export default function SettingsHeader() {
     <div className="flex items-center justify-between px-safe-area">
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={goBack}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
       >
         <ArrowRight size={20} className="text-foreground" />

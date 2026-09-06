@@ -364,7 +364,7 @@ export default function OnboardingView() {
   if (gateBlocked) {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
-        <TopNavigation>ثبت سالن</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
         <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-base font-bold text-foreground">
             برای ایجاد سالن جدید اشتراک لازم است
@@ -387,7 +387,7 @@ export default function OnboardingView() {
   if (draft.submitted) {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
-        <TopNavigation>ثبت سالن</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
         <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-lg font-bold text-foreground">
             در انتظار تأیید ادمین
@@ -427,7 +427,7 @@ export default function OnboardingView() {
 
   return (
     <div className="flex flex-col pb-28">
-      <TopNavigation>ثبت سالن</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
       <Stepper
         steps={STEPS.map((s) => ({ ...s, complete: s.id < step }))}
         activeStep={step}

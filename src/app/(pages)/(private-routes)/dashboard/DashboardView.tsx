@@ -29,8 +29,6 @@ import {
   formatRate,
 } from "@/services/domains/reports/utils/report-display";
 import { asNumber, metricFromUnknown } from "@/services/domains/reports/utils/report-mappers";
-import Link from "next/link";
-import { RouteAddress } from "@/shared/data/routeAddress";
 import {
   AppointmentStatusChip,
   DashboardCard,
@@ -447,12 +445,6 @@ export default function DashboardView() {
       )}
       </>
       )}
-
-      <p className="text-center text-xs text-foreground-muted">
-        <Link className="text-primary" href={RouteAddress.RESERVATION.BASE}>
-          مشاهده رزروهای مشتری
-        </Link>
-      </p>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30">
         <div className="relative mx-auto max-w-[720px] px-safe-area">

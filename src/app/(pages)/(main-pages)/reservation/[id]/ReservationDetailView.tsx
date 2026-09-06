@@ -44,7 +44,7 @@ export default function ReservationDetailView() {
   if (!isLoggedIn) {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
-        <TopNavigation>جزئیات نوبت</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.RESERVATION.BASE}>جزئیات نوبت</TopNavigation>
         <p className="text-sm text-foreground-muted">برای مشاهده وارد شوید.</p>
         <button
           type="button"
@@ -68,7 +68,7 @@ export default function ReservationDetailView() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
-        <TopNavigation>جزئیات نوبت</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.RESERVATION.BASE}>جزئیات نوبت</TopNavigation>
         <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
       </div>
     );
@@ -77,7 +77,7 @@ export default function ReservationDetailView() {
   if (isError || !appointment) {
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
-        <TopNavigation>جزئیات نوبت</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.RESERVATION.BASE}>جزئیات نوبت</TopNavigation>
         <p className="text-sm text-error">نوبت یافت نشد.</p>
         <Link href={RouteAddress.RESERVATION.BASE} className="text-sm text-primary">
           بازگشت به لیست
@@ -104,7 +104,7 @@ export default function ReservationDetailView() {
 
   return (
     <div className="flex flex-col gap-4 px-safe-area pb-28 pt-4">
-      <TopNavigation>جزئیات نوبت</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.RESERVATION.BASE}>جزئیات نوبت</TopNavigation>
 
       <div className="flex items-start justify-between gap-3">
         <div>
