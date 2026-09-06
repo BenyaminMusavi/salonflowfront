@@ -135,9 +135,16 @@ export enum StaffInvitationStatus {
   Rejected = 3,
 }
 
-/** Media upload entity owner (guide §3.1). */
+/**
+ * Media upload entity owner (guide §3.1).
+ * Upload is only enabled server-side for Salon, ServiceType (admin-only),
+ * StaffMember and Customer — the rest of the polymorphic enum is reserved.
+ */
 export enum MediaEntityType {
   Salon = 1,
+  ServiceType = 2,
+  StaffMember = 4,
+  Customer = 5,
 }
 
 /** Common media kind for upload form field `mediaType`. */
