@@ -9,12 +9,16 @@ interface SearchHeaderProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onOpenFilters: () => void;
+  hasActiveFilters?: boolean;
 }
 
 export default function SearchHeader({
   value,
   onChange,
   onSubmit,
+  onOpenFilters,
+  hasActiveFilters,
 }: SearchHeaderProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-30 flex justify-center bg-background">
@@ -40,10 +44,14 @@ export default function SearchHeader({
         </form>
         <button
           type="button"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background-secondary text-foreground"
+          onClick={onOpenFilters}
+          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background-secondary text-foreground"
           aria-label="فیلترها"
         >
           <FadersIcon size={20} />
+          {hasActiveFilters && (
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
+          )}
         </button>
       </div>
     </div>
