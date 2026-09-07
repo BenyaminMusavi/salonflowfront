@@ -97,6 +97,8 @@ interface FieldErrors {
 export type TApiFieldError = {
   field: string;
   message: string;
+  /** Extra structured payload for specific errors (e.g. `{ publicId }` on a pending-salon conflict). Usually absent/null. */
+  data?: unknown;
 };
 
 export type TApiErrorResponse = {

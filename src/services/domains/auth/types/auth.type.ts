@@ -23,6 +23,8 @@ export interface IPendingStaffInvitation {
 
 export interface IAuthMe {
   userId: number;
+  /** Customer public id (Guid) — required as `entityPublicId` for `POST /api/Media/upload/5/{publicId}`. */
+  publicId: string;
   phone: string;
   firstName: string | null;
   lastName: string | null;

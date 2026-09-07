@@ -19,7 +19,10 @@ import {
   IOnboardingService,
   IOnboardingStaff,
 } from "@/services/domains/salons/types/onboarding.type";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  getApiErrorFieldData,
+  getApiErrorMessage,
+} from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
@@ -131,6 +134,11 @@ export default function OnboardingView() {
   const [saving, setSaving] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [gateBlocked, setGateBlocked] = useState(false);
+  /** Set when creating a new salon 400s because this user already has a Pending one. */
+  const [pendingConflict, setPendingConflict] = useState<{
+    message: string;
+    publicId?: string;
+  } | null>(null);
 
   const hasDraft = !!draft.salonPublicId;
 
@@ -290,11 +298,23 @@ export default function OnboardingView() {
         draft.setSubmitted(true);
       }
     } catch (e) {
-      setError(
+      const message =
         e instanceof Error && !("response" in e)
           ? e.message
-          : getApiErrorMessage(e, "ذخیره این مرحله ناموفق بود.")
-      );
+          : getApiErrorMessage(e, "ذخیره این مرحله ناموفق بود.");
+
+      // Creating a brand-new salon (step 1, no existing publicId) 400s with this
+      // shape when the user already has one Pending — surface it as a dedicated
+      // screen instead of an inline form error.
+      if (step === 1 && !draft.salonPublicId) {
+        const conflictData = getApiErrorFieldData<{ publicId?: string }>(e);
+        if (conflictData?.publicId) {
+          setPendingConflict({ message, publicId: conflictData.publicId });
+          return;
+        }
+      }
+
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -360,6 +380,28 @@ export default function OnboardingView() {
     next[staffIdx] = { ...member, offeringPublicIds: [...selected] };
     draft.setStaff(next);
   };
+
+  if (pendingConflict) {
+    return (
+      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
+        <div className="rounded-[24px] bg-surface p-6 text-center">
+          <p className="text-base font-bold text-foreground">
+            درخواست ثبت سالن شما در حال بررسی است
+          </p>
+          <p className="mt-2 text-sm text-foreground-muted">
+            {pendingConflict.message}
+          </p>
+          <Link
+            href={RouteAddress.HOME.BASE}
+            className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+          >
+            بازگشت به خانه
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (gateBlocked) {
     return (

@@ -92,3 +92,17 @@ export function getApiErrorMessage(
 
   return fallback;
 }
+
+/** Extracts the first field error's `data` payload (e.g. `{ publicId }` on a pending-salon conflict) — usually undefined. */
+export function getApiErrorFieldData<T = unknown>(error: unknown): T | undefined {
+  const data = getErrorBody(error);
+  if (!data) return undefined;
+
+  const errors = data.errors;
+  if (Array.isArray(errors) && errors.length > 0) {
+    const first = errors[0] as { data?: T };
+    return first?.data ?? undefined;
+  }
+
+  return undefined;
+}
