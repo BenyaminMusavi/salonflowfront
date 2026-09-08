@@ -424,17 +424,17 @@ export default function SubscriptionsView() {
             </div>
           </section>
 
-          {error && (
-            <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
-              {error}
-            </p>
-          )}
         </>
       )}
 
       {invoiceId == null && (
         <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
           <div className="flex w-full max-w-[600px] flex-col gap-2">
+            {error && (
+              <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
+                {error}
+              </p>
+            )}
             <p className="text-center text-xs text-foreground-muted">
               مبلغ قابل پرداخت:{" "}
               <span className="font-bold text-foreground">
