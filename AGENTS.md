@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# SalonFlow Frontend
+# Saffa Frontend
 
 Salon management SPA (Farsi/RTL, Toman currency, Jalali dates). Next.js 16.2.4 + React 19.2.4 + Tailwind v4.
 
@@ -43,7 +43,7 @@ app/(pages)/(main-pages)/       ← All main pages wrapped in <Header> + <Bottom
 - Domain services: singleton class pattern in `services/domains/<domain>/` with React Query hooks in `hooks/` subdir
 - Auth: Zustand `useTokenStore`, Axios interceptor injects Bearer token, 401 triggers logout
 - `RouteAddress` in `shared/data/routeAddress.ts` — has HOME, AUTH, PROFILE, SEARCH, RESERVATION
-- Theme: dark background (`#060e02`), green primary (`#9be955`), defined in `globals.css`
+- Theme: light/dark switching (Figma-sourced palette). Dark is default — background `#00182f`, primary teal `#4fa39a`; light overrides — background `#ffffff`, primary `#185851`. All tokens in `globals.css` (`@theme` = dark values, `:root[data-theme="light"]` = light overrides, plus a plain `:root { }` block for tokens with no Tailwind-utility usage yet — Tailwind v4 tree-shakes unused `@theme` vars). State: Zustand `useThemeStore` (`services/theme-store/`, persisted to localStorage) + an inline blocking script in `app/layout.tsx` that sets `<html data-theme>` before paint (no FOUC). Toggle lives in Profile → Settings (`ThemeToggleRow` in `SettingsList.tsx`).
 
 ## Strict Workflow Rule
 
