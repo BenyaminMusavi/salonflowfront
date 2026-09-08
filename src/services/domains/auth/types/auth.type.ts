@@ -28,6 +28,8 @@ export interface IAuthMe {
   phone: string;
   firstName: string | null;
   lastName: string | null;
+  /** Relative media path (e.g. "/uploads/customer/xxx.jpg") set after an entityType=5/usageType=3 (Profile) upload, or null. Resolve with salonImageSrc(). */
+  avatarUrl: string | null;
   memberships: IAuthMeMembership[];
   /** Staff invitations (StaffMember.Status == Pending) awaiting this user's accept/reject. */
   pendingStaffInvitations: IPendingStaffInvitation[];
