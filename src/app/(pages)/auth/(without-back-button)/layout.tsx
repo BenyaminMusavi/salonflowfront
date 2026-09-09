@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Hydration from "@/shared/components/Hydration";
+import LogoFull from "@/shared/components/composites/logo/LogoFull";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
 
@@ -16,9 +17,8 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
             "flex flex-col rounded-2xl w-full max-w-[500px]"
           }
         >
-          <div className={"flex justify-between items-center mt-4 sm:mt-0 mb-10"}>
-            <div></div>
-            {/*<IconLogoFull className={"w-[220px]"} />*/}
+          <div className={"flex justify-center items-center mt-4 sm:mt-0 mb-10"}>
+            <LogoFull />
           </div>
           {children}
         </div>

@@ -9,7 +9,7 @@ interface IProps {
 }
 
 const tabs = [
-  { id: "new", label: "جدید در سالن فلو" },
+  { id: "new", label: "جدید در صفا" },
   { id: "recommended", label: "پیشنهادی" },
 ] as const;
 

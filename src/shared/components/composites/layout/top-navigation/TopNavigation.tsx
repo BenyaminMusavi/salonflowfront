@@ -24,12 +24,12 @@ const TopNavigation = ({ children, fallbackHref }: IProps) => {
             type="button"
             onClick={goBack}
             aria-label="بازگشت"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-overlay/40 backdrop-blur-xl hover:bg-overlay/60"
           >
-            <ArrowRightIcon size={20} className="text-foreground-inverse" weight="bold" />
+            <ArrowRightIcon size={20} className="text-on-media" weight="bold" />
           </button>
           {children && (
-            <span className="rounded-full bg-surface-white px-3 py-2 text-xs font-bold text-foreground-inverse">
+            <span className="rounded-full bg-overlay/60 px-3 py-2 text-xs font-bold text-on-media backdrop-blur-sm">
               {children}
             </span>
           )}
