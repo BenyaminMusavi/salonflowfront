@@ -335,7 +335,7 @@ export default function SubscriptionsView() {
                     value={promoCode}
                     onChange={(e) => handlePromoCodeChange(e.target.value)}
                     placeholder="کد تخفیف را وارد کنید"
-                    className="flex-1 rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
+                    className="min-w-0 flex-1 rounded-2xl bg-background-secondary px-4 py-3 text-foreground outline-none"
                   />
                   <button
                     type="button"
