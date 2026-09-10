@@ -45,6 +45,25 @@ app/(pages)/(main-pages)/       ← All main pages wrapped in <Header> + <Bottom
 - `RouteAddress` in `shared/data/routeAddress.ts` — has HOME, AUTH, PROFILE, SEARCH, RESERVATION
 - Theme: light/dark switching (Figma-sourced palette). Dark is default — background `#00182f`, primary teal `#4fa39a`; light overrides — background `#ffffff`, primary `#185851`. All tokens in `globals.css` (`@theme` = dark values, `:root[data-theme="light"]` = light overrides, plus a plain `:root { }` block for tokens with no Tailwind-utility usage yet — Tailwind v4 tree-shakes unused `@theme` vars). State: Zustand `useThemeStore` (`services/theme-store/`, persisted to localStorage) + an inline blocking script in `app/layout.tsx` that sets `<html data-theme>` before paint (no FOUC). Toggle lives in Profile → Settings (`ThemeToggleRow` in `SettingsList.tsx`).
 
+## Service Type Icons
+
+Every `ServiceType` (seeded on the backend — `SalonFlowDbContext.SeedData`) gets a matching icon shown as a themed circular badge (category rows, etc.). The mapping lives in `src/shared/data/serviceTypeIcons.ts`:
+
+```ts
+export const SERVICE_TYPE_ICONS: Record<string, Icon> = {
+  "کوتاهی مو": ScissorsIcon,
+  // ...
+};
+export function getServiceTypeIcon(name: string): Icon { ... }
+```
+
+- **Keyed by the exact Persian `Name` string**, not by id — the API (`ServiceTypeResponseDto.Id`) returns a `Guid` (the row's `PublicId`), not a stable small integer, so the name is the only convenient stable key. Must match the backend seed string byte-for-byte (including any ZWNJ/half-space characters).
+- **Icons come from `@phosphor-icons/react`** (the only icon lib in this repo — see the quirks list above). Always import the `...Icon`-suffixed named export (e.g. `ScissorsIcon`), never the deprecated bare name (`Scissors`) — check `node_modules/@phosphor-icons/react/dist/csr/<Name>.d.ts` if unsure whether an icon exists before importing it.
+- **Unmapped service types** (e.g. a salon's own custom one) fall back to `DEFAULT_SERVICE_TYPE_ICON` (currently `SparkleIcon`) via `getServiceTypeIcon()` — never index the record directly.
+- **Rendering pattern** — a circular badge sized `h-[68px] w-[68px]` (adjust to context) with `bg-surface-brand text-content-brand`, icon at roughly 40% of the badge size with `weight="duotone"`. These two classes are derived from `--color-primary`, so the badge recolors automatically between light/dark — never hardcode a color here. See `SearchCategories.tsx` for the reference implementation.
+
+**To add a new service type's icon:** add one entry to `SERVICE_TYPE_ICONS` with the exact seeded Persian name and a semantically fitting Phosphor icon (verify the `...Icon` export exists first), following the same `bg-surface-brand`/`text-content-brand` badge pattern anywhere it's rendered.
+
 ## Strict Workflow Rule
 
 After completing any requested task or step, you MUST stop and explicitly ask for my confirmation/approval.
