@@ -6,6 +6,11 @@ import "@/shared/styles/globals.css";
 export const metadata: Metadata = {
   title: "Saffa | بدون صف، با صفا",
   description: "رزرو آنلاین نوبت سالن‌های زیبایی، بدون صف و بدون تماس تلفنی.",
+  appleWebApp: {
+    capable: true,
+    title: "Saffa",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
