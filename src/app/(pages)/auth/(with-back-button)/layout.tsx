@@ -2,9 +2,12 @@
 import React from "react";
 import { ArrowRight } from "@phosphor-icons/react";
 import Hydration from "@/shared/components/Hydration";
-import { Button } from "@/shared/components/primitives/button/Button";
+import { useSmartBack } from "@/shared/hooks";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  const goBack = useSmartBack(RouteAddress.HOME.BASE);
+
   return (
     <Hydration>
       <div
@@ -18,7 +21,12 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           }
         >
           <div className={"flex justify-between items-center mt-4 sm:mt-0 mb-10"}>
-            <button className="rounded-full p-2 text-foreground hover:bg-surface-tertiary transition-colors">
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="بازگشت"
+              className="rounded-full p-2 text-foreground hover:bg-surface-tertiary transition-colors"
+            >
               <ArrowRight size={20} />
             </button>
             <div />

@@ -14,7 +14,7 @@ const THEME_STORE_NAME = "salon_flow_theme_state";
 export const useThemeStore = create<IThemeState>()(
   persist(
     (set, get) => ({
-      theme: "dark",
+      theme: "light",
       setTheme: (theme) => set({ theme }),
       toggleTheme: () =>
         set({ theme: get().theme === "dark" ? "light" : "dark" }),

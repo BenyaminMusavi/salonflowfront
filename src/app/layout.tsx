@@ -47,10 +47,10 @@ const ravi = localFont({
 const THEME_INIT_SCRIPT = `(function () {
   try {
     var stored = JSON.parse(localStorage.getItem("salon_flow_theme_state"));
-    var theme = stored && stored.state && stored.state.theme === "light" ? "light" : "dark";
+    var theme = stored && stored.state && stored.state.theme === "dark" ? "dark" : "light";
     document.documentElement.dataset.theme = theme;
   } catch (e) {
-    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.theme = "light";
   }
 })();`;
 

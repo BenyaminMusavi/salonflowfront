@@ -1,9 +1,13 @@
 "use client";
 import React from "react";
+import { ArrowRight } from "@phosphor-icons/react";
 import Hydration from "@/shared/components/Hydration";
 import LogoFull from "@/shared/components/composites/logo/LogoFull";
+import { useSmartBack } from "@/shared/hooks";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  const goBack = useSmartBack(RouteAddress.HOME.BASE);
 
   return (
     <Hydration>
@@ -17,7 +21,18 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
             "flex flex-col rounded-2xl w-full max-w-[500px]"
           }
         >
-          <div className={"flex justify-center items-center mt-4 sm:mt-0 mb-10"}>
+          <div className={"flex justify-between items-center mt-4 sm:mt-0"}>
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="بازگشت"
+              className="rounded-full p-2 text-foreground hover:bg-surface-tertiary transition-colors"
+            >
+              <ArrowRight size={20} />
+            </button>
+            <div />
+          </div>
+          <div className={"flex justify-center items-center mb-10"}>
             <LogoFull />
           </div>
           {children}
