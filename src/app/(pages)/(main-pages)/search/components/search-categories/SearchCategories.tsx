@@ -1,16 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import { getServiceTypeIcon } from "@/shared/data/serviceTypeIcons";
 import { IServiceType } from "@/services/domains/service-type/types/service-type.type";
-import { salonImageSrc } from "@/shared/utils/salonDisplay";
-
-const FALLBACK_COLORS = [
-  "bg-gradient-to-br from-border-hover to-background-elevated",
-  "bg-gradient-to-br from-border-strong to-border",
-  "bg-gradient-to-br from-border-hover to-background-secondary",
-  "bg-gradient-to-br from-border-strong to-background-elevated",
-  "bg-gradient-to-br from-border-hover to-border",
-];
 
 interface SearchCategoriesProps {
   categories: IServiceType[];
@@ -36,8 +27,9 @@ export default function SearchCategories({
       )}
 
       <div className="no-scrollbar flex gap-4 overflow-x-auto">
-        {categories.map((cat, i) => {
+        {categories.map((cat) => {
           const selected = selectedId != null && String(selectedId) === String(cat.id);
+          const CategoryIcon = getServiceTypeIcon(cat.name);
           return (
             <button
               key={String(cat.id)}
@@ -46,19 +38,11 @@ export default function SearchCategories({
               className="flex shrink-0 flex-col items-center gap-2"
             >
               <div
-                className={`relative h-[68px] w-[68px] overflow-hidden rounded-full ${
-                  FALLBACK_COLORS[i % FALLBACK_COLORS.length]
-                } ${selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                className={`flex h-[68px] w-[68px] items-center justify-center rounded-full bg-surface-brand text-content-brand ${
+                  selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+                }`}
               >
-                {cat.imageUrl && (
-                  <Image
-                    src={salonImageSrc(cat.imageUrl, "")}
-                    alt={cat.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                )}
+                <CategoryIcon size={28} weight="duotone" />
               </div>
               <span className="w-[68px] truncate text-center text-[11px] text-foreground-muted">
                 {cat.name}
