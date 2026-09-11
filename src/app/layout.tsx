@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     title: "Saffa",
     statusBarStyle: "black-translucent",
   },
+  other: {
+    enamad: "9999723",
+  },
 };
 
 export const viewport: Viewport = {
