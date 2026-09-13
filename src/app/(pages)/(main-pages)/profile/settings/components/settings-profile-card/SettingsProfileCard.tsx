@@ -46,13 +46,13 @@ export default function SettingsProfileCard() {
         </p>
       </div>
 
-      <button
-        type="button"
+      <Link
+        href={RouteAddress.PROFILE.EDIT_NAME}
         className="flex h-8 w-8 items-center justify-center rounded-full bg-background-tertiary"
         aria-label="ویرایش"
       >
         <PencilSimple size={16} className="text-primary" />
-      </button>
+      </Link>
     </div>
   );
 }
