@@ -5,7 +5,8 @@ import {
   IVerifyOtpRequest,
   ISendOtpRequest,
   ISetPasswordRequest,
-  ISetPasswordWithOtpRequest,
+  IResetPasswordRequest,
+  IUpdateProfileRequest,
   IForgetPasswordRequest,
   IRefreshRequest,
   ILogoutRequest,
@@ -46,16 +47,16 @@ class AuthService {
     );
   }
 
-  async setPasswordWithOtp(data: ISetPasswordWithOtpRequest) {
-    return await axiosInstance.post<unknown, TAuthEntity>(
-      API_ADDRESS.AUTH.SET_PASSWORD_WITH_OTP,
+  async forgetPassword(data: IForgetPasswordRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.AUTH.FORGET_PASSWORD,
       data
     );
   }
 
-  async forgetPassword(data: IForgetPasswordRequest) {
-    return await axiosInstance.post<unknown, void>(
-      API_ADDRESS.AUTH.FORGET_PASSWORD,
+  async resetPassword(data: IResetPasswordRequest) {
+    return await axiosInstance.post<unknown, TAuthEntity>(
+      API_ADDRESS.AUTH.RESET_PASSWORD,
       data
     );
   }
@@ -76,6 +77,13 @@ class AuthService {
 
   async me() {
     return await axiosInstance.get<unknown, TAuthMeEntity>(API_ADDRESS.AUTH.ME);
+  }
+
+  async updateProfile(data: IUpdateProfileRequest) {
+    return await axiosInstance.patch<unknown, TAuthMeEntity>(
+      API_ADDRESS.AUTH.PROFILE,
+      data
+    );
   }
 
   async switchContext(data: ISwitchContextRequest) {

@@ -8,7 +8,7 @@ import {
   newPasswordFormSchema,
   TNewPasswordFormSchema,
 } from "./newPasswordFormSchema";
-import { useSetPasswordWithOtp } from "@/services/domains/auth/hooks/useMutateSetPasswordWithOtp";
+import { useResetPassword } from "@/services/domains/auth/hooks/useMutateResetPassword";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
@@ -36,7 +36,7 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
-  const { mutateAsync, isPending } = useSetPasswordWithOtp();
+  const { mutateAsync, isPending } = useResetPassword();
   const setToken = useTokenStore((s) => s.setToken);
   const clearSalon = useSalonContextStore((s) => s.clearAll);
 
@@ -57,7 +57,7 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
       const res = await mutateAsync({
         phone,
         code: data.otp,
-        password: data.password,
+        newPassword: data.password,
       });
       clearSalon();
       setToken(res.data, true);

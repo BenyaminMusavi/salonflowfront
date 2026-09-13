@@ -10,11 +10,12 @@ export const API_ADDRESS = {
     VERIFY_OTP: "/api/auth/verify-otp",
     LOGIN_PASSWORD: "/api/auth/login-password",
     SET_PASSWORD: "/api/auth/set-password",
-    SET_PASSWORD_WITH_OTP: "/api/auth/set-password-with-otp",
     FORGET_PASSWORD: "/api/auth/forget-password",
+    RESET_PASSWORD: "/api/auth/reset-password",
     REFRESH: "/api/auth/refresh",
     LOGOUT: "/api/auth/logout",
     ME: "/api/auth/me",
+    PROFILE: "/api/auth/profile",
     SWITCH_CONTEXT: "/api/auth/switch-context",
   },
 

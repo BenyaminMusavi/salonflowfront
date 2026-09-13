@@ -37,7 +37,7 @@ const ResetPasswordFormProvider = ({ children }: IProps) => {
     try {
       await mutateAsync({ phone: data.phone });
       router.push(
-        `${RouteAddress.AUTH.OTP.BASE}?phone=${encodeURIComponent(data.phone)}`
+        `${RouteAddress.AUTH.RESET_PASSWORD.NEW_PASSWORD}?phone=${encodeURIComponent(data.phone)}`
       );
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);

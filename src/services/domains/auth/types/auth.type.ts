@@ -4,6 +4,8 @@ export interface IAuth {
   accessToken: string;
   refreshToken: string | null;
   hasPassword?: boolean;
+  /** True when the reset-password response requires the user to re-accept terms. */
+  requiresTermsReacceptance?: boolean;
 }
 
 export interface IAuthMeMembership {
@@ -74,10 +76,15 @@ export interface ISetPasswordRequest {
   lastName?: string;
 }
 
-export interface ISetPasswordWithOtpRequest {
+export interface IResetPasswordRequest {
   phone: string;
   code: string;
-  password: string;
+  newPassword: string;
+}
+
+export interface IUpdateProfileRequest {
+  firstName: string;
+  lastName: string;
 }
 
 export interface IRefreshRequest {
