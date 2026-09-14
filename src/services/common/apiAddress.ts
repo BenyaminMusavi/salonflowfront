@@ -113,6 +113,10 @@ export const API_ADDRESS = {
 
   SALON_REPORTS: {
     BASE: "/api/salon-reports",
+    PENDING: "/api/salon-reports/pending",
+    INVESTIGATE: (id: number) => `/api/salon-reports/${id}/investigate`,
+    RESOLVE: (id: number) => `/api/salon-reports/${id}/resolve`,
+    DISMISS: (id: number) => `/api/salon-reports/${id}/dismiss`,
   },
 
   SUBSCRIPTIONS: {
@@ -238,6 +242,8 @@ export const API_ADDRESS = {
     SALON_REJECT: (publicId: string) => `/api/admin/salons/${publicId}/reject`,
     SALON_SUSPEND: (publicId: string) => `/api/admin/salons/${publicId}/suspend`,
     SALON_RESTORE: (publicId: string) => `/api/admin/salons/${publicId}/restore`,
+    MEDIA_HIDE: (mediaId: number) => `/api/admin/media/${mediaId}/hide`,
+    MEDIA_UNHIDE: (mediaId: number) => `/api/admin/media/${mediaId}/unhide`,
   },
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import {
   Drawer,
   DrawerContent,
@@ -20,6 +21,10 @@ import {
   useMutateRestoreSalon,
 } from "@/services/domains/admin/hooks/useMutateAdminSalonActions";
 import {
+  useMutateHideMedia,
+  useMutateUnhideMedia,
+} from "@/services/domains/admin/hooks/useMutateAdminMediaVisibility";
+import {
   formatAdminDate,
   salonApprovalStatusLabel,
   salonApprovalStatusVariant,
@@ -28,6 +33,8 @@ import {
 } from "@/services/domains/admin/utils/admin-salon-display";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import { SalonApprovalStatus, TrustStatus } from "@/services/common/enums/domain-enums";
+import { IAdminSalonPhoto } from "@/services/domains/admin/types/admin.type";
+import { cn } from "@/shared/utils/className";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -55,16 +62,23 @@ export function SalonDetailDrawer({
 
   const [mode, setMode] = useState<ActionMode>("idle");
   const [reasonInput, setReasonInput] = useState("");
+  const [mediaTarget, setMediaTarget] = useState<IAdminSalonPhoto | null>(null);
+  const [mediaReasonInput, setMediaReasonInput] = useState("");
 
   useEffect(() => {
     setMode("idle");
     setReasonInput("");
+    setMediaTarget(null);
+    setMediaReasonInput("");
   }, [publicId]);
 
   const { mutateAsync: approve, isPending: isApproving } = useMutateApproveSalon();
   const { mutateAsync: reject, isPending: isRejecting } = useMutateRejectSalon();
   const { mutateAsync: suspend, isPending: isSuspending } = useMutateSuspendSalon();
   const { mutateAsync: restore, isPending: isRestoring } = useMutateRestoreSalon();
+  const { mutateAsync: hideMedia, isPending: isHidingMedia } = useMutateHideMedia();
+  const { mutateAsync: unhideMedia, isPending: isUnhidingMedia } = useMutateUnhideMedia();
+  const isMediaActionPending = isHidingMedia || isUnhidingMedia;
 
   const handleApprove = async () => {
     if (!publicId) return;
@@ -103,6 +117,27 @@ export function SalonDetailDrawer({
       onClose();
     } catch {
       /* keep drawer open on failure */
+    }
+  };
+
+  const handleMediaVisibility = async () => {
+    if (!mediaTarget || !mediaReasonInput.trim()) return;
+    try {
+      if (mediaTarget.isHidden) {
+        await unhideMedia({
+          mediaId: mediaTarget.id,
+          data: { reason: mediaReasonInput.trim() },
+        });
+      } else {
+        await hideMedia({
+          mediaId: mediaTarget.id,
+          data: { reason: mediaReasonInput.trim() },
+        });
+      }
+      setMediaTarget(null);
+      setMediaReasonInput("");
+    } catch {
+      /* keep the inline panel open on failure */
     }
   };
 
@@ -209,16 +244,79 @@ export function SalonDetailDrawer({
                       const src = salonImageSrc(photo.thumbnailUrl || photo.url, "");
                       if (!src) return null;
                       return (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={photo.id}
-                          src={src}
-                          alt=""
-                          className="aspect-square w-full rounded-lg object-cover"
-                        />
+                        <div key={photo.id} className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={src}
+                            alt=""
+                            className={cn(
+                              "aspect-square w-full rounded-lg object-cover",
+                              photo.isHidden && "opacity-40"
+                            )}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMediaTarget(photo);
+                              setMediaReasonInput("");
+                            }}
+                            className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
+                            aria-label={photo.isHidden ? "نمایش تصویر" : "مخفی کردن تصویر"}
+                          >
+                            {photo.isHidden ? (
+                              <EyeSlashIcon size={13} />
+                            ) : (
+                              <EyeIcon size={13} />
+                            )}
+                          </button>
+                          {photo.isHidden ? (
+                            <span className="absolute bottom-1 right-1 rounded-full bg-background/90 px-1.5 py-0.5 text-[10px] font-semibold text-foreground-muted">
+                              مخفی
+                            </span>
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>
+
+                  {mediaTarget ? (
+                    <div className="mt-3 flex flex-col gap-2 rounded-lg border border-border p-3">
+                      <p className="text-[12px] font-bold text-foreground">
+                        {mediaTarget.isHidden
+                          ? "نمایش دوبارهٔ این تصویر در کاتالوگ عمومی"
+                          : "مخفی کردن این تصویر از کاتالوگ عمومی"}
+                      </p>
+                      <TextArea
+                        value={mediaReasonInput}
+                        onChange={(e) => setMediaReasonInput(e.target.value)}
+                        placeholder="دلیل را بنویسید"
+                        className="min-h-16"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={mediaTarget.isHidden ? "default" : "destructive"}
+                          className="flex-1"
+                          disabled={!mediaReasonInput.trim()}
+                          isLoading={isMediaActionPending}
+                          onClick={handleMediaVisibility}
+                        >
+                          {mediaTarget.isHidden ? "ثبت نمایش تصویر" : "ثبت مخفی‌سازی"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={isMediaActionPending}
+                          onClick={() => {
+                            setMediaTarget(null);
+                            setMediaReasonInput("");
+                          }}
+                        >
+                          انصراف
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>

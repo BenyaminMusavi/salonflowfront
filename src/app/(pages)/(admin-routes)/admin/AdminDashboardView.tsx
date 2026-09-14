@@ -71,6 +71,7 @@ export default function AdminDashboardView() {
               value={summary?.openReports ?? 0}
               icon={WarningIcon}
               tone="error"
+              href={RouteAddress.ADMIN.REPORTS}
             />
           </>
         )}

@@ -74,5 +74,6 @@ export const RouteAddress = {
     SALONS_PENDING: "/admin/salons-pending",
     SALONS: "/admin/salons",
     REVIEWS: "/admin/reviews",
+    REPORTS: "/admin/reports",
   },
 };

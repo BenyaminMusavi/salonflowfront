@@ -69,3 +69,16 @@ export interface ISalonReasonRequest {
 export type TAdminSalonListEntity = TResponse<TPagedResult<IAdminSalonListItem>>;
 export type TAdminSalonDetailEntity = TResponse<IAdminSalonDetail>;
 export type TAdminSalonActionEntity = TResponse<IAdminSalonListItem>;
+
+export interface IAdminMediaVisibilityRequest {
+  reason: string;
+}
+
+export interface IAdminMediaActionResult {
+  id: number;
+  publicId: string;
+  salonId: number;
+  isHidden: boolean;
+}
+
+export type TAdminMediaActionEntity = TResponse<IAdminMediaActionResult>;
