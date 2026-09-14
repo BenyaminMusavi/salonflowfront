@@ -69,4 +69,7 @@ export const RouteAddress = {
     NOTIFICATIONS: "/dashboard/notifications",
     SALON_INFO: "/dashboard/salon-info",
   },
+  ADMIN: {
+    BASE: "/admin",
+  },
 };

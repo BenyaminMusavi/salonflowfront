@@ -6,6 +6,12 @@ export interface IAuth {
   hasPassword?: boolean;
   /** True when the reset-password response requires the user to re-accept terms. */
   requiresTermsReacceptance?: boolean;
+  /**
+   * True when the JWT carries the global platform `Admin` role. UI-only convenience
+   * (show/hide the admin panel entry, post-login redirect) — real enforcement is always
+   * server-side via the `AdminOnly` policy, never trust this for anything security-relevant.
+   */
+  isAdmin?: boolean;
 }
 
 export interface IAuthMeMembership {
@@ -35,6 +41,8 @@ export interface IAuthMe {
   memberships: IAuthMeMembership[];
   /** Staff invitations (StaffMember.Status == Pending) awaiting this user's accept/reject. */
   pendingStaffInvitations: IPendingStaffInvitation[];
+  /** See {@link IAuth.isAdmin} — same UI-only caveat applies. */
+  isAdmin?: boolean;
 }
 
 export interface ILoginRequest {

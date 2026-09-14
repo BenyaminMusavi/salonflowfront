@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, CaretLeftIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
+import { PlusIcon, CaretLeftIcon, SignOutIcon, UserIcon, ShieldCheckIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
@@ -191,6 +191,25 @@ export default function BusinessSwitcher() {
               </span>
               <CaretLeftIcon size={18} className="text-foreground-muted" />
             </button>
+
+            {data?.data?.isAdmin ? (
+              <button
+                type="button"
+                className="flex items-center gap-3 rounded-[16px] bg-background-secondary p-4 text-right transition-colors hover:bg-background-tertiary"
+                onClick={() => {
+                  setOpen(false);
+                  router.push(RouteAddress.ADMIN.BASE);
+                }}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary">
+                  <ShieldCheckIcon size={18} className="text-primary" />
+                </div>
+                <span className="flex-1 text-[14px] font-bold text-foreground">
+                  پنل مدیریت
+                </span>
+                <CaretLeftIcon size={18} className="text-foreground-muted" />
+              </button>
+            ) : null}
           </div>
 
           <button

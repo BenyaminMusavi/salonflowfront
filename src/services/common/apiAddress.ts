@@ -224,5 +224,9 @@ export const API_ADDRESS = {
     UPLOAD: (entityType: number, entityPublicId: string) =>
       `/api/Media/upload/${entityType}/${entityPublicId}`,
   },
+
+  ADMIN: {
+    DASHBOARD_SUMMARY: "/api/admin/dashboard/summary",
+  },
 };
 
