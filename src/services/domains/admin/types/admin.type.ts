@@ -61,6 +61,11 @@ export interface IRejectSalonRequest {
   reason: string;
 }
 
+/** Shared body shape for suspend and restore — both require a `reason`. */
+export interface ISalonReasonRequest {
+  reason: string;
+}
+
 export type TAdminSalonListEntity = TResponse<TPagedResult<IAdminSalonListItem>>;
 export type TAdminSalonDetailEntity = TResponse<IAdminSalonDetail>;
 export type TAdminSalonActionEntity = TResponse<IAdminSalonListItem>;

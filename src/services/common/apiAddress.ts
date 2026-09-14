@@ -231,6 +231,8 @@ export const API_ADDRESS = {
     SALON_BY_ID: (publicId: string) => `/api/admin/salons/${publicId}`,
     SALON_APPROVE: (publicId: string) => `/api/admin/salons/${publicId}/approve`,
     SALON_REJECT: (publicId: string) => `/api/admin/salons/${publicId}/reject`,
+    SALON_SUSPEND: (publicId: string) => `/api/admin/salons/${publicId}/suspend`,
+    SALON_RESTORE: (publicId: string) => `/api/admin/salons/${publicId}/restore`,
   },
 };
 

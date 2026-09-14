@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import adminService from "@/services/domains/admin/admin.service";
-import { IRejectSalonRequest } from "@/services/domains/admin/types/admin.type";
+import {
+  IRejectSalonRequest,
+  ISalonReasonRequest,
+} from "@/services/domains/admin/types/admin.type";
 import { ADMIN_SALONS_QUERY_KEY } from "./useQueryAdminSalons";
 import { ADMIN_SALON_DETAIL_QUERY_KEY } from "./useQueryAdminSalonDetail";
 import { ADMIN_DASHBOARD_SUMMARY_QUERY_KEY } from "./useQueryAdminDashboardSummary";
@@ -38,6 +41,36 @@ export const useMutateRejectSalon = () => {
       publicId: string;
       data: IRejectSalonRequest;
     }) => adminService.rejectSalon(publicId, data),
+    onSuccess: (_data, { publicId }) => invalidate(publicId),
+  });
+};
+
+export const useMutateSuspendSalon = () => {
+  const invalidate = useInvalidateAfterModeration();
+
+  return useMutation({
+    mutationFn: ({
+      publicId,
+      data,
+    }: {
+      publicId: string;
+      data: ISalonReasonRequest;
+    }) => adminService.suspendSalon(publicId, data),
+    onSuccess: (_data, { publicId }) => invalidate(publicId),
+  });
+};
+
+export const useMutateRestoreSalon = () => {
+  const invalidate = useInvalidateAfterModeration();
+
+  return useMutation({
+    mutationFn: ({
+      publicId,
+      data,
+    }: {
+      publicId: string;
+      data: ISalonReasonRequest;
+    }) => adminService.restoreSalon(publicId, data),
     onSuccess: (_data, { publicId }) => invalidate(publicId),
   });
 };

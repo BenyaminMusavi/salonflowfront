@@ -16,14 +16,18 @@ import { useQueryAdminSalonDetail } from "@/services/domains/admin/hooks/useQuer
 import {
   useMutateApproveSalon,
   useMutateRejectSalon,
+  useMutateSuspendSalon,
+  useMutateRestoreSalon,
 } from "@/services/domains/admin/hooks/useMutateAdminSalonActions";
 import {
   formatAdminDate,
   salonApprovalStatusLabel,
   salonApprovalStatusVariant,
+  trustStatusLabel,
+  trustStatusVariant,
 } from "@/services/domains/admin/utils/admin-salon-display";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
-import { SalonApprovalStatus } from "@/services/common/enums/domain-enums";
+import { SalonApprovalStatus, TrustStatus } from "@/services/common/enums/domain-enums";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -37,6 +41,8 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+type ActionMode = "idle" | "confirm-approve" | "reject" | "suspend" | "restore";
+
 export function SalonDetailDrawer({
   publicId,
   onClose,
@@ -47,16 +53,18 @@ export function SalonDetailDrawer({
   const { data, isLoading } = useQueryAdminSalonDetail(publicId);
   const salon = data?.data;
 
-  const [mode, setMode] = useState<"idle" | "confirm-approve" | "reject">("idle");
-  const [rejectReason, setRejectReason] = useState("");
+  const [mode, setMode] = useState<ActionMode>("idle");
+  const [reasonInput, setReasonInput] = useState("");
 
   useEffect(() => {
     setMode("idle");
-    setRejectReason("");
+    setReasonInput("");
   }, [publicId]);
 
   const { mutateAsync: approve, isPending: isApproving } = useMutateApproveSalon();
   const { mutateAsync: reject, isPending: isRejecting } = useMutateRejectSalon();
+  const { mutateAsync: suspend, isPending: isSuspending } = useMutateSuspendSalon();
+  const { mutateAsync: restore, isPending: isRestoring } = useMutateRestoreSalon();
 
   const handleApprove = async () => {
     if (!publicId) return;
@@ -69,14 +77,36 @@ export function SalonDetailDrawer({
   };
 
   const handleReject = async () => {
-    if (!publicId || !rejectReason.trim()) return;
+    if (!publicId || !reasonInput.trim()) return;
     try {
-      await reject({ publicId, data: { reason: rejectReason.trim() } });
+      await reject({ publicId, data: { reason: reasonInput.trim() } });
       onClose();
     } catch {
       /* keep drawer open on failure */
     }
   };
+
+  const handleSuspend = async () => {
+    if (!publicId || !reasonInput.trim()) return;
+    try {
+      await suspend({ publicId, data: { reason: reasonInput.trim() } });
+      onClose();
+    } catch {
+      /* keep drawer open on failure */
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!publicId || !reasonInput.trim()) return;
+    try {
+      await restore({ publicId, data: { reason: reasonInput.trim() } });
+      onClose();
+    } catch {
+      /* keep drawer open on failure */
+    }
+  };
+
+  const isPending = isApproving || isRejecting || isSuspending || isRestoring;
 
   return (
     <Drawer
@@ -86,24 +116,23 @@ export function SalonDetailDrawer({
       }}
       direction="right"
     >
-      <DrawerContent
-        showHandle={false}
-        className="w-full sm:max-w-md"
-      >
+      <DrawerContent showHandle={false} className="w-full sm:max-w-md">
         <DrawerHeader className="border-b border-border text-right">
           <DrawerTitle className="text-base">
             {isLoading ? "در حال بارگذاری…" : salon?.name ?? "جزئیات سالن"}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
-            جزئیات کامل سالن برای تصمیم تایید یا رد
+            جزئیات کامل سالن برای تصمیم تایید، رد، تعلیق یا بازگرداندن
           </DrawerDescription>
           {salon ? (
-            <Badge
-              variant={salonApprovalStatusVariant(salon.approvalStatus)}
-              className="mt-1 w-fit"
-            >
-              {salonApprovalStatusLabel(salon.approvalStatus)}
-            </Badge>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              <Badge variant={salonApprovalStatusVariant(salon.approvalStatus)}>
+                {salonApprovalStatusLabel(salon.approvalStatus)}
+              </Badge>
+              <Badge variant={trustStatusVariant(salon.trustStatus)}>
+                {trustStatusLabel(salon.trustStatus)}
+              </Badge>
+            </div>
           ) : null}
         </DrawerHeader>
 
@@ -196,30 +225,46 @@ export function SalonDetailDrawer({
           ) : null}
         </div>
 
-        {salon && salon.approvalStatus === SalonApprovalStatus.Pending ? (
+        {salon ? (
           <DrawerFooter className="border-t border-border">
-            {mode === "reject" ? (
+            {mode === "reject" || mode === "suspend" || mode === "restore" ? (
               <div className="flex flex-col gap-2">
                 <TextArea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="دلیل رد را بنویسید (برای مالک پیامک می‌شود)"
+                  value={reasonInput}
+                  onChange={(e) => setReasonInput(e.target.value)}
+                  placeholder={
+                    mode === "reject"
+                      ? "دلیل رد را بنویسید (برای مالک پیامک می‌شود)"
+                      : mode === "suspend"
+                        ? "دلیل تعلیق را بنویسید (برای مالک پیامک می‌شود)"
+                        : "دلیل بازگرداندن را بنویسید"
+                  }
                   className="min-h-20"
                 />
                 <div className="flex gap-2">
                   <Button
-                    variant="destructive"
+                    variant={mode === "restore" ? "default" : "destructive"}
                     className="flex-1"
-                    disabled={!rejectReason.trim()}
-                    isLoading={isRejecting}
-                    onClick={handleReject}
+                    disabled={!reasonInput.trim()}
+                    isLoading={isPending}
+                    onClick={
+                      mode === "reject"
+                        ? handleReject
+                        : mode === "suspend"
+                          ? handleSuspend
+                          : handleRestore
+                    }
                   >
-                    ثبت رد درخواست
+                    {mode === "reject"
+                      ? "ثبت رد درخواست"
+                      : mode === "suspend"
+                        ? "ثبت تعلیق سالن"
+                        : "ثبت بازگرداندن سالن"}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setMode("idle")}
-                    disabled={isRejecting}
+                    disabled={isPending}
                   >
                     انصراف
                   </Button>
@@ -227,22 +272,14 @@ export function SalonDetailDrawer({
               </div>
             ) : mode === "confirm-approve" ? (
               <div className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  isLoading={isApproving}
-                  onClick={handleApprove}
-                >
+                <Button className="flex-1" isLoading={isPending} onClick={handleApprove}>
                   تایید نهایی سالن
                 </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setMode("idle")}
-                  disabled={isApproving}
-                >
+                <Button variant="secondary" onClick={() => setMode("idle")} disabled={isPending}>
                   انصراف
                 </Button>
               </div>
-            ) : (
+            ) : salon.approvalStatus === SalonApprovalStatus.Pending ? (
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => setMode("confirm-approve")}>
                   تایید سالن
@@ -251,6 +288,18 @@ export function SalonDetailDrawer({
                   رد درخواست
                 </Button>
               </div>
+            ) : salon.trustStatus === TrustStatus.Suspended ? (
+              <Button className="w-full" onClick={() => setMode("restore")}>
+                بازگرداندن سالن
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => setMode("suspend")}
+              >
+                تعلیق سالن
+              </Button>
             )}
           </DrawerFooter>
         ) : null}

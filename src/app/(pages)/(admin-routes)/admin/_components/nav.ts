@@ -27,7 +27,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: RouteAddress.ADMIN.SALONS_PENDING,
     icon: StorefrontIcon,
   },
-  { id: "salons", label: "مدیریت و تعلیق سالن‌ها", href: null, icon: BuildingsIcon },
+  {
+    id: "salons",
+    label: "مدیریت و تعلیق سالن‌ها",
+    href: RouteAddress.ADMIN.SALONS,
+    icon: BuildingsIcon,
+  },
   { id: "reviews", label: "نظرات و پاسخ‌ها", href: null, icon: ChatCircleTextIcon },
   { id: "reports", label: "گزارش‌های سوءرفتار", href: null, icon: WarningIcon },
   { id: "users", label: "کاربران و دسترسی‌ها", href: null, icon: UsersIcon },

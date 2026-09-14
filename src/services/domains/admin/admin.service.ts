@@ -3,6 +3,7 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   IAdminSalonListParams,
   IRejectSalonRequest,
+  ISalonReasonRequest,
   TAdminDashboardSummaryEntity,
   TAdminSalonActionEntity,
   TAdminSalonDetailEntity,
@@ -46,6 +47,20 @@ class AdminService {
   async rejectSalon(publicId: string, data: IRejectSalonRequest) {
     return await axiosInstance.post<unknown, TAdminSalonActionEntity>(
       API_ADDRESS.ADMIN.SALON_REJECT(publicId),
+      data
+    );
+  }
+
+  async suspendSalon(publicId: string, data: ISalonReasonRequest) {
+    return await axiosInstance.post<unknown, TAdminSalonActionEntity>(
+      API_ADDRESS.ADMIN.SALON_SUSPEND(publicId),
+      data
+    );
+  }
+
+  async restoreSalon(publicId: string, data: ISalonReasonRequest) {
+    return await axiosInstance.post<unknown, TAdminSalonActionEntity>(
+      API_ADDRESS.ADMIN.SALON_RESTORE(publicId),
       data
     );
   }
