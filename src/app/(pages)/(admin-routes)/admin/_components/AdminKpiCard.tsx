@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/shared/utils/className";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -6,11 +7,13 @@ export function AdminKpiCard({
   value,
   icon: IconComp,
   tone = "default",
+  href,
 }: {
   title: string;
   value: number | string;
   icon: Icon;
   tone?: "default" | "warning" | "error";
+  href?: string;
 }) {
   const toneClass =
     tone === "warning"
@@ -19,8 +22,8 @@ export function AdminKpiCard({
         ? "bg-error-background text-error"
         : "bg-primary/10 text-primary";
 
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
+  const content = (
+    <>
       <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full", toneClass)}>
         <IconComp size={22} weight="duotone" />
       </div>
@@ -30,6 +33,19 @@ export function AdminKpiCard({
           {typeof value === "number" ? value.toLocaleString("fa-IR") : value}
         </p>
       </div>
-    </div>
+    </>
   );
+
+  const className =
+    "flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors";
+
+  if (href) {
+    return (
+      <Link href={href} className={cn(className, "hover:border-primary/40")}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }

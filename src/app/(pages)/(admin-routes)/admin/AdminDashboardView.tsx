@@ -7,6 +7,7 @@ import {
   WarningIcon,
 } from "@phosphor-icons/react";
 import { useQueryAdminDashboardSummary } from "@/services/domains/admin/hooks/useQueryAdminDashboardSummary";
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { AdminKpiCard } from "./_components/AdminKpiCard";
 
 function KpiSkeleton() {
@@ -49,6 +50,7 @@ export default function AdminDashboardView() {
               value={summary?.pendingSalons ?? 0}
               icon={StorefrontIcon}
               tone="warning"
+              href={RouteAddress.ADMIN.SALONS_PENDING}
             />
             <AdminKpiCard
               title="نظرات در انتظار تایید"

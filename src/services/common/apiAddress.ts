@@ -227,6 +227,10 @@ export const API_ADDRESS = {
 
   ADMIN: {
     DASHBOARD_SUMMARY: "/api/admin/dashboard/summary",
+    SALONS: "/api/admin/salons",
+    SALON_BY_ID: (publicId: string) => `/api/admin/salons/${publicId}`,
+    SALON_APPROVE: (publicId: string) => `/api/admin/salons/${publicId}/approve`,
+    SALON_REJECT: (publicId: string) => `/api/admin/salons/${publicId}/reject`,
   },
 };
 

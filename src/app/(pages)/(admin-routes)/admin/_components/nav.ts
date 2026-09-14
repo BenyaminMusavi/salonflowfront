@@ -21,7 +21,12 @@ export type AdminNavItem = {
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: "dashboard", label: "داشبورد", href: RouteAddress.ADMIN.BASE, icon: GaugeIcon },
-  { id: "salons-pending", label: "تایید سالن‌های جدید", href: null, icon: StorefrontIcon },
+  {
+    id: "salons-pending",
+    label: "تایید سالن‌های جدید",
+    href: RouteAddress.ADMIN.SALONS_PENDING,
+    icon: StorefrontIcon,
+  },
   { id: "salons", label: "مدیریت و تعلیق سالن‌ها", href: null, icon: BuildingsIcon },
   { id: "reviews", label: "نظرات و پاسخ‌ها", href: null, icon: ChatCircleTextIcon },
   { id: "reports", label: "گزارش‌های سوءرفتار", href: null, icon: WarningIcon },

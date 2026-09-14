@@ -71,5 +71,6 @@ export const RouteAddress = {
   },
   ADMIN: {
     BASE: "/admin",
+    SALONS_PENDING: "/admin/salons-pending",
   },
 };
