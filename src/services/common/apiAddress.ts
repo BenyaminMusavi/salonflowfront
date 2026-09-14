@@ -104,6 +104,11 @@ export const API_ADDRESS = {
   REVIEWS: {
     BASE: "/api/reviews",
     BY_ID: (id: number) => `/api/reviews/${id}`,
+    PENDING: "/api/reviews/pending",
+    APPROVE: (id: number) => `/api/reviews/${id}/approve`,
+    REJECT: (id: number) => `/api/reviews/${id}/reject`,
+    REPLY_APPROVE: (reviewId: number) => `/api/reviews/${reviewId}/reply/approve`,
+    REPLY_REJECT: (reviewId: number) => `/api/reviews/${reviewId}/reply/reject`,
   },
 
   SALON_REPORTS: {

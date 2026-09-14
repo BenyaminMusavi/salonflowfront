@@ -1,9 +1,11 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
+  IAdminPendingReviewsParams,
   ICreateReviewRequest,
   IEditReviewRequest,
   IGetSalonReviewsParams,
+  TAdminPendingReviewsEntity,
   TReviewEntity,
   TSalonReviewsEntity,
 } from "./types/reviews.type";
@@ -46,6 +48,39 @@ class ReviewsService {
   async remove(id: number) {
     return await axiosInstance.delete<unknown, void>(
       API_ADDRESS.REVIEWS.BY_ID(id)
+    );
+  }
+
+  /** Admin moderation queue. */
+  async listPending(params: IAdminPendingReviewsParams) {
+    return await axiosInstance.get<unknown, TAdminPendingReviewsEntity>(
+      API_ADDRESS.REVIEWS.PENDING,
+      {
+        params: {
+          page: params.page ?? 1,
+          pageSize: params.pageSize ?? 20,
+        },
+      }
+    );
+  }
+
+  async approve(id: number) {
+    return await axiosInstance.post<unknown, void>(API_ADDRESS.REVIEWS.APPROVE(id));
+  }
+
+  async reject(id: number) {
+    return await axiosInstance.post<unknown, void>(API_ADDRESS.REVIEWS.REJECT(id));
+  }
+
+  async approveReply(reviewId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.REVIEWS.REPLY_APPROVE(reviewId)
+    );
+  }
+
+  async rejectReply(reviewId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.REVIEWS.REPLY_REJECT(reviewId)
     );
   }
 }

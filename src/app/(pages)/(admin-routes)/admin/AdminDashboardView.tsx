@@ -57,12 +57,14 @@ export default function AdminDashboardView() {
               value={summary?.pendingReviews ?? 0}
               icon={ChatCircleTextIcon}
               tone="warning"
+              href={RouteAddress.ADMIN.REVIEWS}
             />
             <AdminKpiCard
               title="پاسخ‌های در انتظار تایید"
               value={summary?.pendingReplies ?? 0}
               icon={ChatCenteredDotsIcon}
               tone="warning"
+              href={RouteAddress.ADMIN.REVIEWS}
             />
             <AdminKpiCard
               title="گزارش‌های باز"

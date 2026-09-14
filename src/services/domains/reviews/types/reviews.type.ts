@@ -42,5 +42,24 @@ export interface IGetSalonReviewsParams {
   pageSize?: number;
 }
 
+/** Admin moderation queue item — `GET /api/reviews/pending`. */
+export interface IAdminPendingReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  customerId: number;
+  customerName: string;
+  /** null for a review of a staff member rather than the salon itself. */
+  salonId: number | null;
+  salonName: string | null;
+  reply: IReviewReply | null;
+}
+
+export interface IAdminPendingReviewsParams {
+  page?: number;
+  pageSize?: number;
+}
+
 export type TReviewEntity = TResponse<IReview>;
 export type TSalonReviewsEntity = TResponse<TPagedResult<IReview>>;
+export type TAdminPendingReviewsEntity = TResponse<TPagedResult<IAdminPendingReview>>;

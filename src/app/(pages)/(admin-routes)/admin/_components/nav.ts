@@ -33,7 +33,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: RouteAddress.ADMIN.SALONS,
     icon: BuildingsIcon,
   },
-  { id: "reviews", label: "نظرات و پاسخ‌ها", href: null, icon: ChatCircleTextIcon },
+  {
+    id: "reviews",
+    label: "نظرات و پاسخ‌ها",
+    href: RouteAddress.ADMIN.REVIEWS,
+    icon: ChatCircleTextIcon,
+  },
   { id: "reports", label: "گزارش‌های سوءرفتار", href: null, icon: WarningIcon },
   { id: "users", label: "کاربران و دسترسی‌ها", href: null, icon: UsersIcon },
   { id: "subscriptions", label: "اشتراک و صورتحساب", href: null, icon: CreditCardIcon },
