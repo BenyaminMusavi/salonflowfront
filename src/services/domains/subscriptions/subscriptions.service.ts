@@ -3,6 +3,7 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   ICheckoutPreviewRequest,
   ICheckoutRequest,
+  IMarkInvoicePaidRequest,
   IStartTrialRequest,
   TCheckoutEntity,
   TCheckoutPreviewEntity,
@@ -68,6 +69,14 @@ class SubscriptionsService {
   async getMyInvoices() {
     return await axiosInstance.get<unknown, TPlatformInvoicesEntity>(
       API_ADDRESS.SUBSCRIPTIONS.INVOICES_ME
+    );
+  }
+
+  /** Admin-only — records payment on a platform invoice and activates the subscription. */
+  async markInvoicePaid(invoiceId: number, data: IMarkInvoicePaidRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SUBSCRIPTIONS.INVOICE_MARK_PAID(invoiceId),
+      data
     );
   }
 }

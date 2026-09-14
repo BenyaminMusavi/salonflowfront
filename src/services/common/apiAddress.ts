@@ -128,6 +128,8 @@ export const API_ADDRESS = {
     CHECKOUT: "/api/subscriptions/checkout",
     CHECKOUT_PREVIEW: "/api/subscriptions/checkout/preview",
     INVOICES_ME: "/api/subscriptions/invoices/me",
+    INVOICE_MARK_PAID: (invoiceId: number) =>
+      `/api/subscriptions/invoices/${invoiceId}/mark-paid`,
   },
 
   CUSTOMERS: {
@@ -248,6 +250,8 @@ export const API_ADDRESS = {
     USER_BY_ID: (userPublicId: string) => `/api/admin/users/${userPublicId}`,
     USER_BLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/block`,
     USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
+    SUBSCRIPTIONS: "/api/admin/subscriptions",
+    SUBSCRIPTION_INVOICES: "/api/admin/subscriptions/invoices",
   },
 };
 

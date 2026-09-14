@@ -15,6 +15,12 @@ import {
   TAdminUserDetailEntity,
   TAdminUsersEntity,
 } from "./types/admin.type";
+import {
+  IAdminPlatformInvoicesParams,
+  IAdminSubscriptionsParams,
+  TAdminPlatformInvoicesListEntity,
+  TAdminSubscriptionsEntity,
+} from "@/services/domains/subscriptions/types/subscriptions.type";
 
 class AdminService {
   async dashboardSummary() {
@@ -112,6 +118,34 @@ class AdminService {
   async unblockUser(userPublicId: string) {
     return await axiosInstance.post<unknown, void>(
       API_ADDRESS.ADMIN.USER_UNBLOCK(userPublicId)
+    );
+  }
+
+  async listSubscriptions(params: IAdminSubscriptionsParams) {
+    return await axiosInstance.get<unknown, TAdminSubscriptionsEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTIONS,
+      {
+        params: {
+          page: params.page ?? 1,
+          pageSize: params.pageSize ?? 20,
+          status: params.status,
+          search: params.search || undefined,
+        },
+      }
+    );
+  }
+
+  async listSubscriptionInvoices(params: IAdminPlatformInvoicesParams) {
+    return await axiosInstance.get<unknown, TAdminPlatformInvoicesListEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_INVOICES,
+      {
+        params: {
+          page: params.page ?? 1,
+          pageSize: params.pageSize ?? 20,
+          status: params.status,
+          search: params.search || undefined,
+        },
+      }
     );
   }
 }

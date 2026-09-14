@@ -1,4 +1,8 @@
-import { SubscriptionStatus } from "@/services/common/enums/domain-enums";
+import {
+  PlatformInvoiceStatus,
+  SubscriptionStatus,
+} from "@/services/common/enums/domain-enums";
+import { BadgeProps } from "@/shared/components/primitives/badge/Badge";
 
 export function subscriptionStatusLabel(status: number | null | undefined): string {
   switch (status) {
@@ -18,6 +22,57 @@ export function subscriptionStatusLabel(status: number | null | undefined): stri
       return "معلق";
     default:
       return "بدون اشتراک";
+  }
+}
+
+export function subscriptionStatusVariant(
+  status: number | null | undefined
+): NonNullable<BadgeProps["variant"]> {
+  switch (status) {
+    case SubscriptionStatus.Active:
+      return "success";
+    case SubscriptionStatus.Trialing:
+      return "brand";
+    case SubscriptionStatus.Grace:
+    case SubscriptionStatus.PastDue:
+      return "warning";
+    case SubscriptionStatus.Canceled:
+    case SubscriptionStatus.Expired:
+    case SubscriptionStatus.Suspended:
+      return "error";
+    default:
+      return "default";
+  }
+}
+
+export function platformInvoiceStatusLabel(status: number | null | undefined): string {
+  switch (status) {
+    case PlatformInvoiceStatus.Pending:
+      return "در انتظار پرداخت";
+    case PlatformInvoiceStatus.Paid:
+      return "پرداخت‌شده";
+    case PlatformInvoiceStatus.Cancelled:
+      return "لغو شده";
+    case PlatformInvoiceStatus.Expired:
+      return "منقضی";
+    default:
+      return "نامشخص";
+  }
+}
+
+export function platformInvoiceStatusVariant(
+  status: number | null | undefined
+): NonNullable<BadgeProps["variant"]> {
+  switch (status) {
+    case PlatformInvoiceStatus.Paid:
+      return "success";
+    case PlatformInvoiceStatus.Pending:
+      return "warning";
+    case PlatformInvoiceStatus.Cancelled:
+    case PlatformInvoiceStatus.Expired:
+      return "error";
+    default:
+      return "default";
   }
 }
 

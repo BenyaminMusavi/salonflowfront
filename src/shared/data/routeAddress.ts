@@ -76,5 +76,6 @@ export const RouteAddress = {
     REVIEWS: "/admin/reviews",
     REPORTS: "/admin/reports",
     USERS: "/admin/users",
+    SUBSCRIPTIONS: "/admin/subscriptions",
   },
 };

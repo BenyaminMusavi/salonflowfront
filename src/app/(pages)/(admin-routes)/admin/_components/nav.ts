@@ -51,6 +51,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: RouteAddress.ADMIN.USERS,
     icon: UsersIcon,
   },
-  { id: "subscriptions", label: "اشتراک و صورتحساب", href: null, icon: CreditCardIcon },
+  {
+    id: "subscriptions",
+    label: "اشتراک و صورتحساب",
+    href: RouteAddress.ADMIN.SUBSCRIPTIONS,
+    icon: CreditCardIcon,
+  },
   { id: "platform-reports", label: "گزارش‌های پلتفرم", href: null, icon: ChartBarIcon },
 ];
