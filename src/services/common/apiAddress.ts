@@ -244,6 +244,10 @@ export const API_ADDRESS = {
     SALON_RESTORE: (publicId: string) => `/api/admin/salons/${publicId}/restore`,
     MEDIA_HIDE: (mediaId: number) => `/api/admin/media/${mediaId}/hide`,
     MEDIA_UNHIDE: (mediaId: number) => `/api/admin/media/${mediaId}/unhide`,
+    USERS: "/api/admin/users",
+    USER_BY_ID: (userPublicId: string) => `/api/admin/users/${userPublicId}`,
+    USER_BLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/block`,
+    USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
   },
 };
 

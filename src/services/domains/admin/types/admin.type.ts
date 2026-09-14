@@ -82,3 +82,52 @@ export interface IAdminMediaActionResult {
 }
 
 export type TAdminMediaActionEntity = TResponse<IAdminMediaActionResult>;
+
+/** Global (platform-wide) role names — distinct from per-salon membership roles. */
+export type TGlobalRoleName =
+  | "Customer"
+  | "Staff"
+  | "SalonOwner"
+  | "Admin"
+  | "ChairTenant";
+
+export interface IAdminUserListItem {
+  publicId: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string;
+  /** NOT "blocked" — means the user hasn't verified their phone via OTP yet. Use `isBlocked` for moderation state. */
+  isActive: boolean;
+  isBlocked: boolean;
+  roles: string[];
+}
+
+export interface IAdminUserMembership {
+  salonPublicId: string;
+  salonName: string;
+  roleName: string;
+  isActive: boolean;
+}
+
+export interface IAdminUserDetail extends IAdminUserListItem {
+  blockedAt: string | null;
+  blockReason: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  globalRoles: string[];
+  memberships: IAdminUserMembership[];
+}
+
+export interface IAdminUsersParams {
+  page?: number;
+  pageSize?: number;
+  role?: TGlobalRoleName;
+  search?: string;
+}
+
+export interface IBlockUserRequest {
+  reason: string;
+}
+
+export type TAdminUsersEntity = TResponse<TPagedResult<IAdminUserListItem>>;
+export type TAdminUserDetailEntity = TResponse<IAdminUserDetail>;

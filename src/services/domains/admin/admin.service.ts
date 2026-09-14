@@ -3,6 +3,8 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   IAdminMediaVisibilityRequest,
   IAdminSalonListParams,
+  IAdminUsersParams,
+  IBlockUserRequest,
   IRejectSalonRequest,
   ISalonReasonRequest,
   TAdminDashboardSummaryEntity,
@@ -10,6 +12,8 @@ import {
   TAdminSalonActionEntity,
   TAdminSalonDetailEntity,
   TAdminSalonListEntity,
+  TAdminUserDetailEntity,
+  TAdminUsersEntity,
 } from "./types/admin.type";
 
 class AdminService {
@@ -78,6 +82,36 @@ class AdminService {
     return await axiosInstance.post<unknown, TAdminMediaActionEntity>(
       API_ADDRESS.ADMIN.MEDIA_UNHIDE(mediaId),
       data
+    );
+  }
+
+  async listUsers(params: IAdminUsersParams) {
+    return await axiosInstance.get<unknown, TAdminUsersEntity>(API_ADDRESS.ADMIN.USERS, {
+      params: {
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 20,
+        role: params.role,
+        search: params.search || undefined,
+      },
+    });
+  }
+
+  async getUserDetail(userPublicId: string) {
+    return await axiosInstance.get<unknown, TAdminUserDetailEntity>(
+      API_ADDRESS.ADMIN.USER_BY_ID(userPublicId)
+    );
+  }
+
+  async blockUser(userPublicId: string, data: IBlockUserRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.ADMIN.USER_BLOCK(userPublicId),
+      data
+    );
+  }
+
+  async unblockUser(userPublicId: string) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.ADMIN.USER_UNBLOCK(userPublicId)
     );
   }
 }
