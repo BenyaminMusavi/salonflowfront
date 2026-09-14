@@ -9,9 +9,11 @@ import {
   Storefront,
   BellSimple,
   HeartIcon,
+  ShieldCheckIcon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { remainingSubscriptionDays } from "@/services/domains/subscriptions/utils/subscription-display";
 
@@ -102,9 +104,25 @@ function SubscriptionMenuRow() {
   );
 }
 
+function AdminPanelMenuRow() {
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const { data } = useQueryAuthMe({ enabled: isLoggedIn });
+
+  if (!data?.data?.isAdmin) return null;
+
+  return (
+    <MenuRow
+      label="پنل مدیریت"
+      icon={ShieldCheckIcon}
+      href={RouteAddress.ADMIN.BASE}
+    />
+  );
+}
+
 export default function ProfileMenuList() {
   return (
     <div className="flex flex-col gap-2 px-safe-area">
+      <AdminPanelMenuRow />
       {beforeSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />
       ))}

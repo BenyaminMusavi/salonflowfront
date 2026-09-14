@@ -9,7 +9,7 @@ function HomeView() {
       <HomeHeader />
       <HomeSalons />
       <HomeSearch />
-      <div className="flex justify-center pt-2">
+      <div className="flex justify-end px-safe-area pt-2">
         <a
           referrerPolicy="origin"
           target="_blank"
@@ -19,7 +19,8 @@ function HomeView() {
           <img
             referrerPolicy="origin"
             src="https://trustseal.enamad.ir/logo.aspx?id=7712541&Code=Wx8KM798SLBkVoF6xKgfDqKOyoKNffTk"
-            alt=""
+            alt="نماد اعتماد الکترونیکی"
+            className="h-16 w-auto"
             style={{ cursor: "pointer" }}
             // @ts-expect-error -- eNamad's verification script looks for this exact non-standard "code" attribute; must not become "data-code" or be dropped
             code="Wx8KM798SLBkVoF6xKgfDqKOyoKNffTk"
