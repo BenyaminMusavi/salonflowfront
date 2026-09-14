@@ -2,6 +2,7 @@ import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   IAdminMediaVisibilityRequest,
+  IAdminPlatformReportDateParams,
   IAdminSalonListParams,
   IAdminUsersParams,
   IBlockUserRequest,
@@ -9,6 +10,9 @@ import {
   ISalonReasonRequest,
   TAdminDashboardSummaryEntity,
   TAdminMediaActionEntity,
+  TAdminPlatformReportName,
+  TAdminPromoPerformanceEntity,
+  TAdminReferralPerformanceEntity,
   TAdminSalonActionEntity,
   TAdminSalonDetailEntity,
   TAdminSalonListEntity,
@@ -146,6 +150,29 @@ class AdminService {
           search: params.search || undefined,
         },
       }
+    );
+  }
+
+  async getPromoPerformance(params: IAdminPlatformReportDateParams) {
+    return await axiosInstance.get<unknown, TAdminPromoPerformanceEntity>(
+      API_ADDRESS.ADMIN.PLATFORM_REPORTS_PROMO,
+      { params }
+    );
+  }
+
+  async getReferralPerformance(params: IAdminPlatformReportDateParams) {
+    return await axiosInstance.get<unknown, TAdminReferralPerformanceEntity>(
+      API_ADDRESS.ADMIN.PLATFORM_REPORTS_REFERRAL,
+      { params }
+    );
+  }
+
+  async exportPlatformReport(
+    params: IAdminPlatformReportDateParams & { report: TAdminPlatformReportName }
+  ) {
+    return await axiosInstance.get<unknown, Blob>(
+      API_ADDRESS.ADMIN.PLATFORM_REPORTS_EXPORT,
+      { params, responseType: "blob" }
     );
   }
 }

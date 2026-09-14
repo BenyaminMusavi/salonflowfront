@@ -57,5 +57,10 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: RouteAddress.ADMIN.SUBSCRIPTIONS,
     icon: CreditCardIcon,
   },
-  { id: "platform-reports", label: "گزارش‌های پلتفرم", href: null, icon: ChartBarIcon },
+  {
+    id: "platform-reports",
+    label: "گزارش‌های پلتفرم",
+    href: RouteAddress.ADMIN.PLATFORM_REPORTS,
+    icon: ChartBarIcon,
+  },
 ];

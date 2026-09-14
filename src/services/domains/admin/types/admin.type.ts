@@ -131,3 +131,36 @@ export interface IBlockUserRequest {
 
 export type TAdminUsersEntity = TResponse<TPagedResult<IAdminUserListItem>>;
 export type TAdminUserDetailEntity = TResponse<IAdminUserDetail>;
+
+export interface IAdminPlatformReportDateParams {
+  /** YYYY-MM-DD */
+  from?: string;
+  /** YYYY-MM-DD */
+  to?: string;
+}
+
+export interface IAdminPromoPerformanceRow {
+  code: string;
+  usageCount: number;
+  revenue: number;
+}
+
+export interface IAdminPromoPerformance {
+  items: IAdminPromoPerformanceRow[];
+}
+
+export interface IAdminReferralStatusBreakdown {
+  status: string;
+  count: number;
+}
+
+export interface IAdminReferralPerformance {
+  byStatus: IAdminReferralStatusBreakdown[];
+  totalRewardDaysGranted: number;
+  inviteeRevenueGenerated: number;
+}
+
+export type TAdminPromoPerformanceEntity = TResponse<IAdminPromoPerformance>;
+export type TAdminReferralPerformanceEntity = TResponse<IAdminReferralPerformance>;
+
+export type TAdminPlatformReportName = "promo-performance" | "referral-performance";

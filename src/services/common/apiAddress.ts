@@ -252,6 +252,9 @@ export const API_ADDRESS = {
     USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
     SUBSCRIPTIONS: "/api/admin/subscriptions",
     SUBSCRIPTION_INVOICES: "/api/admin/subscriptions/invoices",
+    PLATFORM_REPORTS_PROMO: "/api/admin/platform-reports/promo-performance",
+    PLATFORM_REPORTS_REFERRAL: "/api/admin/platform-reports/referral-performance",
+    PLATFORM_REPORTS_EXPORT: "/api/admin/platform-reports/export",
   },
 };
 
