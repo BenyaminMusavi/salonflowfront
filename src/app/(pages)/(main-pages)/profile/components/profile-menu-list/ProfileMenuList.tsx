@@ -14,9 +14,11 @@ import {
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
+import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { remainingSubscriptionDays } from "@/services/domains/subscriptions/utils/subscription-display";
+import { SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
 
 const beforeSubscription = [
   {
@@ -28,11 +30,6 @@ const beforeSubscription = [
     label: "علاقه‌مندی‌های من",
     icon: HeartIcon,
     href: RouteAddress.FAVORITES.BASE,
-  },
-  {
-    label: "ثبت سالن",
-    icon: Storefront,
-    href: RouteAddress.ONBOARDING.BASE,
   },
 ];
 
@@ -135,6 +132,45 @@ function SalonNotificationsMenuRow() {
   );
 }
 
+/**
+ * State-aware "ثبت سالن" row: no salon yet -> starts the wizard fresh; Draft/Rejected ->
+ * resumes it (label changes to make that obvious); Pending -> still opens onboarding, which
+ * itself shows a read-only "awaiting admin review" screen (nothing to fill in there); Approved
+ * -> skips the registration flow entirely and goes straight to the salon's own dashboard.
+ */
+function SalonRegistrationMenuRow() {
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const { data: authMeData } = useQueryAuthMe({ enabled: isLoggedIn });
+  const ownerMembership = authMeData?.data?.memberships?.find(
+    (m) => m.roleName === SalonRoleName.SalonOwner
+  );
+  const { data: salonRes } = useQuerySalonById(ownerMembership?.salonPublicId);
+  const status = salonRes?.data?.approvalStatus;
+
+  if (status === SalonApprovalStatus.Approved) {
+    return (
+      <MenuRow
+        label="داشبورد سالن"
+        icon={Storefront}
+        href={RouteAddress.DASHBOARD.BASE}
+      />
+    );
+  }
+
+  const label =
+    ownerMembership && status === SalonApprovalStatus.Pending
+      ? "ثبت سالن (در حال بررسی)"
+      : ownerMembership &&
+          (status === SalonApprovalStatus.Draft ||
+            status === SalonApprovalStatus.Rejected)
+        ? "تکمیل ثبت سالن"
+        : "ثبت سالن";
+
+  return (
+    <MenuRow label={label} icon={Storefront} href={RouteAddress.ONBOARDING.BASE} />
+  );
+}
+
 export default function ProfileMenuList() {
   return (
     <div className="flex flex-col gap-2 px-safe-area">
@@ -143,6 +179,7 @@ export default function ProfileMenuList() {
       {beforeSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />
       ))}
+      <SalonRegistrationMenuRow />
       <SubscriptionMenuRow />
       {afterSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />

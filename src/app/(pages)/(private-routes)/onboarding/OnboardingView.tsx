@@ -7,7 +7,9 @@ import { Stepper } from "@/shared/components/primitives/stepper/Stepper";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useQueryServiceTypes } from "@/services/domains/service-type/hooks/useQueryServiceTypes";
+import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import salonService from "@/services/domains/salons/salon.service";
 import {
   DAY_LABELS,
@@ -26,7 +28,7 @@ import {
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
-import { GenderType } from "@/services/common/enums/domain-enums";
+import { GenderType, SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 
 const STEPS = [
@@ -170,6 +172,43 @@ export default function OnboardingView() {
     hasDraft,
     router,
   ]);
+
+  // Detects an existing owner salon straight away (no local draft needed) — so visiting
+  // /onboarding directly (e.g. from the profile menu, or a fresh device) shows the right
+  // screen immediately instead of a blank step-1 form the user has to submit once just to
+  // discover a conflict. Only kicks in when this browser has no local draft of its own.
+  const { data: authMeData } = useQueryAuthMe({ enabled: tokenReady && isLoggedIn });
+  const ownerMembership = authMeData?.data?.memberships?.find(
+    (m) => m.roleName === SalonRoleName.SalonOwner
+  );
+  const { data: ownerSalonRes, isSuccess: ownerSalonFetched } = useQuerySalonById(
+    !hasDraft && ownerMembership ? ownerMembership.salonPublicId : undefined
+  );
+
+  useEffect(() => {
+    if (hasDraft || !ownerMembership || !ownerSalonFetched) return;
+    const status = ownerSalonRes?.data?.approvalStatus;
+
+    if (status === SalonApprovalStatus.Approved) {
+      router.replace(RouteAddress.DASHBOARD.BASE);
+      return;
+    }
+    if (status === SalonApprovalStatus.Pending) {
+      setPendingConflict({
+        kind: "pending",
+        message: "شما یک درخواست ثبت سالن در حال بررسی دارید. لطفاً تا اعلام نتیجه صبر کنید.",
+        publicId: ownerMembership.salonPublicId,
+      });
+      return;
+    }
+    if (status === SalonApprovalStatus.Draft || status === SalonApprovalStatus.Rejected) {
+      setPendingConflict({
+        kind: "draft",
+        message: "شما یک سالن پیش‌نویس دارید؛ ابتدا همان را تکمیل کنید.",
+        publicId: ownerMembership.salonPublicId,
+      });
+    }
+  }, [hasDraft, ownerMembership, ownerSalonFetched, ownerSalonRes, router]);
 
   const step = draft.step;
 
