@@ -195,15 +195,21 @@ export default function SubscriptionsView() {
       {invoiceId != null ? (
         <section className="rounded-[24px] bg-primary/10 p-5 text-center">
           <p className="text-sm font-bold text-foreground">
-            فاکتور اشتراک شما ثبت شد.
+            اشتراک شما همین الان فعال شد.
           </p>
           <p className="mt-2 text-xs text-foreground-muted">
             شماره فاکتور: {invoiceId}
             {invoiceAmount != null
               ? ` — مبلغ: ${formatToman(invoiceAmount)} تومان`
-              : ""}{" "}
-            — پس از تأیید پرداخت توسط پشتیبانی، اشتراک شما فعال می‌شود.
+              : ""}
           </p>
+          <button
+            type="button"
+            onClick={() => router.push(RouteAddress.ONBOARDING.BASE)}
+            className="mt-4 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+          >
+            رفتن به ثبت سالن
+          </button>
         </section>
       ) : (
         <>
