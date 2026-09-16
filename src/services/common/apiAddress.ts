@@ -38,6 +38,8 @@ export const API_ADDRESS = {
     BRANCH_CALCULATE_PRICE: (branchPublicId: string) =>
       `/api/salons/branches/${branchPublicId}/calculate-price`,
     SAVE_BASIC_INFO: "/api/salons/save-basic-info",
+    ONBOARDING_DRAFT: (salonPublicId: string) =>
+      `/api/salons/${salonPublicId}/onboarding-draft`,
     SAVE_BRANCHES: (salonPublicId: string) =>
       `/api/salons/${salonPublicId}/save-branches`,
     SAVE_SERVICES: (salonPublicId: string) =>

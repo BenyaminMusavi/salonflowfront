@@ -4,12 +4,12 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 
 export const MY_APPOINTMENTS_QUERY_KEY = "MY_APPOINTMENTS_QUERY_KEY";
 
-export const useQueryMyAppointments = () => {
+export const useQueryMyAppointments = (options?: { enabled?: boolean }) => {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
 
   return useQuery({
     queryKey: [MY_APPOINTMENTS_QUERY_KEY],
     queryFn: () => appointmentsService.getMine(),
-    enabled: isLoggedIn,
+    enabled: (options?.enabled ?? true) && isLoggedIn,
   });
 };

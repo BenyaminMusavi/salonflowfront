@@ -446,7 +446,7 @@ export default function DashboardView() {
       </>
       )}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30">
+      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50">
         <div className="relative mx-auto max-w-[720px] px-safe-area">
           <button
             type="button"

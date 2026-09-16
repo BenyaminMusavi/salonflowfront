@@ -14,6 +14,7 @@ import {
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { remainingSubscriptionDays } from "@/services/domains/subscriptions/utils/subscription-display";
 
@@ -119,10 +120,26 @@ function AdminPanelMenuRow() {
   );
 }
 
+/** Only for users with at least one salon membership (owner/staff) — the dashboard's
+ * own notifications, surfaced here too instead of only being reachable from inside it. */
+function SalonNotificationsMenuRow() {
+  const memberships = useSalonContextStore((s) => s.memberships);
+  if (memberships.length === 0) return null;
+
+  return (
+    <MenuRow
+      label="اعلان‌های سالن"
+      icon={BellSimple}
+      href={RouteAddress.DASHBOARD.NOTIFICATIONS}
+    />
+  );
+}
+
 export default function ProfileMenuList() {
   return (
     <div className="flex flex-col gap-2 px-safe-area">
       <AdminPanelMenuRow />
+      <SalonNotificationsMenuRow />
       {beforeSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />
       ))}

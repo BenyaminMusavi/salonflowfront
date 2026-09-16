@@ -22,6 +22,7 @@ import {
   IOnboardingStaff,
   ISaveBasicInfoRequest,
   IScheduleDay,
+  TSalonOnboardingDraftEntity,
   TSaveBasicInfoEntity,
   TSaveBranchesEntity,
   TSaveServicesEntity,
@@ -135,6 +136,14 @@ class SalonService {
     return await axiosInstance.post<unknown, TSaveBasicInfoEntity>(
       API_ADDRESS.SALON.SAVE_BASIC_INFO,
       body
+    );
+  }
+
+  /** Full server-side state of the caller's own in-progress salon, to resume the wizard on a
+   * different device/browser than the one it was started on. */
+  async getOnboardingDraft(salonPublicId: string) {
+    return await axiosInstance.get<unknown, TSalonOnboardingDraftEntity>(
+      API_ADDRESS.SALON.ONBOARDING_DRAFT(salonPublicId)
     );
   }
 

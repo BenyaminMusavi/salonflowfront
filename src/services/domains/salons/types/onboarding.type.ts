@@ -60,8 +60,35 @@ export interface IStaffRosterMember {
   status: StaffInvitationStatus;
 }
 
+/** One row from GET /api/salons/{salonPublicId}/onboarding-draft's `schedule` — the caller's own
+ * WorkingSchedule. Same "HH:mm:ss" string shape the onboarding wizard already saves. */
+export interface IOnboardingScheduleDay {
+  dayOfWeek: number;
+  isOffDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
+}
+
+/** Full server-side state of a salon still in progress (Draft/Rejected/Pending/Approved) — used to
+ * rehydrate the onboarding wizard when the local (localStorage) draft is empty or stale, e.g. on a
+ * different device/browser than the one onboarding was started on. */
+export interface ISalonOnboardingDraft {
+  publicId: string;
+  approvalStatus: number;
+  name: string;
+  description: string | null;
+  instagramHandle: string | null;
+  whatsappNumber: string | null;
+  websiteUrl: string | null;
+  branches: IOnboardingBranch[];
+  services: IOnboardingService[];
+  /** Empty when the owner never saved a schedule yet — caller should keep its own default in that case. */
+  schedule: IOnboardingScheduleDay[];
+}
+
 export type TSaveBasicInfoEntity = TResponse<ISaveBasicInfoResult>;
 export type TSaveBranchesEntity = TResponse<IOnboardingBranch[]>;
 export type TSaveServicesEntity = TResponse<IOnboardingService[]>;
 export type TSaveStaffEntity = TResponse<IOnboardingStaff[]>;
 export type TStaffRosterEntity = TResponse<IStaffRosterMember[]>;
+export type TSalonOnboardingDraftEntity = TResponse<ISalonOnboardingDraft>;

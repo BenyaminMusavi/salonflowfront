@@ -9,6 +9,8 @@ import {
   formatAppointmentDateTime,
 } from "@/services/domains/appointments/utils/appointment-display";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
+import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
@@ -16,10 +18,36 @@ import { getLoginHref } from "@/shared/utils/authRedirect";
 export default function ReservationView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const salonId = useSalonContextStore((s) => s.salonId);
+  const { mutateAsync: switchContext, isPending: isSwitchingContext } =
+    useMutateSwitchContext();
+  // "نوبت‌های من" is customer-scoped; the JWT while a salon context is active
+  // (SalonOwner/Staff) can't list the logged-in person's own bookings, so the
+  // query would just 401/error. Ask to switch back instead of calling it.
   const { data, isLoading, isError, refetch, isFetching } =
-    useQueryMyAppointments();
+    useQueryMyAppointments({ enabled: isLoggedIn && salonId == null });
 
   const appointments = data?.data ?? [];
+
+  if (isLoggedIn && salonId != null) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
+        <h1 className="text-lg font-bold text-foreground">نوبت‌های من</h1>
+        <p className="text-sm text-foreground-muted">
+          شما الان در کانتکست سالن هستید. برای دیدن نوبت‌های شخصی خودتان، ابتدا
+          به کانتکست مشتری برگردید.
+        </p>
+        <button
+          type="button"
+          disabled={isSwitchingContext}
+          onClick={() => switchContext({ salonId: null, branchId: null })}
+          className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+        >
+          بازگشت به کانتکست مشتری
+        </button>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (

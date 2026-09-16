@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import authService from "@/services/domains/auth/auth.service";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
@@ -6,6 +6,7 @@ import { useMyReviewsStore } from "@/services/domains/reviews/store/useMyReviews
 import { useFavoriteIdsStore } from "@/services/domains/favorites/store/useFavoriteIdsStore";
 
 export const useMutateLogout = () => {
+  const queryClient = useQueryClient();
   const clearToken = useTokenStore((s) => s.clear);
   const clearSalon = useSalonContextStore((s) => s.clearAll);
   const clearReviews = useMyReviewsStore((s) => s.clear);
@@ -23,6 +24,9 @@ export const useMutateLogout = () => {
       clearSalon();
       clearReviews();
       clearFavorites();
+      // Drop every cached query (auth/me included) so the next login never
+      // renders stale data left over from the previous account.
+      queryClient.clear();
     },
   });
 };

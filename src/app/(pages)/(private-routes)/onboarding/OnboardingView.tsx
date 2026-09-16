@@ -134,11 +134,19 @@ export default function OnboardingView() {
   const [saving, setSaving] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [gateBlocked, setGateBlocked] = useState(false);
-  /** Set when creating a new salon 400s because this user already has a Pending one. */
+  /**
+   * Set when creating a new salon 400s because this user already has a Draft or
+   * Pending one. Both shapes carry `{ publicId }` from the backend now — "draft"
+   * means the user can resume the wizard on it; "pending" means it's already
+   * submitted and awaiting admin review, so there is nothing to resume yet.
+   */
   const [pendingConflict, setPendingConflict] = useState<{
+    kind: "draft" | "pending";
     message: string;
     publicId?: string;
   } | null>(null);
+  const [resuming, setResuming] = useState(false);
+  const [resumeError, setResumeError] = useState("");
 
   const hasDraft = !!draft.salonPublicId;
 
@@ -309,7 +317,11 @@ export default function OnboardingView() {
       if (step === 1 && !draft.salonPublicId) {
         const conflictData = getApiErrorFieldData<{ publicId?: string }>(e);
         if (conflictData?.publicId) {
-          setPendingConflict({ message, publicId: conflictData.publicId });
+          // Backend uses two distinct messages for the same {publicId} shape —
+          // "پیش‌نویس" (draft, resumable) vs. already-submitted ("در انتظار
+          // بررسی" / Pending, nothing to resume yet).
+          const kind = message.includes("پیش‌نویس") ? "draft" : "pending";
+          setPendingConflict({ kind, message, publicId: conflictData.publicId });
           return;
         }
       }
@@ -381,23 +393,112 @@ export default function OnboardingView() {
     draft.setStaff(next);
   };
 
+  /** Rehydrates the local draft store from the server's own copy of this salon — needed when this
+   * browser's localStorage draft is empty/stale (different device, cleared storage) but the salon
+   * already exists server-side. Landing step is picked by which wizard steps already have data;
+   * the free step navigation (Stepper below) lets the user jump anywhere from there. */
+  const resumeDraft = async (publicId: string) => {
+    setResuming(true);
+    setResumeError("");
+    try {
+      const [draftRes, rosterRes] = await Promise.all([
+        salonService.getOnboardingDraft(publicId),
+        salonService.getStaff(publicId),
+      ]);
+      const data = draftRes.data;
+      if (!data) throw new Error("دیتای پیش‌نویس از سرور دریافت نشد.");
+
+      draft.setBasicInfo({
+        name: data.name,
+        description: data.description ?? "",
+        instagramHandle: data.instagramHandle ?? "",
+        whatsappNumber: data.whatsappNumber ?? "",
+        websiteUrl: data.websiteUrl ?? "",
+      });
+      draft.setBranches(data.branches);
+      draft.setServices(data.services);
+
+      const roster = rosterRes.data ?? [];
+      if (roster.length > 0) {
+        draft.setStaff(
+          roster.map((s) => ({
+            publicId: s.publicId,
+            branchPublicId: s.branchPublicId,
+            isCreator: s.isCreator,
+            phoneNumber: s.phoneNumber,
+            offeringPublicIds: s.offeringPublicIds,
+          }))
+        );
+      }
+
+      // Never saved yet server-side → keep this browser's own default schedule instead of
+      // overwriting it with an empty list.
+      if (data.schedule.length > 0) {
+        draft.setSchedule(
+          data.schedule.map((d) => ({
+            dayOfWeek: d.dayOfWeek,
+            isOffDay: d.isOffDay,
+            startTime: d.startTime,
+            endTime: d.endTime,
+          }))
+        );
+      }
+
+      const staffWithOfferings = roster.filter((s) => s.offeringPublicIds.length > 0);
+      const resumeStep =
+        data.branches.length === 0
+          ? 2
+          : data.services.length === 0
+            ? 3
+            : staffWithOfferings.length === 0
+              ? 4
+              : 6;
+
+      draft.setSalonPublicId(publicId);
+      draft.setStep(resumeStep);
+      setPendingConflict(null);
+    } catch (e) {
+      setResumeError(getApiErrorMessage(e, "بارگذاری پیش‌نویس ناموفق بود."));
+    } finally {
+      setResuming(false);
+    }
+  };
+
   if (pendingConflict) {
+    const isDraft = pendingConflict.kind === "draft";
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
         <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-base font-bold text-foreground">
-            درخواست ثبت سالن شما در حال بررسی است
+            {isDraft
+              ? "یک سالن پیش‌نویس دارید"
+              : "درخواست ثبت سالن شما در حال بررسی است"}
           </p>
           <p className="mt-2 text-sm text-foreground-muted">
             {pendingConflict.message}
           </p>
-          <Link
-            href={RouteAddress.HOME.BASE}
-            className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-          >
-            بازگشت به خانه
-          </Link>
+          {resumeError && (
+            <p className="mt-2 text-xs text-error">{resumeError}</p>
+          )}
+          <div className="mt-6 flex flex-col gap-2">
+            {isDraft && pendingConflict.publicId && (
+              <button
+                type="button"
+                disabled={resuming}
+                onClick={() => resumeDraft(pendingConflict.publicId!)}
+                className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {resuming ? "در حال بارگذاری…" : "ادامه پیش‌نویس"}
+              </button>
+            )}
+            <Link
+              href={RouteAddress.HOME.BASE}
+              className="inline-flex justify-center rounded-full bg-background-secondary px-6 py-3 text-sm font-bold text-foreground"
+            >
+              بازگشت به خانه
+            </Link>
+          </div>
         </div>
       </div>
     );

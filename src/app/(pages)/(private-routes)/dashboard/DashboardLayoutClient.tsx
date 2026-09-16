@@ -11,11 +11,12 @@ import {
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { ArrowLeftIcon, BellIcon } from "@phosphor-icons/react";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
-import { SalonRoleName } from "@/services/common/enums/domain-enums";
+import { SalonRoleName, SalonApprovalStatus } from "@/services/common/enums/domain-enums";
 import SubscriptionLockBanner from "@/shared/components/composites/subscription-lock-banner/SubscriptionLockBanner";
 import {
   OwnerBottomNav,
@@ -105,6 +106,7 @@ export default function DashboardLayoutClient({
 
   const hasHydrated = useSalonContextStore((s) => s._hasHydrated);
   const salonId = useSalonContextStore((s) => s.salonId);
+  const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonName = useSalonContextStore((s) => s.salonName);
   const memberships = useSalonContextStore((s) => s.memberships);
 
@@ -115,6 +117,22 @@ export default function DashboardLayoutClient({
     useMutateSwitchContext();
   const { isEntitled, isLoading: entitlementLoading } =
     useSubscriptionEntitlement();
+
+  // Owner-facing dashboard must stay locked until the active salon is Approved —
+  // Draft/Pending/Rejected salons still belong in the onboarding wizard.
+  const { data: activeSalonRes, isSuccess: activeSalonFetched } =
+    useQuerySalonById(salonId != null ? salonPublicId ?? undefined : undefined);
+  const activeApprovalStatus = activeSalonRes?.data?.approvalStatus;
+
+  useEffect(() => {
+    if (salonId == null || !activeSalonFetched) return;
+    if (
+      activeApprovalStatus != null &&
+      activeApprovalStatus !== SalonApprovalStatus.Approved
+    ) {
+      router.replace(RouteAddress.ONBOARDING.BASE);
+    }
+  }, [salonId, activeSalonFetched, activeApprovalStatus, router]);
 
   const autoSwitchStarted = useRef(false);
   const preferredCaptured = useRef(false);
@@ -250,7 +268,15 @@ export default function DashboardLayoutClient({
     salonId != null &&
     !isSwitching;
 
-  if (!readyToRender) {
+  if (!readyToRender || !activeSalonFetched) {
+    return <Transferring />;
+  }
+
+  if (
+    activeApprovalStatus != null &&
+    activeApprovalStatus !== SalonApprovalStatus.Approved
+  ) {
+    // useEffect above kicks off router.replace(ONBOARDING.BASE); render nothing meanwhile.
     return <Transferring />;
   }
 

@@ -53,7 +53,6 @@ export default function BusinessSwitcher() {
         roleName: membership.roleName,
       });
       setOpen(false);
-      router.push(RouteAddress.DASHBOARD.BASE);
     } catch {
       /* keep sheet open on failure */
     }
