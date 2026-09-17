@@ -15,6 +15,17 @@ import UploadFileButton from "./UploadFileButton";
 import UploadFileProgress from "./UploadFileProgress";
 import { Badge } from "@/shared/components/primitives/badge/Badge";
 
+/** Shape of the thumbnail preview box when `previewShape` is set — matches how the
+ * image is actually cropped/rendered where it's used elsewhere in the app (cover/banner
+ * are wide rectangles, gallery tiles are square, logo is a circular badge). */
+type UploadPreviewShape = "rect" | "square" | "circle";
+
+const PREVIEW_SHAPE_CLASSES: Record<UploadPreviewShape, string> = {
+  rect: "aspect-video w-full rounded-[16px]",
+  square: "aspect-square w-full rounded-[16px]",
+  circle: "aspect-square w-24 rounded-full mx-auto",
+};
+
 interface IUploadFileProps {
   title: string;
   description?: string;
@@ -30,6 +41,10 @@ interface IUploadFileProps {
   onDelete?: () => void;
   hint?: string;
   isRequired?: boolean;
+  /** Opt-in: renders an actual image thumbnail (in this shape) instead of the generic
+   * file-icon row. Only meaningful for image uploads — pass the fully-resolved URL
+   * (e.g. via salonImageSrc) as `uploadedUrl`, same as any other consumer of this prop. */
+  previewShape?: UploadPreviewShape;
 }
 
 const UploadFile = ({
@@ -46,7 +61,8 @@ const UploadFile = ({
   className,
   onDelete,
   hint,
-                      isRequired
+  isRequired,
+  previewShape,
 }: IUploadFileProps) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -166,6 +182,55 @@ const UploadFile = ({
           progress={uploadProgress}
           onCancel={handleCancelUpload}
         />
+      ) : previewShape && isImage && uploadedUrl ? (
+        <div
+          className={cn(
+            "relative overflow-hidden bg-surface-tertiary",
+            PREVIEW_SHAPE_CLASSES[previewShape]
+          )}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={uploadedUrl}
+            alt={uploadedFileName || title}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-overlay/70 to-transparent p-2">
+            <button
+              type="button"
+              onClick={handleFileSelect}
+              disabled={disabled}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 disabled:opacity-50"
+              aria-label={buttonText}
+            >
+              <ImageIcon size={16} className="text-content-bold" />
+            </button>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={disabled}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 disabled:opacity-50"
+                aria-label="حذف تصویر"
+              >
+                <TrashIcon size={16} className="text-content-error" />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : previewShape && !showUploaded ? (
+        <button
+          type="button"
+          onClick={handleFileSelect}
+          disabled={disabled}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 border border-dashed border-border-primary bg-surface-tertiary text-content-quaternary disabled:opacity-50",
+            PREVIEW_SHAPE_CLASSES[previewShape]
+          )}
+        >
+          <ImageIcon size={20} />
+          <span className="text-[10px]">{buttonText}</span>
+        </button>
       ) : showUploaded ? (
         <div className="flex items-center gap-3">
           <div>

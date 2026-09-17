@@ -137,13 +137,15 @@ export default function OnboardingView() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [gateBlocked, setGateBlocked] = useState(false);
   /**
-   * Set when creating a new salon 400s because this user already has a Draft or
-   * Pending one. Both shapes carry `{ publicId }` from the backend now — "draft"
-   * means the user can resume the wizard on it; "pending" means it's already
-   * submitted and awaiting admin review, so there is nothing to resume yet.
+   * Set when creating a new salon 400s because this user already has a Draft,
+   * Pending, or Rejected one. All shapes carry `{ publicId }` from the backend
+   * now — "draft"/"rejected" mean the user can resume the wizard on it (rejected
+   * gets its own copy so the reason for rejection isn't lost in generic "draft"
+   * wording); "pending" means it's already submitted and awaiting admin review,
+   * so there is nothing to resume yet.
    */
   const [pendingConflict, setPendingConflict] = useState<{
-    kind: "draft" | "pending";
+    kind: "draft" | "pending" | "rejected";
     message: string;
     publicId?: string;
   } | null>(null);
@@ -201,10 +203,21 @@ export default function OnboardingView() {
       });
       return;
     }
-    if (status === SalonApprovalStatus.Draft || status === SalonApprovalStatus.Rejected) {
+    if (status === SalonApprovalStatus.Draft) {
       setPendingConflict({
         kind: "draft",
         message: "شما یک سالن پیش‌نویس دارید؛ ابتدا همان را تکمیل کنید.",
+        publicId: ownerMembership.salonPublicId,
+      });
+      return;
+    }
+    if (status === SalonApprovalStatus.Rejected) {
+      const reason = ownerSalonRes?.data?.rejectionReason;
+      setPendingConflict({
+        kind: "rejected",
+        message: reason
+          ? `دلیل رد: ${reason}`
+          : "دلیل رد ثبت نشده است. اطلاعات را اصلاح کنید و دوباره برای بررسی ارسال نمایید.",
         publicId: ownerMembership.salonPublicId,
       });
     }
@@ -505,14 +518,23 @@ export default function OnboardingView() {
 
   if (pendingConflict) {
     const isDraft = pendingConflict.kind === "draft";
+    const isRejected = pendingConflict.kind === "rejected";
+    const canResume = (isDraft || isRejected) && !!pendingConflict.publicId;
     return (
       <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
-        <div className="rounded-[24px] bg-surface p-6 text-center">
+        <div
+          className={cn(
+            "rounded-[24px] p-6 text-center",
+            isRejected ? "bg-critical/10 border border-critical/30" : "bg-surface"
+          )}
+        >
           <p className="text-base font-bold text-foreground">
             {isDraft
               ? "یک سالن پیش‌نویس دارید"
-              : "درخواست ثبت سالن شما در حال بررسی است"}
+              : isRejected
+                ? "درخواست ثبت سالن شما رد شده است"
+                : "درخواست ثبت سالن شما در حال بررسی است"}
           </p>
           <p className="mt-2 text-sm text-foreground-muted">
             {pendingConflict.message}
@@ -521,14 +543,18 @@ export default function OnboardingView() {
             <p className="mt-2 text-xs text-error">{resumeError}</p>
           )}
           <div className="mt-6 flex flex-col gap-2">
-            {isDraft && pendingConflict.publicId && (
+            {canResume && (
               <button
                 type="button"
                 disabled={resuming}
                 onClick={() => resumeDraft(pendingConflict.publicId!)}
                 className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {resuming ? "در حال بارگذاری…" : "ادامه پیش‌نویس"}
+                {resuming
+                  ? "در حال بارگذاری…"
+                  : isRejected
+                    ? "ویرایش و ارسال مجدد"
+                    : "ادامه پیش‌نویس"}
               </button>
             )}
             <Link

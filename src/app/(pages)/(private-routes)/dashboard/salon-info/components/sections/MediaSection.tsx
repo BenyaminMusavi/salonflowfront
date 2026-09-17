@@ -58,10 +58,12 @@ function clearSlotFile(slot: MediaSlotState): MediaSlotState {
 
 interface MediaSectionProps {
   cover: MediaSlotState;
-  profile: MediaSlotState;
+  banner: MediaSlotState;
+  logo: MediaSlotState;
   gallery: GalleryMediaItem[];
   onCoverChange: (cover: MediaSlotState) => void;
-  onProfileChange: (profile: MediaSlotState) => void;
+  onBannerChange: (banner: MediaSlotState) => void;
+  onLogoChange: (logo: MediaSlotState) => void;
   onGalleryChange: (gallery: GalleryMediaItem[]) => void;
   onSave: () => void;
   isSaving: boolean;
@@ -70,10 +72,12 @@ interface MediaSectionProps {
 
 export default function MediaSection({
   cover,
-  profile,
+  banner,
+  logo,
   gallery,
   onCoverChange,
-  onProfileChange,
+  onBannerChange,
+  onLogoChange,
   onGalleryChange,
   onSave,
   isSaving,
@@ -95,11 +99,12 @@ export default function MediaSection({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <UploadFile
             title="کاور"
-            description="تصویر کاور صفحه سالن"
+            description="تصویر کارت سالن در صفحه اصلی و جستجو"
             buttonText="انتخاب کاور"
             accept="image/*"
+            previewShape="rect"
             disabled={isSaving}
-            uploadedUrl={cover.previewUrl || cover.url || undefined}
+            uploadedUrl={salonImageSrc(cover.previewUrl || cover.url, "") || undefined}
             uploadedFileName={cover.fileName || (cover.url ? "کاور فعلی" : undefined)}
             onUpload={async (file) => {
               onCoverChange(applyFileToSlot(cover, file));
@@ -113,21 +118,40 @@ export default function MediaSection({
             }}
           />
           <UploadFile
-            title="لوگو / پروفایل"
-            description="لوگوی سالن"
-            buttonText="انتخاب لوگو"
+            title="بنر"
+            description="تصویر شاخص سالن در بالای صفحه جستجو"
+            buttonText="انتخاب بنر"
             accept="image/*"
+            previewShape="rect"
             disabled={isSaving}
-            uploadedUrl={profile.previewUrl || profile.url || undefined}
-            uploadedFileName={
-              profile.fileName || (profile.url ? "لوگوی فعلی" : undefined)
-            }
+            uploadedUrl={salonImageSrc(banner.previewUrl || banner.url, "") || undefined}
+            uploadedFileName={banner.fileName || (banner.url ? "بنر فعلی" : undefined)}
             onUpload={async (file) => {
-              onProfileChange(applyFileToSlot(profile, file));
+              onBannerChange(applyFileToSlot(banner, file));
             }}
             onDelete={() => {
-              onProfileChange({
-                ...clearSlotFile(profile),
+              onBannerChange({
+                ...clearSlotFile(banner),
+                publicId: null,
+                url: null,
+              });
+            }}
+          />
+          <UploadFile
+            title="لوگو"
+            description="نماد سالن، کنار نام آن در صفحه جزئیات"
+            buttonText="انتخاب لوگو"
+            accept="image/*"
+            previewShape="circle"
+            disabled={isSaving}
+            uploadedUrl={salonImageSrc(logo.previewUrl || logo.url, "") || undefined}
+            uploadedFileName={logo.fileName || (logo.url ? "لوگوی فعلی" : undefined)}
+            onUpload={async (file) => {
+              onLogoChange(applyFileToSlot(logo, file));
+            }}
+            onDelete={() => {
+              onLogoChange({
+                ...clearSlotFile(logo),
                 publicId: null,
                 url: null,
               });

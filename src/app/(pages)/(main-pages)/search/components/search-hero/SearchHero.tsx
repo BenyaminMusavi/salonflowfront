@@ -21,7 +21,10 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
   return (
     <div className="relative h-[180px] w-full overflow-hidden rounded-[28px]">
       <img
-        src={salonImageSrc(slide.imageUrl, barbershop.src)}
+        src={salonImageSrc(
+          slide.bannerImageUrl ?? slide.coverImageUrl ?? slide.imageUrl,
+          barbershop.src
+        )}
         alt={slide.name}
         className="absolute inset-0 h-full w-full object-cover"
       />

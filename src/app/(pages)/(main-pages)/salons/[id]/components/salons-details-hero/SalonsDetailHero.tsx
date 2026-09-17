@@ -23,8 +23,8 @@ function resolveGallery(salon: ISalon): string[] {
 
   if (fromGallery.length > 0) return fromGallery;
 
-  const cover = salon.coverImageUrl || salon.imageUrl;
-  if (cover) return [cover];
+  const fallback = salon.coverImageUrl || salon.bannerImageUrl || salon.imageUrl;
+  if (fallback) return [fallback];
   return [];
 }
 

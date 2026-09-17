@@ -33,6 +33,10 @@ export interface ISalon {
   city?: string | null;
   phone?: string | null;
   coverImageUrl?: string | null;
+  /** MediaUsageType.Banner — wide promotional image used in the search page's featured-salon
+   * hero carousel. null until the owner uploads one (Cover/Gallery are unaffected either way). */
+  bannerImageUrl?: string | null;
+  /** MediaUsageType.Profile — shown in the app as the salon's "logo". */
   imageUrl?: string | null;
   gallery?: Array<string | ISalonGalleryItem> | null;
   services?: ISalonServiceSummary[] | null;

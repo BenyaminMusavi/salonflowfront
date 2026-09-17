@@ -41,12 +41,13 @@ import {
 } from "./components/sections/BranchEditorItem";
 import {
   collectHydratedMediaPublicIds,
+  mapSalonToBanner,
   mapSalonToBasicInfo,
   mapSalonToBranches,
   mapSalonToContactInfo,
   mapSalonToCover,
   mapSalonToGallery,
-  mapSalonToProfile,
+  mapSalonToLogo,
 } from "./utils/mapSalonToForm";
 
 function toOnboardingBranches(
@@ -66,12 +67,14 @@ function toOnboardingBranches(
 
 function collectKeepMediaPublicIds(
   cover: MediaSlotState,
-  profile: MediaSlotState,
+  banner: MediaSlotState,
+  logo: MediaSlotState,
   gallery: GalleryMediaItem[]
 ): string[] {
   const ids: string[] = [];
   if (cover.publicId && !cover.file) ids.push(cover.publicId);
-  if (profile.publicId && !profile.file) ids.push(profile.publicId);
+  if (banner.publicId && !banner.file) ids.push(banner.publicId);
+  if (logo.publicId && !logo.file) ids.push(logo.publicId);
   for (const item of gallery) {
     if (item.publicId && !item.file) ids.push(item.publicId);
   }
@@ -121,7 +124,8 @@ export default function SalonInfoView() {
     createEmptyBranch(),
   ]);
   const [cover, setCover] = useState<MediaSlotState>(createEmptyMediaSlot);
-  const [profile, setProfile] = useState<MediaSlotState>(createEmptyMediaSlot);
+  const [banner, setBanner] = useState<MediaSlotState>(createEmptyMediaSlot);
+  const [logo, setLogo] = useState<MediaSlotState>(createEmptyMediaSlot);
   const [gallery, setGallery] = useState<GalleryMediaItem[]>([]);
   const [initialMediaPublicIds, setInitialMediaPublicIds] = useState<string[]>(
     []
@@ -139,17 +143,19 @@ export default function SalonInfoView() {
     if (hydratedForIdRef.current === salonPublicId) return;
 
     const nextCover = mapSalonToCover(salon);
-    const nextProfile = mapSalonToProfile(salon);
+    const nextBanner = mapSalonToBanner(salon);
+    const nextLogo = mapSalonToLogo(salon);
     const nextGallery = mapSalonToGallery(salon);
 
     setBasicInfo(mapSalonToBasicInfo(salon));
     setContactInfo(mapSalonToContactInfo(salon));
     setCover(nextCover);
-    setProfile(nextProfile);
+    setBanner(nextBanner);
+    setLogo(nextLogo);
     setGallery(nextGallery);
     setBranches(mapSalonToBranches(salon));
     setInitialMediaPublicIds(
-      collectHydratedMediaPublicIds(nextCover, nextProfile, nextGallery)
+      collectHydratedMediaPublicIds(nextCover, nextBanner, nextLogo, nextGallery)
     );
     hydratedForIdRef.current = salonPublicId;
   }, [salon, salonPublicId]);
@@ -343,10 +349,16 @@ export default function SalonInfoView() {
     }
   };
 
-  const keepMediaPublicIds = collectKeepMediaPublicIds(cover, profile, gallery);
+  const keepMediaPublicIds = collectKeepMediaPublicIds(
+    cover,
+    banner,
+    logo,
+    gallery
+  );
   const hasPendingMediaUploads = !!(
     cover.file ||
-    profile.file ||
+    banner.file ||
+    logo.file ||
     gallery.some((g) => g.file)
   );
   const hasMediaRemovals = initialMediaPublicIds.some(
@@ -375,7 +387,8 @@ export default function SalonInfoView() {
       const result = await saveMedia.mutateAsync({
         salonPublicId,
         coverFile: cover.file,
-        profileFile: profile.file,
+        bannerFile: banner.file,
+        profileFile: logo.file,
         galleryFiles: gallery.filter((g) => g.file).map((g) => g.file!),
         keepMediaPublicIds,
       });
@@ -385,7 +398,12 @@ export default function SalonInfoView() {
         file: null,
         fileName: null,
       }));
-      setProfile((prev) => ({
+      setBanner((prev) => ({
+        ...prev,
+        file: null,
+        fileName: null,
+      }));
+      setLogo((prev) => ({
         ...prev,
         file: null,
         fileName: null,
@@ -470,10 +488,12 @@ export default function SalonInfoView() {
           />
           <MediaSection
             cover={cover}
-            profile={profile}
+            banner={banner}
+            logo={logo}
             gallery={gallery}
             onCoverChange={setCover}
-            onProfileChange={setProfile}
+            onBannerChange={setBanner}
+            onLogoChange={setLogo}
             onGalleryChange={setGallery}
             onSave={onSaveMedia}
             isSaving={saveMedia.isPending}

@@ -10,6 +10,7 @@ import { SALON_BY_ID_QUERY_KEY } from "./useQuerySalonById";
 export type SaveSalonMediaVars = {
   salonPublicId: string;
   coverFile?: File | null;
+  bannerFile?: File | null;
   profileFile?: File | null;
   galleryFiles: File[];
   /** Existing media Guids the user kept (not deleted). */
@@ -46,6 +47,9 @@ export const useMutateSalonMedia = () => {
       if (vars.coverFile) {
         await uploadOne(vars.coverFile, MediaUsageType.Cover, true);
       }
+      if (vars.bannerFile) {
+        await uploadOne(vars.bannerFile, MediaUsageType.Banner, true);
+      }
       if (vars.profileFile) {
         await uploadOne(vars.profileFile, MediaUsageType.Profile, true);
       }
@@ -63,6 +67,7 @@ export const useMutateSalonMedia = () => {
         uploadedPublicIds.length === 0
           ? [
               ...(vars.coverFile ? [vars.coverFile] : []),
+              ...(vars.bannerFile ? [vars.bannerFile] : []),
               ...(vars.profileFile ? [vars.profileFile] : []),
               ...vars.galleryFiles,
             ]

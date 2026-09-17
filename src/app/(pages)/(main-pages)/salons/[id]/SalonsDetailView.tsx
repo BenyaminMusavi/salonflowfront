@@ -64,6 +64,7 @@ export default function SalonsDetailView() {
       <div className="mt-5 flex flex-col">
         <SalonsDetailIdentity
           name={salon.name}
+          logoUrl={salon.imageUrl}
           rating={salon.rating}
           isFavorite={isFavorite}
           canFavorite={canToggle}

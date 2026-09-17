@@ -14,6 +14,7 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
 import { resolvePostLoginRedirect } from "@/shared/utils/authRedirect";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -53,6 +54,13 @@ const OtpFormProvider = ({ children }: IProps) => {
       });
       clearSalon();
       setToken(res.data, true);
+      // Brand-new accounts have no password yet — send them to set one before
+      // continuing, otherwise they'd be stuck with no way to log back in
+      // (the login page is password-only, there's no OTP-login fallback).
+      if (res.data.hasPassword === false) {
+        router.push(RouteAddress.AUTH.SET_PASSWORD.BASE);
+        return;
+      }
       router.push(resolvePostLoginRedirect());
     } catch (e) {
       handleFormError(setError, setGeneralError, {

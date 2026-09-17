@@ -11,7 +11,10 @@ import barbershop from "@/shared/assets/images/barbershop.png";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
 
 function SearchSalonCard({ salon }: { salon: ISalonCard }) {
-  const image = salonImageSrc(salon.imageUrl, barbershop.src);
+  const image = salonImageSrc(
+    salon.coverImageUrl ?? salon.imageUrl,
+    barbershop.src
+  );
   const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(
     salon.id
   );

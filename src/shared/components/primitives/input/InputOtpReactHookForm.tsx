@@ -45,6 +45,39 @@ export function InputOtpReactHookForm<TFieldValues extends FieldValues>({
     lastSlot?.focus();
   }, [length]);
 
+  // WebOTP: on supporting browsers (Chrome/Android, including installed PWAs), this
+  // reads the code out of an incoming SMS and fills the field with no user tap needed.
+  // Requires the SMS text to end with "@<domain> #<code>" — a backend/SMS-provider
+  // concern, not something this component can enforce. Falls back to nothing (the
+  // user still has autoComplete="one-time-code" for the keyboard suggestion bar) on
+  // browsers without OTPCredential support, e.g. iOS Safari.
+  const onChangeRef = React.useRef(field.onChange);
+  onChangeRef.current = field.onChange;
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !("OTPCredential" in window)) return;
+
+    const abortController = new AbortController();
+
+    navigator.credentials
+      .get({
+        // @ts-expect-error -- WebOTP's `otp` option isn't in the lib.dom.d.ts CredentialRequestOptions type yet.
+        otp: { transport: ["sms"] },
+        signal: abortController.signal,
+      })
+      .then((otp: unknown) => {
+        const code = (otp as { code?: string } | null)?.code;
+        if (!code) return;
+        onChangeRef.current(code);
+        setTimeout(handleComplete, 100);
+      })
+      .catch(() => {
+        // Aborted (component unmounted / resent) or denied — nothing to do.
+      });
+
+    return () => abortController.abort();
+  }, [handleComplete]);
+
   // Handle click to edit when all slots are filled
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -69,6 +102,8 @@ export function InputOtpReactHookForm<TFieldValues extends FieldValues>({
         <InputOTP
           dir="ltr" // Keep dir as ltr for consistent behavior, handle RTL visually
           maxLength={length}
+          autoComplete="one-time-code"
+          inputMode="numeric"
           value={field.value ?? ""}
           onChange={(value: string) => {
             field.onChange(value);

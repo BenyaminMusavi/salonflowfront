@@ -91,7 +91,7 @@ function HomeSalons() {
                       .filter(Boolean)
                       .join(" · ") || "—"
                   }
-                  imageUrl={salon.imageUrl}
+                  imageUrl={salon.coverImageUrl ?? salon.imageUrl}
                   rating={salon.rating ?? 0}
                 />
               </SwiperSlide>

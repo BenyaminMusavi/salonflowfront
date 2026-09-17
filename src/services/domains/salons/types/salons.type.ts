@@ -4,7 +4,15 @@ import { TPagedResult, TResponse } from "@/services/common/data-types/SharedData
 export interface ISalonCard {
   id: string;
   name: string;
+  /** Legacy "whatever media is primary, any usage type" pick — kept for back-compat; prefer
+   * coverImageUrl/bannerImageUrl below, which are usage-type-filtered and null when unset. */
   imageUrl?: string | null;
+  /** MediaUsageType.Cover — falls back to the legacy imageUrl pick server-side when the salon
+   * has no typed Cover of its own, so this is rarely null for an approved salon. */
+  coverImageUrl?: string | null;
+  /** MediaUsageType.Banner — wide image for the search page's featured-salon hero. null until
+   * the owner uploads one (no fallback). */
+  bannerImageUrl?: string | null;
   genderType?: string | null;
   services?: string | null;
   rating?: number | null;

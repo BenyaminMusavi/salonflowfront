@@ -53,7 +53,15 @@ export function mapSalonToCover(salon: ISalon): MediaSlotState {
   };
 }
 
-export function mapSalonToProfile(salon: ISalon): MediaSlotState {
+export function mapSalonToBanner(salon: ISalon): MediaSlotState {
+  return {
+    ...createEmptyMediaSlot(),
+    url: salon.bannerImageUrl ?? null,
+  };
+}
+
+/** MediaUsageType.Profile — surfaced in the UI as the salon's "logo". */
+export function mapSalonToLogo(salon: ISalon): MediaSlotState {
   return {
     ...createEmptyMediaSlot(),
     url: salon.imageUrl ?? null,
@@ -94,12 +102,14 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
 
 export function collectHydratedMediaPublicIds(
   cover: MediaSlotState,
-  profile: MediaSlotState,
+  banner: MediaSlotState,
+  logo: MediaSlotState,
   gallery: GalleryMediaItem[]
 ): string[] {
   const ids: string[] = [];
   if (cover.publicId) ids.push(cover.publicId);
-  if (profile.publicId) ids.push(profile.publicId);
+  if (banner.publicId) ids.push(banner.publicId);
+  if (logo.publicId) ids.push(logo.publicId);
   for (const item of gallery) {
     if (item.publicId) ids.push(item.publicId);
   }

@@ -10,6 +10,7 @@ import {
   BellSimple,
   HeartIcon,
   ShieldCheckIcon,
+  PencilSimpleIcon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -133,10 +134,14 @@ function SalonNotificationsMenuRow() {
 }
 
 /**
- * State-aware "ثبت سالن" row: no salon yet -> starts the wizard fresh; Draft/Rejected ->
- * resumes it (label changes to make that obvious); Pending -> still opens onboarding, which
- * itself shows a read-only "awaiting admin review" screen (nothing to fill in there); Approved
- * -> skips the registration flow entirely and goes straight to the salon's own dashboard.
+ * State-aware "ثبت سالن" row(s): no salon yet -> starts the wizard fresh; Draft -> resumes
+ * it (label changes to make that obvious); Rejected -> same resume, but labeled/subtitled to
+ * surface the rejection instead of reading like an ordinary unfinished draft; Pending -> still
+ * opens onboarding, which itself shows a read-only "awaiting admin review" screen (nothing to
+ * fill in there); Approved -> skips the registration wizard and instead shows both the salon's
+ * dashboard AND a direct "edit registration info" row (basic info, branches, services, staff,
+ * media, schedule — the same categories the wizard walked through), since nothing else in the
+ * app surfaces that editing entry point.
  */
 function SalonRegistrationMenuRow() {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
@@ -149,10 +154,29 @@ function SalonRegistrationMenuRow() {
 
   if (status === SalonApprovalStatus.Approved) {
     return (
+      <>
+        <MenuRow
+          label="داشبورد سالن"
+          icon={Storefront}
+          href={RouteAddress.DASHBOARD.BASE}
+        />
+        <MenuRow
+          label="ویرایش اطلاعات سالن"
+          subtitle="اطلاعات، شعبه‌ها، خدمات، پرسنل و رسانه"
+          icon={PencilSimpleIcon}
+          href={RouteAddress.DASHBOARD.SALON_INFO}
+        />
+      </>
+    );
+  }
+
+  if (ownerMembership && status === SalonApprovalStatus.Rejected) {
+    return (
       <MenuRow
-        label="داشبورد سالن"
+        label="ویرایش و ارسال مجدد ثبت سالن"
+        subtitle="درخواست ثبت سالن شما رد شده است"
         icon={Storefront}
-        href={RouteAddress.DASHBOARD.BASE}
+        href={RouteAddress.ONBOARDING.BASE}
       />
     );
   }
@@ -160,9 +184,7 @@ function SalonRegistrationMenuRow() {
   const label =
     ownerMembership && status === SalonApprovalStatus.Pending
       ? "ثبت سالن (در حال بررسی)"
-      : ownerMembership &&
-          (status === SalonApprovalStatus.Draft ||
-            status === SalonApprovalStatus.Rejected)
+      : ownerMembership && status === SalonApprovalStatus.Draft
         ? "تکمیل ثبت سالن"
         : "ثبت سالن";
 
