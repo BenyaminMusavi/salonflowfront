@@ -8,7 +8,6 @@ import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnbo
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
-import { useMutateSalonMedia } from "@/services/domains/salons/hooks/useMutateSalonMedia";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
 import {
@@ -40,7 +39,6 @@ import {
   type BranchEditorValues,
 } from "./components/sections/BranchEditorItem";
 import {
-  collectHydratedMediaPublicIds,
   mapSalonToBanner,
   mapSalonToBasicInfo,
   mapSalonToBranches,
@@ -65,22 +63,6 @@ function toOnboardingBranches(
   }));
 }
 
-function collectKeepMediaPublicIds(
-  cover: MediaSlotState,
-  banner: MediaSlotState,
-  logo: MediaSlotState,
-  gallery: GalleryMediaItem[]
-): string[] {
-  const ids: string[] = [];
-  if (cover.publicId && !cover.file) ids.push(cover.publicId);
-  if (banner.publicId && !banner.file) ids.push(banner.publicId);
-  if (logo.publicId && !logo.file) ids.push(logo.publicId);
-  for (const item of gallery) {
-    if (item.publicId && !item.file) ids.push(item.publicId);
-  }
-  return Array.from(new Set(ids));
-}
-
 export default function SalonInfoView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonId = useSalonContextStore((s) => s.salonId);
@@ -98,7 +80,6 @@ export default function SalonInfoView() {
 
   const saveBasicInfo = useMutateSalonBasicInfo();
   const saveBranches = useMutateSalonBranches();
-  const saveMedia = useMutateSalonMedia();
 
   const isIncompleteDraft =
     !!salonPublicId &&
@@ -127,9 +108,6 @@ export default function SalonInfoView() {
   const [banner, setBanner] = useState<MediaSlotState>(createEmptyMediaSlot);
   const [logo, setLogo] = useState<MediaSlotState>(createEmptyMediaSlot);
   const [gallery, setGallery] = useState<GalleryMediaItem[]>([]);
-  const [initialMediaPublicIds, setInitialMediaPublicIds] = useState<string[]>(
-    []
-  );
   const [toast, setToast] = useState<DashboardToastState>(null);
 
   const dismissToast = useCallback(() => setToast(null), []);
@@ -154,9 +132,6 @@ export default function SalonInfoView() {
     setLogo(nextLogo);
     setGallery(nextGallery);
     setBranches(mapSalonToBranches(salon));
-    setInitialMediaPublicIds(
-      collectHydratedMediaPublicIds(nextCover, nextBanner, nextLogo, nextGallery)
-    );
     hydratedForIdRef.current = salonPublicId;
   }, [salon, salonPublicId]);
 
@@ -349,82 +324,6 @@ export default function SalonInfoView() {
     }
   };
 
-  const keepMediaPublicIds = collectKeepMediaPublicIds(
-    cover,
-    banner,
-    logo,
-    gallery
-  );
-  const hasPendingMediaUploads = !!(
-    cover.file ||
-    banner.file ||
-    logo.file ||
-    gallery.some((g) => g.file)
-  );
-  const hasMediaRemovals = initialMediaPublicIds.some(
-    (id) => !keepMediaPublicIds.includes(id)
-  );
-  const canSaveMedia =
-    !!salonPublicId && (hasPendingMediaUploads || hasMediaRemovals);
-
-  const onSaveMedia = async () => {
-    if (!salonPublicId) {
-      setToast({
-        type: "error",
-        message: "شناسه سالن فعال پیدا نشد. دوباره وارد پنل شوید.",
-      });
-      return;
-    }
-    if (!canSaveMedia) {
-      setToast({
-        type: "error",
-        message: "تغییری برای ذخیره رسانه وجود ندارد.",
-      });
-      return;
-    }
-
-    try {
-      const result = await saveMedia.mutateAsync({
-        salonPublicId,
-        coverFile: cover.file,
-        bannerFile: banner.file,
-        profileFile: logo.file,
-        galleryFiles: gallery.filter((g) => g.file).map((g) => g.file!),
-        keepMediaPublicIds,
-      });
-
-      setCover((prev) => ({
-        ...prev,
-        file: null,
-        fileName: null,
-      }));
-      setBanner((prev) => ({
-        ...prev,
-        file: null,
-        fileName: null,
-      }));
-      setLogo((prev) => ({
-        ...prev,
-        file: null,
-        fileName: null,
-      }));
-      setGallery((prev) =>
-        prev.map((item) => ({
-          ...item,
-          file: null,
-        }))
-      );
-      setInitialMediaPublicIds(result.keepMediaPublicIds);
-
-      setToast({ type: "success", message: "رسانه سالن با موفقیت ذخیره شد." });
-    } catch (err) {
-      setToast({
-        type: "error",
-        message: getApiErrorMessage(err, "ذخیره رسانه ناموفق بود."),
-      });
-    }
-  };
-
   const showLoading = !!salonPublicId && salonQuery.isLoading && !salon;
   const showError =
     !!salonPublicId &&
@@ -487,6 +386,7 @@ export default function SalonInfoView() {
             canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
           />
           <MediaSection
+            salonPublicId={salonPublicId as string}
             cover={cover}
             banner={banner}
             logo={logo}
@@ -495,9 +395,6 @@ export default function SalonInfoView() {
             onBannerChange={setBanner}
             onLogoChange={setLogo}
             onGalleryChange={setGallery}
-            onSave={onSaveMedia}
-            isSaving={saveMedia.isPending}
-            canSave={canSaveMedia}
           />
           <BranchesSection
             branches={branches}

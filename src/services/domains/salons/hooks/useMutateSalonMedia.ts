@@ -7,87 +7,58 @@ import {
 } from "@/services/common/enums/domain-enums";
 import { SALON_BY_ID_QUERY_KEY } from "./useQuerySalonById";
 
-export type SaveSalonMediaVars = {
+export type UploadSalonMediaVars = {
   salonPublicId: string;
-  coverFile?: File | null;
-  bannerFile?: File | null;
-  profileFile?: File | null;
-  galleryFiles: File[];
-  /** Existing media Guids the user kept (not deleted). */
-  keepMediaPublicIds: string[];
+  file: File;
+  usageType: MediaUsageType;
+  isPrimary?: boolean;
+  /** Existing media Guid to replace in place; omit to create a new record. */
+  mediaPublicId?: string | null;
 };
 
-function readUploadedPublicId(res: unknown): string | null {
-  const data = (res as { data?: { publicId?: string | null } } | undefined)
-    ?.data;
-  return data?.publicId ?? null;
-}
-
-export const useMutateSalonMedia = () => {
+/** Uploads (or, given `mediaPublicId`, replaces in place) a single salon media item
+ * the moment it's selected — see useMutateDeleteSalonMedia for the matching eager delete. */
+export const useMutateUploadSalonMedia = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (vars: SaveSalonMediaVars) => {
-      const uploadedPublicIds: string[] = [];
-
-      const uploadOne = async (
-        file: File,
-        usageType: MediaUsageType,
-        isPrimary: boolean
-      ) => {
-        const res = await mediaService.upload(
-          MediaEntityType.Salon,
-          vars.salonPublicId,
-          { file, usageType, isPrimary }
-        );
-        const publicId = readUploadedPublicId(res);
-        if (publicId) uploadedPublicIds.push(publicId);
-      };
-
-      if (vars.coverFile) {
-        await uploadOne(vars.coverFile, MediaUsageType.Cover, true);
-      }
-      if (vars.bannerFile) {
-        await uploadOne(vars.bannerFile, MediaUsageType.Banner, true);
-      }
-      if (vars.profileFile) {
-        await uploadOne(vars.profileFile, MediaUsageType.Profile, true);
-      }
-      for (const file of vars.galleryFiles) {
-        await uploadOne(file, MediaUsageType.Gallery, false);
-      }
-
-      const keepMediaPublicIds = Array.from(
-        new Set([...vars.keepMediaPublicIds, ...uploadedPublicIds])
-      );
-
-      // Reconcile kept set (handles deletions). New files already uploaded via Media/upload.
-      // Fallback: if typed upload path produced no new publicIds but files remain, send via save-medias.
-      const fallbackFiles =
-        uploadedPublicIds.length === 0
-          ? [
-              ...(vars.coverFile ? [vars.coverFile] : []),
-              ...(vars.bannerFile ? [vars.bannerFile] : []),
-              ...(vars.profileFile ? [vars.profileFile] : []),
-              ...vars.galleryFiles,
-            ]
-          : [];
-
-      await salonService.saveMedias(
-        vars.salonPublicId,
-        fallbackFiles,
-        keepMediaPublicIds
-      );
-
-      return { keepMediaPublicIds, uploadedPublicIds };
-    },
+    mutationFn: (vars: UploadSalonMediaVars) =>
+      mediaService.upload(MediaEntityType.Salon, vars.salonPublicId, {
+        file: vars.file,
+        usageType: vars.usageType,
+        isPrimary: vars.isPrimary,
+        mediaPublicId: vars.mediaPublicId ?? undefined,
+      }),
     onSuccess: (_res, variables) => {
       queryClient.invalidateQueries({
         queryKey: [SALON_BY_ID_QUERY_KEY, variables.salonPublicId],
       });
+      queryClient.invalidateQueries({ queryKey: [SALON_BY_ID_QUERY_KEY] });
+    },
+  });
+};
+
+export type DeleteSalonMediaVars = {
+  salonPublicId: string;
+  /** Every media Guid that should remain after this delete — i.e. all currently
+   * known persisted media except the one being removed. */
+  keepMediaPublicIds: string[];
+};
+
+/** No dedicated single-media delete endpoint exists yet — deleting eagerly means
+ * reconciling immediately via save-medias with no new files, keeping everything
+ * except the removed item (same reconcile semantics the wizard's final save used). */
+export const useMutateDeleteSalonMedia = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: DeleteSalonMediaVars) =>
+      salonService.saveMedias(vars.salonPublicId, [], vars.keepMediaPublicIds),
+    onSuccess: (_res, variables) => {
       queryClient.invalidateQueries({
-        queryKey: [SALON_BY_ID_QUERY_KEY],
+        queryKey: [SALON_BY_ID_QUERY_KEY, variables.salonPublicId],
       });
+      queryClient.invalidateQueries({ queryKey: [SALON_BY_ID_QUERY_KEY] });
     },
   });
 };

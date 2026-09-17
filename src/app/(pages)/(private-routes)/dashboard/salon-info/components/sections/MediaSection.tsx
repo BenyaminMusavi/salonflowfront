@@ -1,9 +1,15 @@
 "use client";
 
+import * as React from "react";
 import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
-import { Button } from "@/shared/components/primitives/button/Button";
 import { UploadFile } from "@/shared/components/composites/upload-file";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
+import { MediaUsageType } from "@/services/common/enums/domain-enums";
+import {
+  useMutateUploadSalonMedia,
+  useMutateDeleteSalonMedia,
+} from "@/services/domains/salons/hooks";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 
 export type MediaSlotState = {
   publicId: string | null;
@@ -36,27 +42,8 @@ function revokePreview(url: string | null) {
   }
 }
 
-function applyFileToSlot(slot: MediaSlotState, file: File): MediaSlotState {
-  revokePreview(slot.previewUrl);
-  return {
-    ...slot,
-    file,
-    fileName: file.name,
-    previewUrl: URL.createObjectURL(file),
-  };
-}
-
-function clearSlotFile(slot: MediaSlotState): MediaSlotState {
-  revokePreview(slot.previewUrl);
-  return {
-    ...slot,
-    file: null,
-    fileName: null,
-    previewUrl: null,
-  };
-}
-
 interface MediaSectionProps {
+  salonPublicId: string;
   cover: MediaSlotState;
   banner: MediaSlotState;
   logo: MediaSlotState;
@@ -65,12 +52,10 @@ interface MediaSectionProps {
   onBannerChange: (banner: MediaSlotState) => void;
   onLogoChange: (logo: MediaSlotState) => void;
   onGalleryChange: (gallery: GalleryMediaItem[]) => void;
-  onSave: () => void;
-  isSaving: boolean;
-  canSave: boolean;
 }
 
 export default function MediaSection({
+  salonPublicId,
   cover,
   banner,
   logo,
@@ -79,14 +64,91 @@ export default function MediaSection({
   onBannerChange,
   onLogoChange,
   onGalleryChange,
-  onSave,
-  isSaving,
-  canSave,
 }: MediaSectionProps) {
-  const removeGalleryItem = (clientKey: string) => {
+  const uploadMedia = useMutateUploadSalonMedia();
+  const deleteMedia = useMutateDeleteSalonMedia();
+  const [galleryError, setGalleryError] = React.useState<string | null>(null);
+  const [deletingGalleryKey, setDeletingGalleryKey] = React.useState<
+    string | null
+  >(null);
+
+  /** Every persisted media Guid this section currently knows about, except the one
+   * being removed — the reconcile keep-list a single eager delete sends.
+   * Gap: GET /api/salons/{id} returns cover/banner/logo only as bare URLs, never a
+   * publicId (unlike gallery items, which do carry one) — see ISalon in salon.type.ts.
+   * So a cover/banner/logo set in an earlier session hydrates with publicId=null, and
+   * this list can't include it. Any reconcile call fired while that's true (e.g.
+   * deleting a gallery photo, or deleting one of the other two slots) will make the
+   * backend drop that not-yet-identifiable image too. Fixing this needs the backend to
+   * expose a publicId for cover/banner/logo the way it already does for gallery. */
+  const keepIdsExcept = (excludedPublicId: string | null) => {
+    const ids = [cover.publicId, banner.publicId, logo.publicId, ...gallery.map((g) => g.publicId)]
+      .filter((id): id is string => !!id && id !== excludedPublicId);
+    return Array.from(new Set(ids));
+  };
+
+  const uploadSlot = async (
+    slot: MediaSlotState,
+    usageType: MediaUsageType,
+    file: File
+  ) => {
+    try {
+      const res = await uploadMedia.mutateAsync({
+        salonPublicId,
+        file,
+        usageType,
+        isPrimary: true,
+        mediaPublicId: slot.publicId,
+      });
+      revokePreview(slot.previewUrl);
+      return {
+        ...slot,
+        publicId: res.data?.publicId ?? slot.publicId,
+        url: res.data?.url ?? res.data?.imageUrl ?? slot.url,
+        file: null,
+        fileName: null,
+        previewUrl: null,
+      } satisfies MediaSlotState;
+    } catch (err) {
+      throw new Error(getApiErrorMessage(err, "آپلود تصویر ناموفق بود."));
+    }
+  };
+
+  const deleteSlot = async (slot: MediaSlotState) => {
+    if (slot.publicId) {
+      try {
+        await deleteMedia.mutateAsync({
+          salonPublicId,
+          keepMediaPublicIds: keepIdsExcept(slot.publicId),
+        });
+      } catch (err) {
+        throw new Error(getApiErrorMessage(err, "حذف تصویر ناموفق بود."));
+      }
+    }
+    revokePreview(slot.previewUrl);
+    return createEmptyMediaSlot();
+  };
+
+  const removeGalleryItem = async (clientKey: string) => {
     const target = gallery.find((g) => g.clientKey === clientKey);
-    if (target) revokePreview(target.previewUrl);
-    onGalleryChange(gallery.filter((g) => g.clientKey !== clientKey));
+    if (!target || deletingGalleryKey) return;
+
+    setGalleryError(null);
+    setDeletingGalleryKey(clientKey);
+    try {
+      if (target.publicId) {
+        await deleteMedia.mutateAsync({
+          salonPublicId,
+          keepMediaPublicIds: keepIdsExcept(target.publicId),
+        });
+      }
+      revokePreview(target.previewUrl);
+      onGalleryChange(gallery.filter((g) => g.clientKey !== clientKey));
+    } catch (err) {
+      setGalleryError(getApiErrorMessage(err, "حذف تصویر ناموفق بود."));
+    } finally {
+      setDeletingGalleryKey(null);
+    }
   };
 
   return (
@@ -103,18 +165,13 @@ export default function MediaSection({
             buttonText="انتخاب کاور"
             accept="image/*"
             previewShape="rect"
-            disabled={isSaving}
             uploadedUrl={salonImageSrc(cover.previewUrl || cover.url, "") || undefined}
             uploadedFileName={cover.fileName || (cover.url ? "کاور فعلی" : undefined)}
             onUpload={async (file) => {
-              onCoverChange(applyFileToSlot(cover, file));
+              onCoverChange(await uploadSlot(cover, MediaUsageType.Cover, file));
             }}
-            onDelete={() => {
-              onCoverChange({
-                ...clearSlotFile(cover),
-                publicId: null,
-                url: null,
-              });
+            onDelete={async () => {
+              onCoverChange(await deleteSlot(cover));
             }}
           />
           <UploadFile
@@ -123,18 +180,13 @@ export default function MediaSection({
             buttonText="انتخاب بنر"
             accept="image/*"
             previewShape="rect"
-            disabled={isSaving}
             uploadedUrl={salonImageSrc(banner.previewUrl || banner.url, "") || undefined}
             uploadedFileName={banner.fileName || (banner.url ? "بنر فعلی" : undefined)}
             onUpload={async (file) => {
-              onBannerChange(applyFileToSlot(banner, file));
+              onBannerChange(await uploadSlot(banner, MediaUsageType.Banner, file));
             }}
-            onDelete={() => {
-              onBannerChange({
-                ...clearSlotFile(banner),
-                publicId: null,
-                url: null,
-              });
+            onDelete={async () => {
+              onBannerChange(await deleteSlot(banner));
             }}
           />
           <UploadFile
@@ -143,18 +195,13 @@ export default function MediaSection({
             buttonText="انتخاب لوگو"
             accept="image/*"
             previewShape="circle"
-            disabled={isSaving}
             uploadedUrl={salonImageSrc(logo.previewUrl || logo.url, "") || undefined}
             uploadedFileName={logo.fileName || (logo.url ? "لوگوی فعلی" : undefined)}
             onUpload={async (file) => {
-              onLogoChange(applyFileToSlot(logo, file));
+              onLogoChange(await uploadSlot(logo, MediaUsageType.Profile, file));
             }}
-            onDelete={() => {
-              onLogoChange({
-                ...clearSlotFile(logo),
-                publicId: null,
-                url: null,
-              });
+            onDelete={async () => {
+              onLogoChange(await deleteSlot(logo));
             }}
           />
         </div>
@@ -165,6 +212,7 @@ export default function MediaSection({
             <div className="grid grid-cols-3 gap-2">
               {gallery.map((item) => {
                 const src = salonImageSrc(item.previewUrl || item.url, "");
+                const isDeleting = deletingGalleryKey === item.clientKey;
                 return (
                   <div
                     key={item.clientKey}
@@ -184,9 +232,9 @@ export default function MediaSection({
                     )}
                     <button
                       type="button"
-                      disabled={isSaving}
+                      disabled={isDeleting}
                       onClick={() => removeGalleryItem(item.clientKey)}
-                      className="absolute top-1 left-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/90"
+                      className="absolute top-1 left-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 disabled:opacity-50"
                       aria-label="حذف تصویر"
                     >
                       <TrashIcon size={14} className="text-error" />
@@ -201,14 +249,27 @@ export default function MediaSection({
             title="افزودن به گالری"
             buttonText="انتخاب تصویر"
             accept="image/*"
-            disabled={isSaving}
             hint="می‌توانید چند تصویر به‌صورت جداگانه اضافه کنید."
             onUpload={async (file) => {
-              const next: GalleryMediaItem = {
-                ...applyFileToSlot(createEmptyMediaSlot(), file),
-                clientKey: createGalleryClientKey(),
-              };
-              onGalleryChange([...gallery, next]);
+              try {
+                const res = await uploadMedia.mutateAsync({
+                  salonPublicId,
+                  file,
+                  usageType: MediaUsageType.Gallery,
+                  isPrimary: false,
+                });
+                const next: GalleryMediaItem = {
+                  ...createEmptyMediaSlot(),
+                  clientKey: createGalleryClientKey(),
+                  publicId: res.data?.publicId ?? null,
+                  url: res.data?.url ?? res.data?.imageUrl ?? null,
+                };
+                onGalleryChange([...gallery, next]);
+              } catch (err) {
+                throw new Error(
+                  getApiErrorMessage(err, "آپلود تصویر ناموفق بود.")
+                );
+              }
             }}
           />
           {gallery.length === 0 && (
@@ -217,17 +278,10 @@ export default function MediaSection({
               هنوز تصویری در گالری نیست.
             </p>
           )}
+          {galleryError && (
+            <p className="text-xs text-content-error">{galleryError}</p>
+          )}
         </div>
-
-        <Button
-          type="button"
-          className="w-full"
-          onClick={onSave}
-          disabled={!canSave || isSaving}
-          isLoading={isSaving}
-        >
-          ذخیره رسانه
-        </Button>
       </div>
     </section>
   );

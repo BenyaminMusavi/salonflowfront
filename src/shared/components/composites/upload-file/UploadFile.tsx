@@ -38,7 +38,7 @@ interface IUploadFileProps {
   error?: string;
   disabled?: boolean;
   className?: string;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
   hint?: string;
   isRequired?: boolean;
   /** Opt-in: renders an actual image thumbnail (in this shape) instead of the generic
@@ -66,6 +66,7 @@ const UploadFile = ({
 }: IUploadFileProps) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [selectedFileName, setSelectedFileName] = React.useState<string>("");
   const [localError, setLocalError] = React.useState<string | undefined>();
@@ -117,6 +118,19 @@ const UploadFile = ({
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || isDeleting) return;
+    setLocalError(undefined);
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "حذف ناموفق بود");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -199,7 +213,7 @@ const UploadFile = ({
             <button
               type="button"
               onClick={handleFileSelect}
-              disabled={disabled}
+              disabled={disabled || isDeleting}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 disabled:opacity-50"
               aria-label={buttonText}
             >
@@ -208,8 +222,8 @@ const UploadFile = ({
             {onDelete && (
               <button
                 type="button"
-                onClick={onDelete}
-                disabled={disabled}
+                onClick={handleDelete}
+                disabled={disabled || isDeleting}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 disabled:opacity-50"
                 aria-label="حذف تصویر"
               >
@@ -255,7 +269,9 @@ const UploadFile = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onDelete}
+              onClick={handleDelete}
+              disabled={disabled || isDeleting}
+              isLoading={isDeleting}
               className="h-auto px-2 py-1"
               type="button"
             >

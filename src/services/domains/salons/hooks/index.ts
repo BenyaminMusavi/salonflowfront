@@ -7,7 +7,10 @@ import { useQueryCalculatePrice } from "./useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "./useQuerySalonAvailableSlots";
 import { useMutateSalonBasicInfo } from "./useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "./useMutateSalonBranches";
-import { useMutateSalonMedia } from "./useMutateSalonMedia";
+import {
+  useMutateUploadSalonMedia,
+  useMutateDeleteSalonMedia,
+} from "./useMutateSalonMedia";
 import { useMutateSalonStaff } from "./useMutateSalonStaff";
 import { useQueryStaffRoster } from "./useQueryStaffRoster";
 import { useMutateStaffInvitation } from "./useMutateStaffInvitation";
@@ -23,7 +26,8 @@ export {
   useQuerySalonAvailableSlots,
   useMutateSalonBasicInfo,
   useMutateSalonBranches,
-  useMutateSalonMedia,
+  useMutateUploadSalonMedia,
+  useMutateDeleteSalonMedia,
   useMutateSalonStaff,
   useQueryStaffRoster,
   useMutateStaffInvitation,

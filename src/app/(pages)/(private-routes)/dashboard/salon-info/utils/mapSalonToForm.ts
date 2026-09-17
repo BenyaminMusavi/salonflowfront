@@ -99,19 +99,3 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
     genderType: parseGenderType(branch.genderType),
   }));
 }
-
-export function collectHydratedMediaPublicIds(
-  cover: MediaSlotState,
-  banner: MediaSlotState,
-  logo: MediaSlotState,
-  gallery: GalleryMediaItem[]
-): string[] {
-  const ids: string[] = [];
-  if (cover.publicId) ids.push(cover.publicId);
-  if (banner.publicId) ids.push(banner.publicId);
-  if (logo.publicId) ids.push(logo.publicId);
-  for (const item of gallery) {
-    if (item.publicId) ids.push(item.publicId);
-  }
-  return Array.from(new Set(ids));
-}
