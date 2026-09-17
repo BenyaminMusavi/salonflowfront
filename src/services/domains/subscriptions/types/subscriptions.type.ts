@@ -1,6 +1,8 @@
 import { TPagedResult, TResponse } from "@/services/common/data-types/SharedDataTypes";
 import {
+  PlanCampaignDiscountType,
   PlatformInvoiceStatus,
+  PromoDiscountType,
   SubscriptionStatus,
 } from "@/services/common/enums/domain-enums";
 
@@ -135,3 +137,76 @@ export type TAdminSubscriptionsEntity = TResponse<TPagedResult<IAdminSubscriptio
 export type TAdminPlatformInvoicesListEntity = TResponse<
   TPagedResult<IAdminPlatformInvoiceListItem>
 >;
+
+/** Admin discount campaign on a subscription plan — `GET/POST/PUT /api/subscriptions/campaigns`. */
+export interface IPlanCampaign {
+  id: number;
+  planId: number;
+  name: string;
+  discountType: PlanCampaignDiscountType;
+  discountValue: number;
+  /** ISO datetime */
+  startsAt: string;
+  /** ISO datetime */
+  endsAt: string;
+  isActive: boolean;
+}
+
+export interface ICreatePlanCampaignRequest {
+  planId: number;
+  name: string;
+  discountType: PlanCampaignDiscountType;
+  discountValue: number;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface IUpdatePlanCampaignRequest {
+  name: string;
+  discountType: PlanCampaignDiscountType;
+  discountValue: number;
+  startsAt: string;
+  endsAt: string;
+}
+
+export type TPlanCampaignsEntity = TResponse<IPlanCampaign[]>;
+export type TPlanCampaignEntity = TResponse<IPlanCampaign>;
+
+/** Admin platform-wide promo code — `GET/POST/PUT /api/subscriptions/promos`. Distinct from a
+ * plan campaign: a promo is a code the buyer types in, not an automatic price override. */
+export interface IPromoCode {
+  id: number;
+  code: string;
+  discountType: PromoDiscountType;
+  discountValue: number;
+  maxRedemptions: number | null;
+  usedCount: number;
+  /** ISO datetime, or null for no start restriction. */
+  startsAt: string | null;
+  /** ISO datetime, or null for no end restriction. */
+  endsAt: string | null;
+  isActive: boolean;
+  /** null = valid for every plan. */
+  planId: number | null;
+}
+
+export interface ICreatePromoCodeRequest {
+  code: string;
+  discountType: PromoDiscountType;
+  discountValue: number;
+  maxRedemptions?: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  planId?: number | null;
+}
+
+export interface IUpdatePromoCodeRequest {
+  discountType: PromoDiscountType;
+  discountValue: number;
+  maxRedemptions?: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+}
+
+export type TPromoCodesEntity = TResponse<IPromoCode[]>;
+export type TPromoCodeEntity = TResponse<IPromoCode>;

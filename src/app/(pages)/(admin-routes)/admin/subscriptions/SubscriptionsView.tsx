@@ -4,10 +4,14 @@ import { useState } from "react";
 import { cn } from "@/shared/utils/className";
 import { SubscriptionsListTab } from "./components/SubscriptionsListTab";
 import { InvoicesListTab } from "./components/InvoicesListTab";
+import { CampaignsListTab } from "./components/CampaignsListTab";
+import { PromoCodesListTab } from "./components/PromoCodesListTab";
 
 const TABS = [
   { id: "subscriptions", label: "اشتراک‌ها" },
   { id: "invoices", label: "فاکتورها" },
+  { id: "campaigns", label: "کمپین‌ها" },
+  { id: "promos", label: "کدهای تخفیف" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -42,7 +46,15 @@ export default function SubscriptionsView() {
         ))}
       </div>
 
-      {tab === "subscriptions" ? <SubscriptionsListTab /> : <InvoicesListTab />}
+      {tab === "subscriptions" ? (
+        <SubscriptionsListTab />
+      ) : tab === "invoices" ? (
+        <InvoicesListTab />
+      ) : tab === "campaigns" ? (
+        <CampaignsListTab />
+      ) : (
+        <PromoCodesListTab />
+      )}
     </div>
   );
 }

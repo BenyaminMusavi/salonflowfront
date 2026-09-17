@@ -91,6 +91,16 @@ export enum PromoCodeScope {
   SalonBooking = 2,
 }
 
+export enum PromoDiscountType {
+  Percentage = 1,
+  FixedAmount = 2,
+}
+
+export enum PlanCampaignDiscountType {
+  Percentage = 1,
+  FixedAmount = 2,
+}
+
 export enum ReviewModerationStatus {
   Pending = 1,
   Approved = 2,

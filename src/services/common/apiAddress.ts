@@ -132,6 +132,16 @@ export const API_ADDRESS = {
     INVOICES_ME: "/api/subscriptions/invoices/me",
     INVOICE_MARK_PAID: (invoiceId: number) =>
       `/api/subscriptions/invoices/${invoiceId}/mark-paid`,
+    CAMPAIGNS: "/api/subscriptions/campaigns",
+    CAMPAIGN_BY_ID: (campaignId: number) => `/api/subscriptions/campaigns/${campaignId}`,
+    CAMPAIGN_ACTIVATE: (campaignId: number) =>
+      `/api/subscriptions/campaigns/${campaignId}/activate`,
+    CAMPAIGN_DEACTIVATE: (campaignId: number) =>
+      `/api/subscriptions/campaigns/${campaignId}/deactivate`,
+    PROMOS: "/api/subscriptions/promos",
+    PROMO_BY_ID: (promoId: number) => `/api/subscriptions/promos/${promoId}`,
+    PROMO_ACTIVATE: (promoId: number) => `/api/subscriptions/promos/${promoId}/activate`,
+    PROMO_DEACTIVATE: (promoId: number) => `/api/subscriptions/promos/${promoId}/deactivate`,
   },
 
   CUSTOMERS: {

@@ -3,12 +3,20 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   ICheckoutPreviewRequest,
   ICheckoutRequest,
+  ICreatePlanCampaignRequest,
+  ICreatePromoCodeRequest,
   IMarkInvoicePaidRequest,
   IStartTrialRequest,
+  IUpdatePlanCampaignRequest,
+  IUpdatePromoCodeRequest,
   TCheckoutEntity,
   TCheckoutPreviewEntity,
   TEntitlementEntity,
+  TPlanCampaignEntity,
+  TPlanCampaignsEntity,
   TPlatformInvoicesEntity,
+  TPromoCodeEntity,
+  TPromoCodesEntity,
   TSubscriptionEntity,
   TSubscriptionPlansEntity,
 } from "./types/subscriptions.type";
@@ -77,6 +85,74 @@ class SubscriptionsService {
     return await axiosInstance.post<unknown, void>(
       API_ADDRESS.SUBSCRIPTIONS.INVOICE_MARK_PAID(invoiceId),
       data
+    );
+  }
+
+  /** Admin-only — planId filters to one plan's campaigns, omit for all. */
+  async listCampaigns(planId?: number) {
+    return await axiosInstance.get<unknown, TPlanCampaignsEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGNS,
+      { params: { planId } }
+    );
+  }
+
+  async createCampaign(data: ICreatePlanCampaignRequest) {
+    return await axiosInstance.post<unknown, TPlanCampaignEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGNS,
+      data
+    );
+  }
+
+  async updateCampaign(campaignId: number, data: IUpdatePlanCampaignRequest) {
+    return await axiosInstance.put<unknown, TPlanCampaignEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_BY_ID(campaignId),
+      data
+    );
+  }
+
+  async activateCampaign(campaignId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_ACTIVATE(campaignId)
+    );
+  }
+
+  async deactivateCampaign(campaignId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_DEACTIVATE(campaignId)
+    );
+  }
+
+  /** Admin-only — planId filters to codes scoped to one plan, omit for all. */
+  async listPromos(planId?: number) {
+    return await axiosInstance.get<unknown, TPromoCodesEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.PROMOS,
+      { params: { planId } }
+    );
+  }
+
+  async createPromo(data: ICreatePromoCodeRequest) {
+    return await axiosInstance.post<unknown, TPromoCodeEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.PROMOS,
+      data
+    );
+  }
+
+  async updatePromo(promoId: number, data: IUpdatePromoCodeRequest) {
+    return await axiosInstance.put<unknown, TPromoCodeEntity>(
+      API_ADDRESS.SUBSCRIPTIONS.PROMO_BY_ID(promoId),
+      data
+    );
+  }
+
+  async activatePromo(promoId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SUBSCRIPTIONS.PROMO_ACTIVATE(promoId)
+    );
+  }
+
+  async deactivatePromo(promoId: number) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.SUBSCRIPTIONS.PROMO_DEACTIVATE(promoId)
     );
   }
 }

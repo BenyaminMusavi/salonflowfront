@@ -1,8 +1,11 @@
 import {
+  PlanCampaignDiscountType,
   PlatformInvoiceStatus,
+  PromoDiscountType,
   SubscriptionStatus,
 } from "@/services/common/enums/domain-enums";
 import { BadgeProps } from "@/shared/components/primitives/badge/Badge";
+import { formatToman } from "@/shared/utils/salonDisplay";
 
 export function subscriptionStatusLabel(status: number | null | undefined): string {
   switch (status) {
@@ -88,6 +91,17 @@ export function effectivePlanPrice(plan: {
     return plan.campaignPrice;
   }
   return plan.price;
+}
+
+/** Shared by campaigns and promo codes — both use the same Percentage/FixedAmount shape. */
+export function formatDiscountValue(
+  discountType: PlanCampaignDiscountType | PromoDiscountType,
+  value: number
+): string {
+  if (discountType === PlanCampaignDiscountType.Percentage) {
+    return `${value.toLocaleString("fa-IR")}٪`;
+  }
+  return `${formatToman(value)} تومان`;
 }
 
 /** Whole days left until `endDate`, or null if there is no end date to count down to. */
