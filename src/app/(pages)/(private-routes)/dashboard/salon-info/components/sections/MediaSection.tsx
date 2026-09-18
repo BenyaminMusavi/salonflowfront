@@ -71,6 +71,8 @@ export default function MediaSection({
   const [deletingGalleryKey, setDeletingGalleryKey] = React.useState<
     string | null
   >(null);
+  const GALLERY_LIMIT = 5;
+  const galleryFull = gallery.length >= GALLERY_LIMIT;
 
   /** Every persisted media Guid this section currently knows about, except the one
    * being removed — the reconcile keep-list a single eager delete sends.
@@ -245,33 +247,40 @@ export default function MediaSection({
             </div>
           )}
 
-          <UploadFile
-            title="افزودن به گالری"
-            buttonText="انتخاب تصویر"
-            accept="image/*"
-            hint="می‌توانید چند تصویر به‌صورت جداگانه اضافه کنید."
-            onUpload={async (file) => {
-              try {
-                const res = await uploadMedia.mutateAsync({
-                  salonPublicId,
-                  file,
-                  usageType: MediaUsageType.Gallery,
-                  isPrimary: false,
-                });
-                const next: GalleryMediaItem = {
-                  ...createEmptyMediaSlot(),
-                  clientKey: createGalleryClientKey(),
-                  publicId: res.data?.publicId ?? null,
-                  url: res.data?.url ?? res.data?.imageUrl ?? null,
-                };
-                onGalleryChange([...gallery, next]);
-              } catch (err) {
-                throw new Error(
-                  getApiErrorMessage(err, "آپلود تصویر ناموفق بود.")
-                );
-              }
-            }}
-          />
+          {galleryFull ? (
+            <p className="text-xs text-foreground-muted">
+              حداکثر {GALLERY_LIMIT} تصویر در گالری مجاز است — برای افزودن تصویر جدید، ابتدا یکی را حذف کنید.
+            </p>
+          ) : (
+            <UploadFile
+              title="افزودن به گالری"
+              buttonText="انتخاب تصویر"
+              accept="image/*"
+              hint={`حداکثر ${GALLERY_LIMIT} تصویر، به ترتیب افزودن نمایش داده می‌شوند.`}
+              onUpload={async (file) => {
+                try {
+                  const res = await uploadMedia.mutateAsync({
+                    salonPublicId,
+                    file,
+                    usageType: MediaUsageType.Gallery,
+                    isPrimary: false,
+                    displayOrder: gallery.length,
+                  });
+                  const next: GalleryMediaItem = {
+                    ...createEmptyMediaSlot(),
+                    clientKey: createGalleryClientKey(),
+                    publicId: res.data?.publicId ?? null,
+                    url: res.data?.url ?? res.data?.imageUrl ?? null,
+                  };
+                  onGalleryChange([...gallery, next]);
+                } catch (err) {
+                  throw new Error(
+                    getApiErrorMessage(err, "آپلود تصویر ناموفق بود.")
+                  );
+                }
+              }}
+            />
+          )}
           {gallery.length === 0 && (
             <p className="flex items-center gap-1 text-xs text-foreground-muted">
               <PlusIcon size={12} />

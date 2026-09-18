@@ -10,6 +10,8 @@ export interface IMediaUploadRequest {
   usageType: MediaUsageType;
   isPrimary?: boolean;
   mediaPublicId?: string | null;
+  /** Display position within its usageType (e.g. gallery order). Omit to leave unset/0. */
+  displayOrder?: number;
 }
 
 export interface IMediaUploadResult {

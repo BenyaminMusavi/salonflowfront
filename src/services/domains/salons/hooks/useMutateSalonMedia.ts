@@ -14,6 +14,8 @@ export type UploadSalonMediaVars = {
   isPrimary?: boolean;
   /** Existing media Guid to replace in place; omit to create a new record. */
   mediaPublicId?: string | null;
+  /** Display position within its usageType — used for gallery ordering. */
+  displayOrder?: number;
 };
 
 /** Uploads (or, given `mediaPublicId`, replaces in place) a single salon media item
@@ -28,6 +30,7 @@ export const useMutateUploadSalonMedia = () => {
         usageType: vars.usageType,
         isPrimary: vars.isPrimary,
         mediaPublicId: vars.mediaPublicId ?? undefined,
+        displayOrder: vars.displayOrder,
       }),
     onSuccess: (_res, variables) => {
       queryClient.invalidateQueries({

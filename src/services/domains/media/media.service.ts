@@ -23,6 +23,9 @@ class MediaService {
     if (body.mediaPublicId) {
       form.append("mediaPublicId", body.mediaPublicId);
     }
+    if (body.displayOrder != null) {
+      form.append("displayOrder", String(body.displayOrder));
+    }
 
     return await axiosInstance.post<unknown, TMediaUploadEntity>(
       API_ADDRESS.MEDIA.UPLOAD(entityType, entityPublicId),

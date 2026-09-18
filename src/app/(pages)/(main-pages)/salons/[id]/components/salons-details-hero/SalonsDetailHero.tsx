@@ -11,6 +11,10 @@ import {
   ISalonGalleryItem,
 } from "@/services/domains/salons/types/salon.type";
 
+/** Backend already caps this to 5 (ordered by DisplayOrder) — slice defensively here too
+ * so a stale cache or direct API change can't blow up this swiper. */
+const GALLERY_LIMIT = 5;
+
 function resolveGallery(salon: ISalon): string[] {
   const fromGallery =
     salon.gallery
@@ -21,7 +25,7 @@ function resolveGallery(salon: ISalon): string[] {
       })
       .filter(Boolean) ?? [];
 
-  if (fromGallery.length > 0) return fromGallery;
+  if (fromGallery.length > 0) return fromGallery.slice(0, GALLERY_LIMIT);
 
   const fallback = salon.coverImageUrl || salon.bannerImageUrl || salon.imageUrl;
   if (fallback) return [fallback];
