@@ -3,7 +3,7 @@ import { toBookingStartTime } from "./booking-mappers";
 
 // Regression coverage for a booking-create bug: the backend's POST /api/booking/create and
 // POST /api/appointments/quick-book require startTime as a UTC ISO instant (see
-// docs/FRONTEND_INTEGRATION_GUIDE.md — "startTime | datetime | UTC/ISO"). toBookingStartTime
+// the backend's OpenAPI snapshot, D:\SourceSalon\docs\openapi\v1.json). toBookingStartTime
 // used to just concatenate `${date}T${time}` with no timezone info; System.Text.Json parses
 // that as an unspecified-kind DateTime which the backend's TimeZoneDayRange.ToLocal then
 // treats AS IF it were already UTC, converting it to Asia/Tehran local by adding +03:30 —

@@ -1,6 +1,6 @@
 /**
  * The backend's booking-create/quick-book endpoints require startTime as a UTC ISO
- * instant (see docs/FRONTEND_INTEGRATION_GUIDE.md — "startTime | datetime | UTC/ISO").
+ * instant (see the backend's OpenAPI snapshot, D:\SourceSalon\docs\openapi\v1.json).
  * `date`/`time` here are wall-clock values in the salon's local time (e.g. the
  * "HH:mm:ss" produced from GET /api/booking/slots), so they must be interpreted as
  * local and converted to UTC — not sent as a bare, timezone-less string, which the
