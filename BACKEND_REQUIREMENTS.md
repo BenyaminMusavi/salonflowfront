@@ -3,7 +3,7 @@
 **From:** Frontend Engineering Lead
 **To:** Backend Team
 **Scope:** Four API gaps identified during Sprints 1–4 that currently force frontend workarounds. Each item includes the observed problem (with exact code references), the risk it creates, and the concrete API contract requested.
-**Status:** Awaiting backend implementation. No frontend code should assume any of this exists until confirmed shipped and documented in `docs/FRONTEND_INTEGRATION_GUIDE.md`.
+**Status:** Awaiting backend implementation. No frontend code should assume any of this exists until confirmed shipped and present in the backend's OpenAPI snapshot (`D:\SourceSalon\docs\openapi\v1.json`).
 
 ---
 
