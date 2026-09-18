@@ -1022,10 +1022,7 @@ export default function OnboardingView() {
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold">برنامه کاری مالک</h2>
             {draft.schedule.map((day, idx) => (
-              <div
-                key={day.dayOfWeek}
-                className={cardClass}
-              >
+              <div key={day.dayOfWeek} className={cardClass}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-foreground">
                     {DAY_LABELS[day.dayOfWeek]}

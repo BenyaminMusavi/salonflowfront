@@ -7,6 +7,7 @@ import { cn } from "@/shared/utils/className";
 import {
   findTodayWorkingHour,
   formatHourRange,
+  sortByIranianWeek,
 } from "../../utils/workingHours";
 
 interface SalonsDetailHoursProps {
@@ -63,7 +64,7 @@ export default function SalonsDetailHours({
         </div>
       ) : (
         <ul className="mt-3 overflow-hidden rounded-2xl bg-surface">
-          {workingHours.map((row, index) => {
+          {sortByIranianWeek(workingHours).map((row, index) => {
             const isToday =
               today != null &&
               row.dayName === today.dayName &&

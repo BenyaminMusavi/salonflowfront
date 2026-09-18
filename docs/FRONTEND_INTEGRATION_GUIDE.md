@@ -773,7 +773,7 @@ Refresh فقط `refreshToken` می‌خواهد. `salonId`/`branchId` را نف�
 }
 ```
 
-`dayOfWeek`: 0=یکشنبه … 6=شنبه (قرارداد .NET).
+`dayOfWeek`: 0=شنبه، 1=یکشنبه، 2=دوشنبه، 3=سه‌شنبه، 4=چهارشنبه، 5=پنج‌شنبه، 6=جمعه (از commit `8e33909` — دیگر قرارداد .NET نیست؛ این قرارداد در `working-schedules` POST/PUT، `GET /api/working-schedules/staff/{staffMemberId}` و آرایهٔ `schedule` در onboarding-draft هم صادق است).
 
 پروفایل پرسنل مالک در صورت نیاز توسط سرور ensure می‌شود؛ این مرحله دیگر به خاطر نبودن `StaffMember` مالک fail نمی‌شود.
 
@@ -887,7 +887,7 @@ Base: `api/catalog` — JWT + کانتکست سالن.
 | `PUT /api/working-schedules/{id}` | ویرایش |
 | `DELETE /api/working-schedules/{id}` | 204 |
 
-فیلدها: `dayOfWeek`, `startTime`, `endTime`, `breakStart?`, `breakEnd?`, `isOffDay`, `isManagedBySalon`.
+فیلدها: `dayOfWeek` (0=شنبه … 6=جمعه، از commit `8e33909`)، `startTime`, `endTime`, `breakStart?`, `breakEnd?`, `isOffDay`, `isManagedBySalon`.
 
 **Special schedules** (مرخصی / شیفت خاص) — `api/special-schedules`
 

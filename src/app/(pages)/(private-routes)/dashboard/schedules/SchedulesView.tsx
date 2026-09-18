@@ -33,14 +33,15 @@ import {
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
+// value = dayOfWeek per commit 8e33909 (0=شنبه … 6=جمعه).
 const DAYS = [
-  { value: 6, label: "شنبه" },
-  { value: 0, label: "یکشنبه" },
-  { value: 1, label: "دوشنبه" },
-  { value: 2, label: "سه‌شنبه" },
-  { value: 3, label: "چهارشنبه" },
-  { value: 4, label: "پنجشنبه" },
-  { value: 5, label: "جمعه" },
+  { value: 0, label: "شنبه" },
+  { value: 1, label: "یکشنبه" },
+  { value: 2, label: "دوشنبه" },
+  { value: 3, label: "سه‌شنبه" },
+  { value: 4, label: "چهارشنبه" },
+  { value: 5, label: "پنجشنبه" },
+  { value: 6, label: "جمعه" },
 ];
 
 function staffLabel(member: { firstName?: string | null }) {
@@ -88,7 +89,7 @@ export default function SchedulesView() {
   }, [workingItems]);
 
   const [workingForm, setWorkingForm] = useState({
-    dayOfWeek: 6,
+    dayOfWeek: 0,
     startTime: "09:00:00",
     endTime: "18:00:00",
     isOffDay: false,

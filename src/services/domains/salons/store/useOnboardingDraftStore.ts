@@ -9,12 +9,13 @@ import {
   IScheduleDay,
 } from "@/services/domains/salons/types/onboarding.type";
 
+// dayOfWeek: 0=شنبه … 6=جمعه (per commit 8e33909 — no longer .NET's 0=Sunday convention).
 const defaultSchedule = (): IScheduleDay[] =>
   Array.from({ length: 7 }, (_, dayOfWeek) => ({
     dayOfWeek,
-    isOffDay: dayOfWeek === 5, // Friday off by default
-    startTime: dayOfWeek === 5 ? null : "09:00:00",
-    endTime: dayOfWeek === 5 ? null : "18:00:00",
+    isOffDay: dayOfWeek === 6, // Friday off by default
+    startTime: dayOfWeek === 6 ? null : "09:00:00",
+    endTime: dayOfWeek === 6 ? null : "18:00:00",
   }));
 
 /** Persisted drafts may lack offeringPublicIds; treat missing as []. */
@@ -99,14 +100,15 @@ export const useOnboardingDraftStore = create<IOnboardingDraftState>()(
   )
 );
 
+/** Index = dayOfWeek per commit 8e33909 (0=شنبه … 6=جمعه). */
 export const DAY_LABELS = [
+  "شنبه",
   "یکشنبه",
   "دوشنبه",
   "سه‌شنبه",
   "چهارشنبه",
   "پنجشنبه",
   "جمعه",
-  "شنبه",
 ];
 
 /** Matches guide §5.4 GenderType: 1 Male, 2 Female, 3 Mixed. */

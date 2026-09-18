@@ -1,6 +1,8 @@
 import { ISalonWorkingHour } from "@/services/domains/salons/types/salon.type";
 
-/** JS getDay(): 0=Sun … 6=Sat — matches onboarding / schedules labels. */
+/** JS getDay(): 0=Sun … 6=Sat. Only used to convert a JS Date to a day-name string for
+ * matching against workingHours[].dayName — unrelated to the working-schedules/onboarding
+ * numeric dayOfWeek contract (0=شنبه … 6=جمعه as of commit 8e33909). */
 const FA_DAY_BY_WEEKDAY = [
   "یکشنبه",
   "دوشنبه",
@@ -27,6 +29,29 @@ function normalizeDayLabel(value: string): string {
     .replace(/\u200c/g, "")
     .replace(/\s+/g, "")
     .toLowerCase();
+}
+
+/** Iranian week order (\u0634\u0646\u0628\u0647 \u2192 \u062c\u0645\u0639\u0647), by index into FA_DAY_BY_WEEKDAY/EN_DAY_BY_WEEKDAY. */
+const IRANIAN_WEEK_ORDER = [6, 0, 1, 2, 3, 4, 5];
+
+const IRANIAN_WEEK_RANK: Record<string, number> = (() => {
+  const rank: Record<string, number> = {};
+  IRANIAN_WEEK_ORDER.forEach((weekdayIndex, position) => {
+    rank[normalizeDayLabel(FA_DAY_BY_WEEKDAY[weekdayIndex])] = position;
+    rank[normalizeDayLabel(EN_DAY_BY_WEEKDAY[weekdayIndex])] = position;
+  });
+  return rank;
+})();
+
+/** Sorts working hours \u0634\u0646\u0628\u0647 \u2192 \u062c\u0645\u0639\u0647 regardless of the order the API returned them in. */
+export function sortByIranianWeek<T extends { dayName?: string | null }>(
+  hours: T[]
+): T[] {
+  return [...hours].sort((a, b) => {
+    const rankA = IRANIAN_WEEK_RANK[normalizeDayLabel(a.dayName ?? "")] ?? 99;
+    const rankB = IRANIAN_WEEK_RANK[normalizeDayLabel(b.dayName ?? "")] ?? 99;
+    return rankA - rankB;
+  });
 }
 
 function todayFaDayName(date = new Date()): string {
