@@ -62,6 +62,7 @@ function toOnboardingBranches(
     longitude: b.longitude,
     genderType: b.genderType,
     phone: b.phone.trim() || null,
+    isActive: b.isActive,
   }));
 }
 
@@ -79,6 +80,7 @@ function branchesSignature(list: BranchEditorValues[]): string {
       genderType: b.genderType,
       latitude: b.latitude,
       longitude: b.longitude,
+      isActive: b.isActive,
     }))
   );
 }
@@ -378,6 +380,7 @@ export default function SalonInfoView() {
           genderType: server.genderType,
           latitude: server.latitude ?? null,
           longitude: server.longitude ?? null,
+          isActive: server.isActive,
         };
       });
       setBranches(nextBranches);

@@ -23,6 +23,8 @@ export interface IOnboardingBranch {
   longitude?: number | null;
   genderType: GenderType;
   phone?: string | null;
+  /** false blocks NEW bookings against this branch; existing appointments are untouched. */
+  isActive: boolean;
 }
 
 export interface IOnboardingService {

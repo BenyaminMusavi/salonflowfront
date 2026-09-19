@@ -12,6 +12,9 @@ export interface ISalonBranch {
   latitude?: number | null;
   longitude?: number | null;
   genderType?: number | string | null;
+  /** Owner/staff view only — the public salon-detail endpoint only ever returns active branches
+   * to anonymous/customer callers, so this is always true (or absent) there. */
+  isActive?: boolean;
 }
 
 /** Branch catalog line — Guid-first for customer booking. */

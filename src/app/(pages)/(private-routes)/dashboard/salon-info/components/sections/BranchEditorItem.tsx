@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
+import { Switch } from "@/shared/components/primitives/switch/Switch";
 import { GenderType } from "@/services/common/enums/domain-enums";
 import { GENDER_TYPE_OPTIONS } from "@/services/domains/salons/store/useOnboardingDraftStore";
 
@@ -16,6 +18,10 @@ export interface BranchEditorValues {
   address: string;
   phone: string;
   genderType: GenderType;
+  latitude: number | null;
+  longitude: number | null;
+  /** false blocks NEW bookings against this branch; existing appointments are untouched. */
+  isActive: boolean;
 }
 
 export interface BranchEditorErrors {
@@ -35,6 +41,9 @@ export const createEmptyBranch = (): BranchEditorValues => ({
   address: "",
   phone: "",
   genderType: GenderType.Mixed,
+  latitude: null,
+  longitude: null,
+  isActive: true,
 });
 
 interface BranchEditorItemProps {
@@ -54,6 +63,10 @@ export default function BranchEditorItem({
   canRemove,
   errors,
 }: BranchEditorItemProps) {
+  const [showCoords, setShowCoords] = useState(
+    values.latitude != null || values.longitude != null
+  );
+
   const update = (patch: Partial<BranchEditorValues>) =>
     onChange({ ...values, ...patch });
 
@@ -70,18 +83,36 @@ export default function BranchEditorItem({
             </span>
           )}
         </p>
-        {canRemove && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onRemove}
-            className="text-error"
-          >
-            حذف
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-foreground-muted">
+              {values.isActive ? "فعال" : "غیرفعال"}
+            </span>
+            <Switch
+              checked={values.isActive}
+              onCheckedChange={(checked) => update({ isActive: checked })}
+            />
+          </div>
+          {canRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              className="text-error"
+            >
+              حذف
+            </Button>
+          )}
+        </div>
       </div>
+
+      {!values.isActive && (
+        <p className="mb-3 rounded-[12px] bg-warning-background px-3 py-2 text-xs text-warning">
+          این شعبه غیرفعال است — امکان ثبت نوبت جدید برای آن وجود ندارد. نوبت‌های قبلاً ثبت‌شده دست‌نخورده می‌مانند و مشتری‌ای که قبلاً رزرو کرده به‌صورت خودکار مطلع نمی‌شود.
+        </p>
+      )}
+
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-1.5">
           <Label>نام شعبه</Label>
@@ -146,6 +177,55 @@ export default function BranchEditorItem({
             ))}
           </select>
         </div>
+
+        {showCoords ? (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>عرض جغرافیایی</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="35.7219"
+                value={values.latitude ?? ""}
+                onChange={(e) =>
+                  update({
+                    latitude:
+                      e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+                dir="ltr"
+                className="text-left"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>طول جغرافیایی</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="51.3347"
+                value={values.longitude ?? ""}
+                onChange={(e) =>
+                  update({
+                    longitude:
+                      e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+                dir="ltr"
+                className="text-left"
+              />
+            </div>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-fit text-primary"
+            onClick={() => setShowCoords(true)}
+          >
+            + افزودن مختصات روی نقشه (اختیاری)
+          </Button>
+        )}
       </div>
     </div>
   );

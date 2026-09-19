@@ -102,5 +102,6 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
     genderType: parseGenderType(branch.genderType),
     latitude: branch.latitude ?? null,
     longitude: branch.longitude ?? null,
+    isActive: branch.isActive ?? true,
   }));
 }

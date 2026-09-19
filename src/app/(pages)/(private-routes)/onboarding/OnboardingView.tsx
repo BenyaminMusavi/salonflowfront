@@ -406,6 +406,7 @@ export default function OnboardingView() {
       longitude: null,
       genderType: GenderType.Male,
       phone: "",
+      isActive: true,
     };
     draft.setBranches([...draft.branches, branch]);
   };
