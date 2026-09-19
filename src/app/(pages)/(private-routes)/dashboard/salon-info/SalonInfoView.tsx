@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { Button } from "@/shared/components/primitives/button/Button";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
@@ -36,6 +37,7 @@ import MediaSection, {
 import BranchesSection from "./components/sections/BranchesSection";
 import {
   createEmptyBranch,
+  type BranchEditorErrors,
   type BranchEditorValues,
 } from "./components/sections/BranchEditorItem";
 import {
@@ -56,11 +58,29 @@ function toOnboardingBranches(
     name: b.name.trim(),
     city: b.city.trim(),
     address: b.address.trim(),
-    latitude: null,
-    longitude: null,
+    latitude: b.latitude,
+    longitude: b.longitude,
     genderType: b.genderType,
     phone: b.phone.trim() || null,
   }));
+}
+
+/** Stable signature for dirty-checking a branch list — deliberately excludes
+ * `clientKey`, which is a fresh random id on every hydration and would make an
+ * otherwise-unchanged list look dirty. */
+function branchesSignature(list: BranchEditorValues[]): string {
+  return JSON.stringify(
+    list.map((b) => ({
+      publicId: b.publicId,
+      name: b.name.trim(),
+      city: b.city.trim(),
+      address: b.address.trim(),
+      phone: b.phone.trim(),
+      genderType: b.genderType,
+      latitude: b.latitude,
+      longitude: b.longitude,
+    }))
+  );
 }
 
 export default function SalonInfoView() {
@@ -110,6 +130,19 @@ export default function SalonInfoView() {
   const [gallery, setGallery] = useState<GalleryMediaItem[]>([]);
   const [toast, setToast] = useState<DashboardToastState>(null);
 
+  // Set true the moment a save is attempted for that section; cleared again on a
+  // successful save. Drives inline field errors without nagging on first load.
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  const [branchesSubmitted, setBranchesSubmitted] = useState(false);
+
+  // Last-saved (or last-hydrated) snapshot for each section, used purely to
+  // detect unsaved local changes — the "تغییرات ذخیره‌نشده" indicators below.
+  const profileBaselineRef = useRef<{
+    basicInfo: BasicInfoValues;
+    contactInfo: ContactSocialValues;
+  } | null>(null);
+  const branchesBaselineRef = useRef<string | null>(null);
+
   const dismissToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
@@ -124,14 +157,26 @@ export default function SalonInfoView() {
     const nextBanner = mapSalonToBanner(salon);
     const nextLogo = mapSalonToLogo(salon);
     const nextGallery = mapSalonToGallery(salon);
+    const nextBasicInfo = mapSalonToBasicInfo(salon);
+    const nextContactInfo = mapSalonToContactInfo(salon);
+    const nextBranches = mapSalonToBranches(salon);
 
-    setBasicInfo(mapSalonToBasicInfo(salon));
-    setContactInfo(mapSalonToContactInfo(salon));
+    setBasicInfo(nextBasicInfo);
+    setContactInfo(nextContactInfo);
     setCover(nextCover);
     setBanner(nextBanner);
     setLogo(nextLogo);
     setGallery(nextGallery);
-    setBranches(mapSalonToBranches(salon));
+    setBranches(nextBranches);
+
+    profileBaselineRef.current = {
+      basicInfo: nextBasicInfo,
+      contactInfo: nextContactInfo,
+    };
+    branchesBaselineRef.current = branchesSignature(nextBranches);
+    setProfileSubmitted(false);
+    setBranchesSubmitted(false);
+
     hydratedForIdRef.current = salonPublicId;
   }, [salon, salonPublicId]);
 
@@ -165,6 +210,42 @@ export default function SalonInfoView() {
     return () => observer.disconnect();
   }, [salon]);
 
+  const profileDirty =
+    !!profileBaselineRef.current &&
+    (JSON.stringify(basicInfo) !==
+      JSON.stringify(profileBaselineRef.current.basicInfo) ||
+      JSON.stringify(contactInfo) !==
+        JSON.stringify(profileBaselineRef.current.contactInfo));
+
+  const branchesDirty =
+    !!branchesBaselineRef.current &&
+    branchesSignature(branches) !== branchesBaselineRef.current;
+
+  const dirtySectionIds = [
+    ...(profileDirty ? ["salon-profile"] : []),
+    ...(branchesDirty ? ["salon-branches"] : []),
+  ];
+
+  // Warn on tab close / refresh while a section has local changes the two batch
+  // save buttons haven't sent yet (media saves per-upload, so it's excluded).
+  useEffect(() => {
+    if (!profileDirty && !branchesDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [profileDirty, branchesDirty]);
+
+  const branchErrors: BranchEditorErrors[] | undefined = branchesSubmitted
+    ? branches.map((b) => ({
+        name: b.name.trim() ? undefined : "نام شعبه الزامی است.",
+        city: b.city.trim() ? undefined : "شهر الزامی است.",
+        address: b.address.trim() ? undefined : "آدرس الزامی است.",
+      }))
+    : undefined;
+
   const onJump = (id: string) => {
     setActiveSectionId(id);
     // Deferred to the next frame: called straight from the click handler, this
@@ -186,6 +267,7 @@ export default function SalonInfoView() {
   };
 
   const onSaveBasicContact = async () => {
+    setProfileSubmitted(true);
     const name = basicInfo.name.trim();
     if (!salonPublicId) {
       setToast({
@@ -226,6 +308,8 @@ export default function SalonInfoView() {
         });
       }
 
+      profileBaselineRef.current = { basicInfo, contactInfo };
+      setProfileSubmitted(false);
       setToast({ type: "success", message: "اطلاعات سالن با موفقیت ذخیره شد." });
     } catch (err) {
       setToast({
@@ -236,6 +320,7 @@ export default function SalonInfoView() {
   };
 
   const onSaveBranches = async () => {
+    setBranchesSubmitted(true);
     if (!salonPublicId) {
       setToast({
         type: "error",
@@ -280,21 +365,24 @@ export default function SalonInfoView() {
       }
 
       setDraftBranches(saved);
-      setBranches((prev) =>
-        prev.map((b, i) => {
-          const server = saved[i];
-          if (!server) return b;
-          return {
-            ...b,
-            publicId: server.publicId,
-            name: server.name,
-            city: server.city,
-            address: server.address,
-            phone: server.phone ?? "",
-            genderType: server.genderType,
-          };
-        })
-      );
+      const nextBranches = branches.map((b, i) => {
+        const server = saved[i];
+        if (!server) return b;
+        return {
+          ...b,
+          publicId: server.publicId,
+          name: server.name,
+          city: server.city,
+          address: server.address,
+          phone: server.phone ?? "",
+          genderType: server.genderType,
+          latitude: server.latitude ?? null,
+          longitude: server.longitude ?? null,
+        };
+      });
+      setBranches(nextBranches);
+      branchesBaselineRef.current = branchesSignature(nextBranches);
+      setBranchesSubmitted(false);
 
       const draftStaff = useOnboardingDraftStore.getState().staff;
       if (draftStaff.length > 0) {
@@ -333,7 +421,11 @@ export default function SalonInfoView() {
 
   return (
     <DashboardPage>
-      <SalonInfoJumpNav activeId={activeSectionId} onJump={onJump} />
+      <SalonInfoJumpNav
+        activeId={activeSectionId}
+        onJump={onJump}
+        dirtyIds={dirtySectionIds}
+      />
 
       <DashboardPageHeader
         title="اطلاعات سالن"
@@ -377,14 +469,46 @@ export default function SalonInfoView() {
             onToast={setToast}
           />
 
-          <BasicInfoSection values={basicInfo} onChange={setBasicInfo} />
-          <ContactSocialSection
-            values={contactInfo}
-            onChange={setContactInfo}
-            onSave={onSaveBasicContact}
-            isSaving={saveBasicInfo.isPending}
-            canSave={!!salonPublicId && basicInfo.name.trim().length > 0}
-          />
+          <section
+            id="salon-profile"
+            className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-foreground">
+                اطلاعات پایه و تماس
+              </h2>
+              {profileDirty && (
+                <span className="rounded-full bg-warning-background px-2 py-0.5 text-[11px] font-semibold text-warning">
+                  تغییرات ذخیره‌نشده
+                </span>
+              )}
+            </div>
+
+            <BasicInfoSection
+              values={basicInfo}
+              onChange={setBasicInfo}
+              nameError={
+                profileSubmitted && !basicInfo.name.trim()
+                  ? "نام سالن الزامی است."
+                  : undefined
+              }
+            />
+
+            <div className="my-4 border-t border-border" />
+
+            <ContactSocialSection values={contactInfo} onChange={setContactInfo} />
+
+            <Button
+              type="button"
+              className="mt-4 w-full"
+              onClick={onSaveBasicContact}
+              disabled={saveBasicInfo.isPending}
+              isLoading={saveBasicInfo.isPending}
+            >
+              ذخیره اطلاعات
+            </Button>
+          </section>
+
           <MediaSection
             salonPublicId={salonPublicId as string}
             cover={cover}
@@ -401,13 +525,8 @@ export default function SalonInfoView() {
             onChange={setBranches}
             onSave={onSaveBranches}
             isSaving={saveBranches.isPending}
-            canSave={
-              !!salonPublicId &&
-              branches.length > 0 &&
-              branches.every(
-                (b) => b.name.trim() && b.city.trim() && b.address.trim()
-              )
-            }
+            isDirty={branchesDirty}
+            errors={branchErrors}
           />
 
           <p className="text-xs text-foreground-muted">

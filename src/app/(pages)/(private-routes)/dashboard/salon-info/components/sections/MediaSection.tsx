@@ -75,14 +75,10 @@ export default function MediaSection({
   const galleryFull = gallery.length >= GALLERY_LIMIT;
 
   /** Every persisted media Guid this section currently knows about, except the one
-   * being removed — the reconcile keep-list a single eager delete sends.
-   * Gap: GET /api/salons/{id} returns cover/banner/logo only as bare URLs, never a
-   * publicId (unlike gallery items, which do carry one) — see ISalon in salon.type.ts.
-   * So a cover/banner/logo set in an earlier session hydrates with publicId=null, and
-   * this list can't include it. Any reconcile call fired while that's true (e.g.
-   * deleting a gallery photo, or deleting one of the other two slots) will make the
-   * backend drop that not-yet-identifiable image too. Fixing this needs the backend to
-   * expose a publicId for cover/banner/logo the way it already does for gallery. */
+   * being removed — the reconcile keep-list a single eager delete sends. GET
+   * /api/salons/{id} now returns coverMediaPublicId/bannerMediaPublicId/imageMediaPublicId
+   * alongside the gallery items' own publicIds (see mapSalonToForm.ts), so this list is
+   * complete and an eager delete can no longer drop an unrelated not-yet-identified image. */
   const keepIdsExcept = (excludedPublicId: string | null) => {
     const ids = [cover.publicId, banner.publicId, logo.publicId, ...gallery.map((g) => g.publicId)]
       .filter((id): id is string => !!id && id !== excludedPublicId);

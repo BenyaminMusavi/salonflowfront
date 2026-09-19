@@ -50,6 +50,7 @@ export function mapSalonToCover(salon: ISalon): MediaSlotState {
   return {
     ...createEmptyMediaSlot(),
     url: salon.coverImageUrl ?? null,
+    publicId: salon.coverMediaPublicId ?? null,
   };
 }
 
@@ -57,6 +58,7 @@ export function mapSalonToBanner(salon: ISalon): MediaSlotState {
   return {
     ...createEmptyMediaSlot(),
     url: salon.bannerImageUrl ?? null,
+    publicId: salon.bannerMediaPublicId ?? null,
   };
 }
 
@@ -65,6 +67,7 @@ export function mapSalonToLogo(salon: ISalon): MediaSlotState {
   return {
     ...createEmptyMediaSlot(),
     url: salon.imageUrl ?? null,
+    publicId: salon.imageMediaPublicId ?? null,
   };
 }
 
@@ -97,5 +100,7 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
     address: branch.address ?? "",
     phone: branch.phone ?? "",
     genderType: parseGenderType(branch.genderType),
+    latitude: branch.latitude ?? null,
+    longitude: branch.longitude ?? null,
   }));
 }

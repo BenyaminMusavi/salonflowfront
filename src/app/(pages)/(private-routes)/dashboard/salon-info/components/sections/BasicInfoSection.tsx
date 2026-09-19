@@ -12,44 +12,52 @@ export interface BasicInfoValues {
 interface BasicInfoSectionProps {
   values: BasicInfoValues;
   onChange: (values: BasicInfoValues) => void;
+  /** Shown under the name field once a save attempt exposed an invalid value. */
+  nameError?: string;
 }
 
+/**
+ * Field group only — no card wrapper, heading, or save button. Rendered together
+ * with ContactSocialSection inside one "اطلاعات پایه و تماس" card in
+ * SalonInfoView, since both are persisted through the same save call.
+ */
 export default function BasicInfoSection({
   values,
   onChange,
+  nameError,
 }: BasicInfoSectionProps) {
   return (
-    <section
-      id="salon-basic"
-      className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
-    >
-      <h2 className="mb-3 text-sm font-bold text-foreground">اطلاعات پایه</h2>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="salon-name">نام سالن *</Label>
-          <Input
-            id="salon-name"
-            placeholder="مثلاً سالن زیبایی ونک"
-            value={values.name}
-            onChange={(e) => onChange({ ...values, name: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="salon-description">توضیحات</Label>
-          <TextArea
-            id="salon-description"
-            rows={4}
-            placeholder="توضیح کوتاه درباره سالن…"
-            value={values.description}
-            onChange={(e) =>
-              onChange({ ...values, description: e.target.value })
-            }
-          />
-          <p className="text-xs text-foreground-muted">
-            این متن در صفحه عمومی سالن برای مشتریان نمایش داده می‌شود.
-          </p>
-        </div>
+    <div className="flex flex-col gap-3">
+      <p className="text-xs font-semibold text-foreground-muted">پایه</p>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="salon-name">نام سالن *</Label>
+        <Input
+          id="salon-name"
+          placeholder="مثلاً سالن زیبایی ونک"
+          value={values.name}
+          hasError={!!nameError}
+          aria-invalid={!!nameError}
+          onChange={(e) => onChange({ ...values, name: e.target.value })}
+        />
+        {nameError && (
+          <p className="text-xs text-content-error">{nameError}</p>
+        )}
       </div>
-    </section>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="salon-description">توضیحات</Label>
+        <TextArea
+          id="salon-description"
+          rows={4}
+          placeholder="توضیح کوتاه درباره سالن…"
+          value={values.description}
+          onChange={(e) =>
+            onChange({ ...values, description: e.target.value })
+          }
+        />
+        <p className="text-xs text-foreground-muted">
+          این متن در صفحه عمومی سالن برای مشتریان نمایش داده می‌شود.
+        </p>
+      </div>
+    </div>
   );
 }

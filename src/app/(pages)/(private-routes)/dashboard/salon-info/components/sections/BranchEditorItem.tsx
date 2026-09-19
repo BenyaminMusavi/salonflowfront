@@ -18,6 +18,12 @@ export interface BranchEditorValues {
   genderType: GenderType;
 }
 
+export interface BranchEditorErrors {
+  name?: string;
+  city?: string;
+  address?: string;
+}
+
 export const createEmptyBranch = (): BranchEditorValues => ({
   publicId: null,
   clientKey:
@@ -37,6 +43,7 @@ interface BranchEditorItemProps {
   onChange: (values: BranchEditorValues) => void;
   onRemove: () => void;
   canRemove: boolean;
+  errors?: BranchEditorErrors;
 }
 
 export default function BranchEditorItem({
@@ -45,14 +52,24 @@ export default function BranchEditorItem({
   onChange,
   onRemove,
   canRemove,
+  errors,
 }: BranchEditorItemProps) {
   const update = (patch: Partial<BranchEditorValues>) =>
     onChange({ ...values, ...patch });
 
+  const summary = [values.name, values.city].filter(Boolean).join(" — ");
+
   return (
     <div className="rounded-[16px] border border-border bg-background-elevated p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-sm font-bold text-foreground">شعبه {index + 1}</p>
+        <p className="text-sm font-bold text-foreground">
+          شعبه {index + 1}
+          {summary && (
+            <span className="mr-1.5 font-normal text-foreground-muted">
+              ({summary})
+            </span>
+          )}
+        </p>
         {canRemove && (
           <Button
             type="button"
@@ -71,24 +88,36 @@ export default function BranchEditorItem({
           <Input
             placeholder="مثلاً ونک"
             value={values.name}
+            hasError={!!errors?.name}
             onChange={(e) => update({ name: e.target.value })}
           />
+          {errors?.name && (
+            <p className="text-xs text-content-error">{errors.name}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>شهر</Label>
           <Input
             placeholder="تهران"
             value={values.city}
+            hasError={!!errors?.city}
             onChange={(e) => update({ city: e.target.value })}
           />
+          {errors?.city && (
+            <p className="text-xs text-content-error">{errors.city}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>آدرس</Label>
           <Input
             placeholder="خیابان، پلاک…"
             value={values.address}
+            hasError={!!errors?.address}
             onChange={(e) => update({ address: e.target.value })}
           />
+          {errors?.address && (
+            <p className="text-xs text-content-error">{errors.address}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>تلفن شعبه</Label>

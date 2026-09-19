@@ -38,6 +38,12 @@ export interface ISalon {
   bannerImageUrl?: string | null;
   /** MediaUsageType.Profile — shown in the app as the salon's "logo". */
   imageUrl?: string | null;
+  /** Media.PublicId for each picked image — lets the owner-edit page delete/replace one without
+   * risking an unrelated not-yet-identified image, the way Gallery items already can. Null when
+   * no media of that usage type exists yet. */
+  coverMediaPublicId?: string | null;
+  bannerMediaPublicId?: string | null;
+  imageMediaPublicId?: string | null;
   gallery?: Array<string | ISalonGalleryItem> | null;
   services?: ISalonServiceSummary[] | null;
   branches?: ISalonBranch[] | null;

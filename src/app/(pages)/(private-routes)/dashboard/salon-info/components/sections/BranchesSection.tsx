@@ -4,6 +4,7 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import BranchEditorItem, {
   createEmptyBranch,
+  type BranchEditorErrors,
   type BranchEditorValues,
 } from "./BranchEditorItem";
 
@@ -12,7 +13,9 @@ interface BranchesSectionProps {
   onChange: (branches: BranchEditorValues[]) => void;
   onSave: () => void;
   isSaving: boolean;
-  canSave: boolean;
+  isDirty?: boolean;
+  /** Per-branch field errors, indexed the same as `branches`. Present only after a save attempt. */
+  errors?: BranchEditorErrors[];
 }
 
 export default function BranchesSection({
@@ -20,7 +23,8 @@ export default function BranchesSection({
   onChange,
   onSave,
   isSaving,
-  canSave,
+  isDirty = false,
+  errors,
 }: BranchesSectionProps) {
   const updateBranch = (index: number, values: BranchEditorValues) => {
     onChange(branches.map((b, i) => (i === index ? values : b)));
@@ -40,7 +44,14 @@ export default function BranchesSection({
       className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-bold text-foreground">شعبه‌ها و آدرس</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-bold text-foreground">شعبه‌ها و آدرس</h2>
+          {isDirty && (
+            <span className="rounded-full bg-warning-background px-2 py-0.5 text-[11px] font-semibold text-warning">
+              تغییرات ذخیره‌نشده
+            </span>
+          )}
+        </div>
         <Button
           type="button"
           variant="secondary"
@@ -63,6 +74,7 @@ export default function BranchesSection({
             onChange={(values) => updateBranch(index, values)}
             onRemove={() => removeBranch(index)}
             canRemove={branches.length > 1}
+            errors={errors?.[index]}
           />
         ))}
 
@@ -70,7 +82,7 @@ export default function BranchesSection({
           type="button"
           className="w-full"
           onClick={onSave}
-          disabled={!canSave || isSaving}
+          disabled={isSaving}
           isLoading={isSaving}
         >
           ذخیره شعبه‌ها
