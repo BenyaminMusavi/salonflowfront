@@ -27,6 +27,7 @@ import {
   SparkleIcon,
   StarIcon,
   SyringeIcon,
+  UserFocusIcon,
   BandaidsIcon,
   WavesIcon,
   WindIcon,
@@ -71,6 +72,7 @@ export const SERVICE_TYPE_ICONS: Record<string, Icon> = {
   "پیرایش فید (طرح مو)": PencilRulerIcon,
   "رنگ ریش": PaintBrushBroadIcon,
   "ماساژ سر و گردن": WavesIcon,
+  "آرایش داماد": UserFocusIcon,
 };
 
 /** آیکون پیش‌فرض برای هر نوع خدمتی که سالن خودش دستی اضافه کرده و توی لیست بالا نیست. */
