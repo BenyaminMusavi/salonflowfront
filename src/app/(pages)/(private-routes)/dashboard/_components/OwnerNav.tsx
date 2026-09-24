@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
 import {
+  isOwnerNavTabActive,
   getVisibleNavGroups,
   isOwnerNavGroupActive,
   type OwnerNavGroup,
@@ -85,7 +86,7 @@ export function OwnerSubnav({
   return (
     <div className="flex gap-2 overflow-x-auto px-safe-area py-2">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        const active = isOwnerNavTabActive(tab.href, pathname);
         return (
           <Link
             key={tab.href}

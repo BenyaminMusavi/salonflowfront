@@ -3,51 +3,22 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryMyAppointments } from "@/services/domains/appointments/hooks/useQueryMyAppointments";
-import {
-  appointmentStatusClass,
-  appointmentStatusLabel,
-  formatAppointmentDateTime,
-} from "@/services/domains/appointments/utils/appointment-display";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
+import {
+  AppointmentHistoryPanel,
+  useAppointmentHistoryQuery,
+} from "@/shared/components/composites/appointment-history/AppointmentHistoryPanel";
 
 export default function ReservationView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const salonId = useSalonContextStore((s) => s.salonId);
-  const { mutateAsync: switchContext, isPending: isSwitchingContext } =
-    useMutateSwitchContext();
-  // "نوبت‌های من" is customer-scoped; the JWT while a salon context is active
-  // (SalonOwner/Staff) can't list the logged-in person's own bookings, so the
-  // query would just 401/error. Ask to switch back instead of calling it.
-  const { data, isLoading, isError, refetch, isFetching } =
-    useQueryMyAppointments({ enabled: isLoggedIn && salonId == null });
-
-  const appointments = data?.data ?? [];
-
-  if (isLoggedIn && salonId != null) {
-    return (
-      <div className="flex flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
-        <h1 className="text-lg font-bold text-foreground">نوبت‌های من</h1>
-        <p className="text-sm text-foreground-muted">
-          شما الان در کانتکست سالن هستید. برای دیدن نوبت‌های شخصی خودتان، ابتدا
-          به کانتکست مشتری برگردید.
-        </p>
-        <button
-          type="button"
-          disabled={isSwitchingContext}
-          onClick={() => switchContext({ salonId: null, branchId: null })}
-          className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
-        >
-          بازگشت به کانتکست مشتری
-        </button>
-      </div>
-    );
-  }
+  const { query, setFilter, setPage } = useAppointmentHistoryQuery();
+  // GET /appointments/me accepts any valid token (global or salon context),
+  // so no switch-context is needed to list the user's own bookings.
+  const { data, isLoading, isFetching, error, refetch } =
+    useQueryMyAppointments(query, { enabled: isLoggedIn });
 
   if (!isLoggedIn) {
     return (
@@ -69,6 +40,8 @@ export default function ReservationView() {
     );
   }
 
+  const hasFilter = !!(query.from || query.to || query.status);
+
   return (
     <div className="flex flex-col gap-4 px-safe-area pb-32 pt-6">
       <div className="flex items-center justify-between">
@@ -83,59 +56,33 @@ export default function ReservationView() {
         </button>
       </div>
 
-      {isLoading && (
-        <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
-      )}
-
-      {isError && (
-        <p className="text-sm text-error">خطا در دریافت نوبت‌ها</p>
-      )}
-
-      {!isLoading && !isError && appointments.length === 0 && (
-        <div className="rounded-[20px] bg-surface-tertiary p-6 text-center">
-          <p className="text-sm text-foreground-muted">هنوز نوبتی ندارید.</p>
-          <Link
-            href={RouteAddress.SEARCH.BASE}
-            className="mt-4 inline-flex text-sm font-bold text-primary"
-          >
-            جستجوی سالن
-          </Link>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-3">
-        {appointments.map((item) => (
-          <Link
-            key={item.id}
-            href={RouteAddress.RESERVATION.DETAILS(item.id)}
-            className="rounded-[20px] bg-surface-tertiary p-4 transition hover:bg-surface"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-[15px] font-bold text-foreground">
-                  {item.salonName}
-                </p>
-                <p className="mt-1 text-xs text-foreground-muted">
-                  {formatAppointmentDateTime(item.startTime)}
-                </p>
-                {item.staffNames && (
-                  <p className="mt-1 text-xs text-foreground-muted">
-                    {item.staffNames}
-                  </p>
-                )}
-              </div>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                  appointmentStatusClass(item.status)
-                )}
+      <AppointmentHistoryPanel
+        idPrefix="my-reservations"
+        query={query}
+        onFilterChange={setFilter}
+        onPageChange={setPage}
+        result={data?.data}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        error={error}
+        fields={{ salon: true, staff: true }}
+        itemHref={(item) => RouteAddress.RESERVATION.DETAILS(item.id)}
+        emptyState={
+          <div className="rounded-[20px] bg-surface p-6 text-center">
+            <p className="text-sm text-foreground-muted">
+              {hasFilter ? "نوبتی با این فیلتر پیدا نشد." : "هنوز نوبتی ندارید."}
+            </p>
+            {!hasFilter && (
+              <Link
+                href={RouteAddress.SEARCH.BASE}
+                className="mt-4 inline-flex text-sm font-bold text-primary"
               >
-                {appointmentStatusLabel(item.status)}
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
+                جستجوی سالن
+              </Link>
+            )}
+          </div>
+        }
+      />
     </div>
   );
 }

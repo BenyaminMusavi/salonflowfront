@@ -102,6 +102,11 @@ export const API_ADDRESS = {
       `/api/appointments/staff/${staffMemberId}/day-board`,
     BRANCH_DAY_BOARD: (branchPublicId: string) =>
       `/api/appointments/branch/${branchPublicId}/day-board`,
+    STAFF_ME: "/api/appointments/staff/me",
+    BY_CUSTOMER: (customerPublicId: string) =>
+      `/api/appointments/customer/${customerPublicId}`,
+    BY_STAFF: (staffPublicId: string) =>
+      `/api/appointments/staff/${staffPublicId}`,
   },
 
   REVIEWS: {

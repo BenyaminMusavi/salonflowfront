@@ -6,12 +6,12 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 
 export const CUSTOMERS_QUERY_KEY = "CUSTOMERS_QUERY_KEY";
 
-export const useQueryCustomers = (search?: string) => {
+export const useQueryCustomers = (search?: string, page = 1) => {
   const salonId = useSalonContextStore((s) => s.salonId);
 
   return useQuery({
-    queryKey: [CUSTOMERS_QUERY_KEY, salonId, search ?? ""],
-    queryFn: () => customersService.list({ search }),
+    queryKey: [CUSTOMERS_QUERY_KEY, salonId, search ?? "", page],
+    queryFn: () => customersService.list({ search, page }),
     enabled: !!salonId,
   });
 };

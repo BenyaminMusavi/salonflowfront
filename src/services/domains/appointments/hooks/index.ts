@@ -1,5 +1,10 @@
 export { useQueryMyAppointments } from "./useQueryMyAppointments";
 export { useQueryMyAppointmentById } from "./useQueryMyAppointmentById";
+export {
+  useQueryMyStaffAppointments,
+  useQueryCustomerAppointments,
+  useQueryStaffAppointments,
+} from "./useQueryAppointmentHistory";
 export { useMutateCancelAppointment } from "./useMutateCancelAppointment";
 export { useQuerySalonAppointments } from "./useQuerySalonAppointments";
 export { useMutateSalonLifecycle } from "./useMutateSalonLifecycle";

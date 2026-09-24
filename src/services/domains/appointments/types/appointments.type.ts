@@ -2,7 +2,8 @@ import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import { TPagedResult } from "@/services/common/data-types/SharedDataTypes";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
-export interface IMyAppointmentListItem {
+/** One row from the paged appointment-history endpoints: `me`, `staff/me`, `customer/{id}`, `staff/{id}`. */
+export interface IAppointmentHistoryItem {
   /** Appointment.PublicId (Guid) — for GET .../me/{id} detail lookups. */
   id: string;
   /** Appointment's internal numeric id — required by the cancel/check-in/complete/no-show {id:long} lifecycle routes. */
@@ -10,8 +11,22 @@ export interface IMyAppointmentListItem {
   startTime: string;
   endTime: string;
   status: AppointmentStatus | number;
-  salonName: string;
+  salonName?: string | null;
+  branchName?: string | null;
+  customerName?: string | null;
   staffNames?: string | null;
+  services?: IMyAppointmentService[] | null;
+  totalDurationMinutes: number;
+  totalPrice: number;
+}
+
+/** Optional filters shared by every appointment-history endpoint. `from`/`to` are inclusive Tehran days (`yyyy-MM-dd`). */
+export interface IAppointmentHistoryQuery {
+  from?: string;
+  to?: string;
+  status?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface IMyAppointmentService {
@@ -128,7 +143,7 @@ export interface IBranchDayBoardGroup {
 }
 
 export type TSalonAppointmentsEntity = TResponse<TPagedResult<ISalonAppointmentItem>>;
-export type TMyAppointmentsEntity = TResponse<IMyAppointmentListItem[]>;
+export type TAppointmentHistoryEntity = TResponse<TPagedResult<IAppointmentHistoryItem>>;
 export type TMyAppointmentDetailEntity = TResponse<IMyAppointmentDetail>;
 export type TQuickBookEntity = TResponse<IQuickBookResult>;
 export type TCreateSalonAppointmentEntity = TResponse<number>;

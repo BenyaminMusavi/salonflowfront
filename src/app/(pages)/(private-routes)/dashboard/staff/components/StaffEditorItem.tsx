@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
@@ -77,17 +79,27 @@ export default function StaffEditorItem({
             <p className="text-[11px] text-foreground-muted">{statusLabel}</p>
           )}
         </div>
-        {!values.isCreator && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onRemove}
-            className="text-error"
-          >
-            حذف
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {values.publicId && (
+            <Link
+              href={RouteAddress.DASHBOARD.STAFF_APPOINTMENTS(values.publicId)}
+              className="rounded-full bg-surface px-3 py-1.5 text-xs font-semibold text-primary"
+            >
+              رزروها
+            </Link>
+          )}
+          {!values.isCreator && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              className="text-error"
+            >
+              حذف
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

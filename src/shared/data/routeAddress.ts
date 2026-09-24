@@ -69,6 +69,12 @@ export const RouteAddress = {
     PAYOUTS: "/dashboard/payouts",
     NOTIFICATIONS: "/dashboard/notifications",
     SALON_INFO: "/dashboard/salon-info",
+    MY_APPOINTMENTS: "/dashboard/my-appointments",
+    CUSTOMERS: "/dashboard/customers",
+    CUSTOMER_APPOINTMENTS: (customerPublicId: string) =>
+      `/dashboard/customers/${customerPublicId}`,
+    STAFF_APPOINTMENTS: (staffPublicId: string) =>
+      `/dashboard/staff/${staffPublicId}/appointments`,
   },
   ADMIN: {
     BASE: "/admin",

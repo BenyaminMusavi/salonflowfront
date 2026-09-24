@@ -37,6 +37,8 @@ export const OWNER_NAV_GROUPS: OwnerNavGroup[] = [
     href: RouteAddress.DASHBOARD.CATALOG,
     label: "عملیات",
     tabs: [
+      { href: RouteAddress.DASHBOARD.MY_APPOINTMENTS, label: "نوبت‌های من" },
+      { href: RouteAddress.DASHBOARD.CUSTOMERS, label: "مشتریان" },
       { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
       { href: RouteAddress.DASHBOARD.STAFF, label: "پرسنل", ownerOnly: true },
       { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
@@ -71,6 +73,12 @@ function normalizePath(pathname: string): string {
   return clean || "/";
 }
 
+/** A tab is active on its own path and on its sub-routes (e.g. `/dashboard/customers/{id}`). */
+export function isOwnerNavTabActive(tabHref: string, pathname: string): boolean {
+  const path = normalizePath(pathname);
+  return path === tabHref || path.startsWith(`${tabHref}/`);
+}
+
 export function getOwnerNavGroup(pathname: string): OwnerNavGroup | null {
   const path = normalizePath(pathname);
 
@@ -80,7 +88,7 @@ export function getOwnerNavGroup(pathname: string): OwnerNavGroup | null {
 
   return (
     OWNER_NAV_GROUPS.find((group) =>
-      group.tabs.some((tab) => path === tab.href)
+      group.tabs.some((tab) => isOwnerNavTabActive(tab.href, path))
     ) ?? null
   );
 }
@@ -93,5 +101,5 @@ export function isOwnerNavGroupActive(
   if (group.id === "today") {
     return path === RouteAddress.DASHBOARD.BASE;
   }
-  return group.tabs.some((tab) => path === tab.href);
+  return group.tabs.some((tab) => isOwnerNavTabActive(tab.href, path));
 }

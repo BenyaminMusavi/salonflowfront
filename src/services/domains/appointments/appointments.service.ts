@@ -10,15 +10,58 @@ import {
   TQuickBookEntity,
   TSalonAppointmentsEntity,
   TMyAppointmentDetailEntity,
-  TMyAppointmentsEntity,
+  TAppointmentHistoryEntity,
+  IAppointmentHistoryQuery,
   TStaffDayBoardEntity,
   TBranchDayBoardEntity,
 } from "./types/appointments.type";
 
+function historyParams(query: IAppointmentHistoryQuery) {
+  return {
+    from: query.from || undefined,
+    to: query.to || undefined,
+    status: query.status,
+    page: query.page ?? 1,
+    pageSize: query.pageSize ?? 20,
+  };
+}
+
 class AppointmentsService {
-  async getMine() {
-    return await axiosInstance.get<unknown, TMyAppointmentsEntity>(
-      API_ADDRESS.APPOINTMENTS.ME
+  /** Logged-in user's own bookings as a customer, across all salons (any token). */
+  async getMine(query: IAppointmentHistoryQuery = {}) {
+    return await axiosInstance.get<unknown, TAppointmentHistoryEntity>(
+      API_ADDRESS.APPOINTMENTS.ME,
+      { params: historyParams(query) }
+    );
+  }
+
+  /** Current salon's appointments where the caller is the staff member (salon-context JWT). */
+  async getMyStaffAppointments(query: IAppointmentHistoryQuery = {}) {
+    return await axiosInstance.get<unknown, TAppointmentHistoryEntity>(
+      API_ADDRESS.APPOINTMENTS.STAFF_ME,
+      { params: historyParams(query) }
+    );
+  }
+
+  /** One customer's appointments in the current salon (SalonOwner/Staff, salon-context JWT). */
+  async getCustomerAppointments(
+    customerPublicId: string,
+    query: IAppointmentHistoryQuery = {}
+  ) {
+    return await axiosInstance.get<unknown, TAppointmentHistoryEntity>(
+      API_ADDRESS.APPOINTMENTS.BY_CUSTOMER(customerPublicId),
+      { params: historyParams(query) }
+    );
+  }
+
+  /** One staff member's appointments in the current salon (SalonOwner only, salon-context JWT). */
+  async getStaffAppointments(
+    staffPublicId: string,
+    query: IAppointmentHistoryQuery = {}
+  ) {
+    return await axiosInstance.get<unknown, TAppointmentHistoryEntity>(
+      API_ADDRESS.APPOINTMENTS.BY_STAFF(staffPublicId),
+      { params: historyParams(query) }
     );
   }
 
