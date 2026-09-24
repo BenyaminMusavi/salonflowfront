@@ -3,15 +3,29 @@ import React from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useMutateSendOtp } from "@/services/domains/auth/hooks/useMutateSendOtp";
+import { useMutateForgetPassword } from "@/services/domains/auth/hooks/useMutateForgetPassword";
 
 const RESEND_TIME = 120; // seconds
 
-export default function OtpResendButton() {
+/**
+ * `purpose="reset-password"` resends through forget-password instead of send-otp.
+ * `phone` overrides the `?phone=` query (reset-password keeps the phone out of the URL).
+ */
+export default function OtpResendButton({
+  purpose = "login",
+  phone: phoneProp,
+}: {
+  purpose?: "login" | "reset-password";
+  phone?: string | null;
+}) {
   const [timeLeft, setTimeLeft] = React.useState(RESEND_TIME);
   const [error, setError] = React.useState("");
   const searchParams = useSearchParams();
-  const phone = searchParams.get("phone");
-  const { mutateAsync, isPending } = useMutateSendOtp();
+  const phone = phoneProp ?? searchParams.get("phone");
+  const sendOtp = useMutateSendOtp();
+  const forgetPassword = useMutateForgetPassword();
+  const { mutateAsync, isPending } =
+    purpose === "reset-password" ? forgetPassword : sendOtp;
 
   React.useEffect(() => {
     if (timeLeft <= 0) return;
@@ -35,8 +49,10 @@ export default function OtpResendButton() {
       // whole request instead of assuming failure early (BACKEND_UPDATE_REPORT.md §2.3).
       await mutateAsync({ phone });
       setTimeLeft(RESEND_TIME);
-    } catch {
-      setError("ارسال مجدد کد ناموفق بود. لطفاً دوباره تلاش کنید.");
+    } catch (e) {
+      const message = (e as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      setError(message || "ارسال مجدد کد ناموفق بود. لطفاً دوباره تلاش کنید.");
     }
   };
 

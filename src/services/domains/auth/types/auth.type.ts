@@ -84,9 +84,22 @@ export interface ISetPasswordRequest {
   lastName?: string;
 }
 
-export interface IResetPasswordRequest {
+/** Step 2 of forgot-password: checks the OTP from forget-password and trades it for a reset token. */
+export interface IVerifyResetCodeRequest {
   phone: string;
   code: string;
+}
+
+export interface IVerifyResetCode {
+  /** Single-use, short-lived token; only proves OTP ownership for the reset-password call. */
+  resetToken: string;
+  /** ISO UTC — after this the user must request a new code. */
+  expiresAt: string;
+}
+
+/** Step 3 of forgot-password: sets the new password and returns a normal login token pair. */
+export interface IResetPasswordRequest {
+  resetToken: string;
   newPassword: string;
 }
 
@@ -110,4 +123,5 @@ export interface ISwitchContextRequest {
 }
 
 export type TAuthEntity = TResponse<IAuth>;
+export type TVerifyResetCodeEntity = TResponse<IVerifyResetCode>;
 export type TAuthMeEntity = TResponse<IAuthMe>;

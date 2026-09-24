@@ -6,6 +6,8 @@ import {
   ISendOtpRequest,
   ISetPasswordRequest,
   IResetPasswordRequest,
+  IVerifyResetCodeRequest,
+  TVerifyResetCodeEntity,
   IUpdateProfileRequest,
   IForgetPasswordRequest,
   IRefreshRequest,
@@ -48,16 +50,29 @@ class AuthService {
   }
 
   async forgetPassword(data: IForgetPasswordRequest) {
+    // Anonymous forgot-password step: never refresh-and-retry or log out on 401.
     return await axiosInstance.post<unknown, void>(
       API_ADDRESS.AUTH.FORGET_PASSWORD,
-      data
+      data,
+      { skipAuthRetry: true }
+    );
+  }
+
+  async verifyResetCode(data: IVerifyResetCodeRequest) {
+    // A 401 here means "wrong/expired code", never "session expired" — don't refresh-and-retry.
+    return await axiosInstance.post<unknown, TVerifyResetCodeEntity>(
+      API_ADDRESS.AUTH.VERIFY_RESET_CODE,
+      data,
+      { skipAuthRetry: true }
     );
   }
 
   async resetPassword(data: IResetPasswordRequest) {
+    // A 401 here means "reset token invalid/expired", not a stale session.
     return await axiosInstance.post<unknown, TAuthEntity>(
       API_ADDRESS.AUTH.RESET_PASSWORD,
-      data
+      data,
+      { skipAuthRetry: true }
     );
   }
 

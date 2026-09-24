@@ -2,9 +2,6 @@ import { z } from "zod";
 
 export const newPasswordFormSchema = () =>
   z.object({
-    otp: z
-      .string({ message: "لطفا کد یکبار مصرف دریافتی را وارد نمایید" })
-      .min(1, "لطفا کد یکبار مصرف دریافتی را وارد نمایید"),
     password: z
       .string({
         message: "لطفا رمز عبور را وارد نمایید",

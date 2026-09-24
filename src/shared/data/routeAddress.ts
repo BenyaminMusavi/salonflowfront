@@ -14,6 +14,7 @@ export const RouteAddress = {
     },
     RESET_PASSWORD: {
       BASE: "/auth/reset-password",
+      VERIFY: "/auth/reset-password/verify",
       NEW_PASSWORD: "/auth/reset-password/new-password",
     },
     LOGOUT: {

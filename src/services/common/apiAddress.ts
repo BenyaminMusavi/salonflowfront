@@ -11,6 +11,7 @@ export const API_ADDRESS = {
     LOGIN_PASSWORD: "/api/auth/login-password",
     SET_PASSWORD: "/api/auth/set-password",
     FORGET_PASSWORD: "/api/auth/forget-password",
+    VERIFY_RESET_CODE: "/api/auth/verify-reset-code",
     RESET_PASSWORD: "/api/auth/reset-password",
     REFRESH: "/api/auth/refresh",
     LOGOUT: "/api/auth/logout",

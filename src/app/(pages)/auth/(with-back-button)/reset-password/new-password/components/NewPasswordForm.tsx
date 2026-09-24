@@ -5,7 +5,6 @@ import { InputReactHookForm } from "@/shared/components/primitives/input/InputRe
 import { useFormContext } from "react-hook-form";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
-import { InputOtpReactHookForm } from "@/shared/components/primitives/input/InputOtpReactHookForm";
 
 function NewPasswordForm() {
   const { control } = useFormContext();
@@ -17,19 +16,10 @@ function NewPasswordForm() {
         className={"w-full py-6 items-center flex flex-col gap-x-2 gap-y-4 "}
       >
         <div className={"flex w-full"}>
-          <InputOtpReactHookForm
-            control={control}
-            name="otp"
-            label="کد تایید"
-            length={6}
-          />
-        </div>
-
-        <div className={"flex w-full"}>
           <InputReactHookForm
             startIcon={<LockKey size={20} />}
-            label={"رمز عبور"}
-            placeholder={"رمز عبور خود را وارد کنید"}
+            label={"رمز عبور جدید"}
+            placeholder={"رمز عبور جدید خود را وارد کنید"}
             className={"h-full"}
             control={control}
             name={"password"}
@@ -51,7 +41,7 @@ function NewPasswordForm() {
 
         <div className={"flex flex-col w-full pt-5"}>
           <Button className={"w-full flex gap-x-2 items-center"} isLoading={isLoading}>
-            <span className={"mt-[1px]"}>تایید و ادامه</span>
+            <span className={"mt-[1px]"}>ذخیره و ورود</span>
             <CaretLeft size={20} weight="bold" />
           </Button>
         </div>

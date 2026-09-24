@@ -9,6 +9,7 @@ import {
   TResetPasswordFormSchema,
 } from "./resetPasswordFormSchema";
 import { useMutateForgetPassword } from "@/services/domains/auth/hooks/useMutateForgetPassword";
+import { useResetPasswordStore } from "@/services/authentication-store/useResetPasswordStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -31,14 +32,16 @@ const ResetPasswordFormProvider = ({ children }: IProps) => {
   const [generalError, setGeneralError] = useState("");
   const router = useRouter();
   const { mutateAsync, isPending } = useMutateForgetPassword();
+  const setPhone = useResetPasswordStore((s) => s.setPhone);
 
   const onSubmit = async (data: TResetPasswordFormSchema) => {
     setGeneralError("");
     try {
       await mutateAsync({ phone: data.phone });
-      router.push(
-        `${RouteAddress.AUTH.RESET_PASSWORD.NEW_PASSWORD}?phone=${encodeURIComponent(data.phone)}`
-      );
+      // Phone stays in memory, never in the URL; no "code sent" message either —
+      // the response is identical whether or not the phone has an account.
+      setPhone(data.phone);
+      router.push(RouteAddress.AUTH.RESET_PASSWORD.VERIFY);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
     }
