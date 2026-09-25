@@ -500,7 +500,7 @@ export default function ReportsView() {
         </ReportBody>
       </DashboardAccordion>
 
-      <DashboardAccordion title="مشتریان در معرض ریزش (۶۰ روز)">
+      <DashboardAccordion title="مشتریان در معرض ریزش (60 روز)">
         <ReportBody loading={atRisk.isLoading} error={atRisk.error}>
           {riskRows.length === 0 ? (
             <p className="text-xs text-foreground-muted">داده‌ای نیست.</p>

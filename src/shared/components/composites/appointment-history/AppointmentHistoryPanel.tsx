@@ -19,6 +19,7 @@ import {
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 const PAGE_SIZE = 20;
 
@@ -173,8 +174,8 @@ export function AppointmentHistoryPanel({
             قبلی
           </button>
           <span className="text-xs text-foreground-muted">
-            صفحه {result.page.toLocaleString("fa-IR")} از{" "}
-            {result.totalPages.toLocaleString("fa-IR")}
+            صفحه {result.page.toLocaleString(APP_LOCALE)} از{" "}
+            {result.totalPages.toLocaleString(APP_LOCALE)}
           </span>
           <button
             type="button"
@@ -226,7 +227,7 @@ function AppointmentHistoryRow({
           <p className="mt-1 text-xs text-foreground-muted">مشتری: {item.customerName}</p>
         )}
         <p className="mt-1 text-xs text-foreground-muted">
-          {item.totalDurationMinutes.toLocaleString("fa-IR")} دقیقه ·{" "}
+          {item.totalDurationMinutes.toLocaleString(APP_LOCALE)} دقیقه ·{" "}
           {formatToman(item.totalPrice)} تومان
         </p>
       </div>

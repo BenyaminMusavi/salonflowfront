@@ -14,6 +14,7 @@ import { IPromoCode } from "@/services/domains/subscriptions/types/subscriptions
 import { formatDiscountValue } from "@/services/domains/subscriptions/utils/subscription-display";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
 import { PromoCodeFormDrawer } from "./PromoCodeFormDrawer";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function PromoCodesListTab() {
   const { data: plansRes } = useQuerySubscriptionPlans();
@@ -100,9 +101,9 @@ export function PromoCodesListTab() {
                       {formatDiscountValue(p.discountType, p.discountValue)}
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
-                      {p.usedCount.toLocaleString("fa-IR")}
+                      {p.usedCount.toLocaleString(APP_LOCALE)}
                       {p.maxRedemptions != null
-                        ? ` از ${p.maxRedemptions.toLocaleString("fa-IR")}`
+                        ? ` از ${p.maxRedemptions.toLocaleString(APP_LOCALE)}`
                         : ""}
                     </td>
                     <td className="px-4 py-3">

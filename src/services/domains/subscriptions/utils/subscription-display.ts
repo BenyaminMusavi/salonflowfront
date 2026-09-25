@@ -6,6 +6,7 @@ import {
 } from "@/services/common/enums/domain-enums";
 import { BadgeProps } from "@/shared/components/primitives/badge/Badge";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function subscriptionStatusLabel(status: number | null | undefined): string {
   switch (status) {
@@ -99,7 +100,7 @@ export function formatDiscountValue(
   value: number
 ): string {
   if (discountType === PlanCampaignDiscountType.Percentage) {
-    return `${value.toLocaleString("fa-IR")}٪`;
+    return `${value.toLocaleString(APP_LOCALE)}٪`;
   }
   return `${formatToman(value)} تومان`;
 }

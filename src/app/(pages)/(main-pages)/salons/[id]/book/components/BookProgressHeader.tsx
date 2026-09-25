@@ -1,4 +1,5 @@
 "use client";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 const STEPS = [
   { id: 1, label: "شعبه" },
@@ -33,7 +34,7 @@ export default function BookProgressHeader({
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">
-          گام {clamped.toLocaleString("fa-IR")} از ۷ · {label}
+          گام {clamped.toLocaleString(APP_LOCALE)} از 7 · {label}
         </p>
         {branchChip ? (
           <span className="rounded-full bg-surface px-3 py-1 text-[11px] text-foreground-muted">

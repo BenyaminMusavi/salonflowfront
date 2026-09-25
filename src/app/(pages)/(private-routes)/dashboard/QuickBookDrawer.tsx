@@ -5,6 +5,7 @@ import { WarningCircleIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import {
   Dialog,
   DialogContent,
@@ -40,10 +41,11 @@ import {
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { DashboardSelect, type DashboardToastState } from "./_components";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 function formatClock(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString("fa-IR", {
+    return new Date(iso).toLocaleTimeString(APP_LOCALE, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -203,10 +205,10 @@ export default function QuickBookDrawer({
               </p>
             ) : null}
             <div>
-              <Input
+              <PhoneInput
                 placeholder="موبایل مشتری"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onValueChange={setPhone}
                 hasError={!!quickBookErrors.phone}
               />
               {quickBookErrors.phone && (

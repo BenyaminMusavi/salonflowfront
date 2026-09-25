@@ -118,7 +118,7 @@ export default function AppointmentReviewSection({
   const handleSubmit = async () => {
     setError("");
     if (rating < 1 || rating > 5) {
-      setError("امتیاز بین ۱ تا ۵ را انتخاب کنید.");
+      setError("امتیاز بین 1 تا 5 را انتخاب کنید.");
       return;
     }
     try {

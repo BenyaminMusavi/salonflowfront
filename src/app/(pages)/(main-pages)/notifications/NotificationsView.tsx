@@ -7,6 +7,7 @@ import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 interface IProps {
   title: string;
@@ -96,7 +97,7 @@ export default function NotificationsView({ title }: IProps) {
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <p className="text-[11px] text-foreground-muted">
-                    {n.createdAt ? new Date(n.createdAt).toLocaleString("fa-IR") : ""}
+                    {n.createdAt ? new Date(n.createdAt).toLocaleString(APP_LOCALE) : ""}
                   </p>
                   {unread ? (
                     <button

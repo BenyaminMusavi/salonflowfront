@@ -31,6 +31,9 @@ type InputReactHookFormProps<TFieldValues extends FieldValues> = {
 
   inputWrapperClassname?: string;
 
+  /** Rewrites the typed text before it reaches the form value (e.g. phone digit normalization). */
+  transformValue?: (value: string) => string;
+
 } & Omit<InputProps, "name" | "defaultValue">; // Omit props handled by RHF
 
 /**
@@ -50,6 +53,7 @@ export function InputReactHookForm<TFieldValues extends FieldValues>({
   endIconClickable,
   onEndIconClick,
                                                                        inputWrapperClassname,
+  transformValue,
   ...props
 }: InputReactHookFormProps<TFieldValues>) {
   // The useController hook does all the magic!
@@ -81,6 +85,9 @@ export function InputReactHookForm<TFieldValues extends FieldValues>({
         onEndIconClick={onEndIconClick}
         {...props} // Pass through any other input props (placeholder, type, etc.)
         {...field} // Spread the RHF props (onChange, onBlur, value, ref)
+        onChange={(e) =>
+          field.onChange(transformValue ? transformValue(e.target.value) : e)
+        }
       />
 
       <AnimatePresence mode="wait">

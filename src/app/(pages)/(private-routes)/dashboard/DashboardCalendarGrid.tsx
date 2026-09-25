@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/primitives/dialog/Dialog";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 // Fixed business-hours window rather than deriving from working-schedules — a
 // reasonable default for a first version; can be made schedule-aware later.
@@ -39,7 +40,7 @@ function minutesSinceDayStart(iso: string): number {
 
 function formatClock(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString("fa-IR", {
+    return new Date(iso).toLocaleTimeString(APP_LOCALE, {
       hour: "2-digit",
       minute: "2-digit",
     });

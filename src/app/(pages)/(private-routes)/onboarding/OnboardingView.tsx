@@ -27,6 +27,8 @@ import {
   getApiFieldErrorMessage,
 } from "@/services/domains/booking/utils/booking-mappers";
 import SalonUsernameField from "@/shared/components/composites/salon-username/SalonUsernameField";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
@@ -685,7 +687,17 @@ export default function OnboardingView() {
                 ["whatsappNumber", "واتساپ"],
                 ["websiteUrl", "وبسایت"],
               ] as const
-            ).map(([key, label]) => key === "username" ? (
+            ).map(([key, label]) => key === "whatsappNumber" ? (
+              <label key={key} className="flex flex-col gap-1 text-sm">
+                <span className="text-foreground-muted">{label}</span>
+                <PhoneInput
+                  placeholder="09xxxxxxxxx"
+                  value={draft.basicInfo.whatsappNumber}
+                  onValueChange={(whatsappNumber) => draft.setBasicInfo({ whatsappNumber })}
+                  inputWrapperClassname="rounded-2xl"
+                />
+              </label>
+            ) : key === "username" ? (
               <SalonUsernameField
                 key={key}
                 value={draft.basicInfo.username ?? ""}
@@ -774,15 +786,16 @@ export default function OnboardingView() {
                   }}
                   className={fieldClass}
                 />
-                <input
-                  placeholder="تلفن"
-                  value={b.phone ?? ""}
-                  onChange={(e) => {
+                <PhoneInput
+                  kind="landline"
+                  placeholder="تلفن شعبه"
+                  value={b.phone}
+                  onValueChange={(phone) => {
                     const next = [...draft.branches];
-                    next[idx] = { ...b, phone: e.target.value };
+                    next[idx] = { ...b, phone };
                     draft.setBranches(next);
                   }}
-                  className={fieldClass}
+                  inputWrapperClassname="rounded-2xl"
                 />
                 <select
                   value={b.genderType}
@@ -853,19 +866,15 @@ export default function OnboardingView() {
                     </option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  placeholder="قیمت (تومان)"
-                  value={s.basePrice || ""}
-                  onChange={(e) => {
+                <MoneyInput
+                  placeholder="قیمت"
+                  value={s.basePrice || null}
+                  onValueChange={(price) => {
                     const next = [...draft.services];
-                    next[idx] = {
-                      ...s,
-                      basePrice: Number(e.target.value) || 0,
-                    };
+                    next[idx] = { ...s, basePrice: price ?? 0 };
                     draft.setServices(next);
                   }}
-                  className={fieldClass}
+                  inputWrapperClassname="rounded-2xl"
                 />
                 <input
                   type="number"
@@ -946,15 +955,15 @@ export default function OnboardingView() {
                   مالک / سازنده
                 </label>
                 {!s.isCreator && (
-                  <input
+                  <PhoneInput
                     placeholder="موبایل پرسنل"
-                    value={s.phoneNumber ?? ""}
-                    onChange={(e) => {
+                    value={s.phoneNumber}
+                    onValueChange={(phoneNumber) => {
                       const next = [...draft.staff];
-                      next[idx] = { ...s, phoneNumber: e.target.value };
+                      next[idx] = { ...s, phoneNumber };
                       draft.setStaff(next);
                     }}
-                    className={fieldClass}
+                    inputWrapperClassname="rounded-2xl"
                   />
                 )}
                 <div className="flex flex-col gap-2 border-t border-border pt-2">
@@ -1020,7 +1029,7 @@ export default function OnboardingView() {
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold">رسانه (اختیاری)</h2>
             <p className="text-xs text-foreground-muted">
-              حداکثر ۱۰ مگابایت برای هر فایل در این مرحله. می‌توانید رد شوید.
+              حداکثر 10 مگابایت برای هر فایل در این مرحله. می‌توانید رد شوید.
             </p>
             <div className={cardClass}>
               <input

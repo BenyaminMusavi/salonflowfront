@@ -13,7 +13,7 @@ const ResetVerifyView = () => {
         </h2>
         {/* Neutral on purpose: the backend never reveals whether a code was actually sent. */}
         <span className={"text-foreground/60 text-[14px]"}>
-          کد تایید ۶ رقمی را وارد کنید.
+          کد تایید 6 رقمی را وارد کنید.
         </span>
       </div>
       <ResetVerifyFormProvider>

@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import {
   Drawer,
   DrawerContent,
@@ -364,11 +365,10 @@ export default function CatalogView() {
             </DashboardSelect>
           )}
 
-          <Input
-            type="number"
-            placeholder="قیمت (تومان)"
+          <MoneyInput
+            placeholder="قیمت"
             value={rulePrice}
-            onChange={(e) => setRulePrice(e.target.value)}
+            onValueChange={(v) => setRulePrice(v == null ? "" : String(v))}
           />
           <Input
             type="number"
@@ -477,11 +477,10 @@ export default function CatalogView() {
                 </option>
               ))}
             </DashboardSelect>
-            <Input
-              type="number"
-              placeholder="قیمت پایه (تومان)"
+            <MoneyInput
+              placeholder="قیمت پایه"
               value={basePrice}
-              onChange={(e) => setBasePrice(e.target.value)}
+              onValueChange={(v) => setBasePrice(v == null ? "" : String(v))}
             />
             <Input
               type="number"
@@ -489,11 +488,10 @@ export default function CatalogView() {
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(e.target.value)}
             />
-            <Input
-              type="number"
+            <MoneyInput
               placeholder="بیعانه (اختیاری)"
               value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
+              onValueChange={(v) => setDepositAmount(v == null ? "" : String(v))}
             />
             <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
             <Button

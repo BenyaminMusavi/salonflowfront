@@ -3,6 +3,7 @@
 import DatePicker from "@/shared/components/composites/date-picker/DatePicker";
 import { formatDateToGregorian } from "@/shared/components/composites/date-picker/DatePickerFormField";
 import moment from "moment-jalaali";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 function toJalaliDisplay(gregorian: string): string {
   if (!gregorian) return "";
@@ -49,7 +50,7 @@ export function shiftGregorianDate(date: string, days: number): string {
 
 export function formatJalaliDayLabel(date: string): string {
   try {
-    return new Date(`${date}T12:00:00`).toLocaleDateString("fa-IR", {
+    return new Date(`${date}T12:00:00`).toLocaleDateString(APP_LOCALE, {
       weekday: "long",
       day: "numeric",
       month: "long",

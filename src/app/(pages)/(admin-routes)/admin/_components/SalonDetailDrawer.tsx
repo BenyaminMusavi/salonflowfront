@@ -35,6 +35,7 @@ import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import { SalonApprovalStatus, TrustStatus } from "@/services/common/enums/domain-enums";
 import { IAdminSalonPhoto } from "@/services/domains/admin/types/admin.type";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -213,7 +214,7 @@ export function SalonDetailDrawer({
               {salon.branches.length > 0 ? (
                 <div>
                   <p className="mb-2 text-[11px] font-bold text-foreground-muted">
-                    شعبه‌ها ({salon.branches.length.toLocaleString("fa-IR")})
+                    شعبه‌ها ({salon.branches.length.toLocaleString(APP_LOCALE)})
                   </p>
                   <div className="flex flex-col gap-2">
                     {salon.branches.map((branch, idx) => (
@@ -237,7 +238,7 @@ export function SalonDetailDrawer({
               {salon.photos.length > 0 ? (
                 <div>
                   <p className="mb-2 text-[11px] font-bold text-foreground-muted">
-                    تصاویر ({salon.photos.length.toLocaleString("fa-IR")})
+                    تصاویر ({salon.photos.length.toLocaleString(APP_LOCALE)})
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {salon.photos.map((photo) => {

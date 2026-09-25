@@ -20,6 +20,7 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { remainingSubscriptionDays } from "@/services/domains/subscriptions/utils/subscription-display";
 import { SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 const beforeSubscription = [
   {
@@ -90,7 +91,7 @@ function SubscriptionMenuRow() {
   const label = hasActiveSubscription ? "اشتراک فعال دارید" : "خرید اشتراک";
   const subtitle =
     hasActiveSubscription && remainingDays != null
-      ? `باقی‌مانده اعتبار: ${remainingDays.toLocaleString("fa-IR")} روز`
+      ? `باقی‌مانده اعتبار: ${remainingDays.toLocaleString(APP_LOCALE)} روز`
       : undefined;
 
   return (

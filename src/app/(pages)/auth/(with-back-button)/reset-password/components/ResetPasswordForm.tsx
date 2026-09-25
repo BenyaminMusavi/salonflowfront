@@ -1,4 +1,5 @@
 "use client";
+import { normalizePhoneInput, PHONE_INPUT_ATTRS } from "@/shared/utils/phoneInput";
 import React from "react";
 import { CaretLeft, DeviceMobile } from "@phosphor-icons/react";
 import { InputReactHookForm } from "@/shared/components/primitives/input/InputReactHookForm";
@@ -23,6 +24,14 @@ function ResetPasswordForm() {
             className={"h-full"}
             control={control}
             name={"phone"}
+            type={PHONE_INPUT_ATTRS.type}
+
+            inputMode={PHONE_INPUT_ATTRS.inputMode}
+
+            dir={PHONE_INPUT_ATTRS.dir}
+            inputClassName={PHONE_INPUT_ATTRS.className}
+            autoComplete="tel"
+            transformValue={normalizePhoneInput}
           />
         </div>
 

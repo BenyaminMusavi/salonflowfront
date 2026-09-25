@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/primitives/drawer/Drawer";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
   useMutateCreateCampaign,
@@ -158,12 +159,19 @@ export function CampaignFormDrawer({
                 مقدار تخفیف{" "}
                 {discountType === PlanCampaignDiscountType.Percentage ? "(٪)" : "(تومان)"}
               </label>
-              <Input
-                type="number"
-                dir="ltr"
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
-              />
+              {discountType === PlanCampaignDiscountType.Percentage ? (
+                <Input
+                  type="number"
+                  dir="ltr"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                />
+              ) : (
+                <MoneyInput
+                  value={discountValue}
+                  onValueChange={(v) => setDiscountValue(v == null ? "" : String(v))}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

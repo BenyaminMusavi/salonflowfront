@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/primitives/drawer/Drawer";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
   useMutateCreatePromoCode,
@@ -166,12 +167,19 @@ export function PromoCodeFormDrawer({
                 مقدار تخفیف{" "}
                 {discountType === PromoDiscountType.Percentage ? "(٪)" : "(تومان)"}
               </label>
-              <Input
-                type="number"
-                dir="ltr"
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
-              />
+              {discountType === PromoDiscountType.Percentage ? (
+                <Input
+                  type="number"
+                  dir="ltr"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                />
+              ) : (
+                <MoneyInput
+                  value={discountValue}
+                  onValueChange={(v) => setDiscountValue(v == null ? "" : String(v))}
+                />
+              )}
             </div>
 
             <div className="flex flex-col gap-1">

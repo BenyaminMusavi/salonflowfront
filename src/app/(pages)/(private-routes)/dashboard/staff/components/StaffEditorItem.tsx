@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { Input } from "@/shared/components/primitives/input/Input";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Checkbox } from "@/shared/components/primitives/checkbox/Checkbox";
@@ -105,14 +105,11 @@ export default function StaffEditorItem({
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-1.5">
           <Label>شماره موبایل</Label>
-          <Input
-            type="tel"
+          <PhoneInput
             placeholder="09xxxxxxxxx"
             value={values.isCreator ? ownerPhone || "" : values.phoneNumber}
-            onChange={(e) => update({ phoneNumber: e.target.value })}
+            onValueChange={(phoneNumber) => update({ phoneNumber })}
             disabled={values.isCreator}
-            dir="ltr"
-            className="text-left"
             hasError={!!errors?.phoneNumber}
           />
           {errors?.phoneNumber && (

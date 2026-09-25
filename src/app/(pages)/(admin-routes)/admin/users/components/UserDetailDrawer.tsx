@@ -18,6 +18,7 @@ import {
   useMutateUnblockUser,
 } from "@/services/domains/admin/hooks/useMutateAdminUserActions";
 import { formatAdminDate } from "@/services/domains/admin/utils/admin-salon-display";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -148,7 +149,7 @@ export function UserDetailDrawer({
               {user.memberships.length > 0 ? (
                 <div>
                   <p className="mb-2 text-[11px] font-bold text-foreground-muted">
-                    عضویت در سالن‌ها ({user.memberships.length.toLocaleString("fa-IR")})
+                    عضویت در سالن‌ها ({user.memberships.length.toLocaleString(APP_LOCALE)})
                   </p>
                   <div className="flex flex-col gap-2">
                     {user.memberships.map((m, idx) => (

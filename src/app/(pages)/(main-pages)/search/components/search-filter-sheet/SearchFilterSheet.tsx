@@ -5,6 +5,7 @@ import { StarIcon, NavigationArrowIcon } from "@phosphor-icons/react";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { GenderType } from "@/services/common/enums/domain-enums";
 import { cn } from "@/shared/utils/className";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 
 export interface ISearchFilters {
   minPrice: string;
@@ -43,9 +44,6 @@ const chipClass = (active: boolean) =>
     "rounded-full px-4 py-2 text-sm font-semibold transition",
     active ? "bg-primary text-primary-foreground" : "bg-background-secondary text-foreground"
   );
-
-const fieldClass =
-  "w-full rounded-2xl bg-input border border-input-border px-3 py-2 text-sm text-foreground outline-none placeholder:text-input-placeholder hover:bg-input-hover focus:bg-input-focus focus:border-border-strong";
 
 export default function SearchFilterSheet({
   open,
@@ -104,30 +102,24 @@ export default function SearchFilterSheet({
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-bold text-foreground">محدوده قیمت (تومان)</span>
+          <span className="text-sm font-bold text-foreground">محدوده قیمت</span>
           <div className="flex items-center gap-3">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
+            <MoneyInput
               placeholder="حداقل"
               value={draft.minPrice}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, minPrice: e.target.value }))
+              onValueChange={(v) =>
+                setDraft((d) => ({ ...d, minPrice: v == null ? "" : String(v) }))
               }
-              className={fieldClass}
+              inputWrapperClassname="rounded-2xl"
             />
             <span className="text-foreground-muted">تا</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
+            <MoneyInput
               placeholder="حداکثر"
               value={draft.maxPrice}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, maxPrice: e.target.value }))
+              onValueChange={(v) =>
+                setDraft((d) => ({ ...d, maxPrice: v == null ? "" : String(v) }))
               }
-              className={fieldClass}
+              inputWrapperClassname="rounded-2xl"
             />
           </div>
         </div>

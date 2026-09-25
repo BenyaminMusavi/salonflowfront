@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import { useQuerySalonAppointments } from "@/services/domains/appointments/hooks";
 import { AppointmentStatus, PaymentMethod, PaymentType } from "@/services/common/enums/domain-enums";
 import { useMutateInvoices, useQueryInvoices } from "@/services/domains/invoices/hooks";
@@ -266,11 +267,10 @@ export default function FinanceView() {
             )}
           </div>
           <div>
-            <Input
-              type="number"
-              placeholder="مبلغ (تومان)"
+            <MoneyInput
+              placeholder="مبلغ"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onValueChange={(v) => setAmount(v == null ? "" : String(v))}
               hasError={!!paymentErrors.amount}
             />
             {paymentErrors.amount && (
@@ -332,11 +332,10 @@ export default function FinanceView() {
         </p>
         <p className="text-[11px] text-foreground-muted">موجودی کیف پول</p>
         <div className="mt-3 flex gap-2">
-          <Input
-            type="number"
+          <MoneyInput
             placeholder="مبلغ"
             value={walletAmount}
-            onChange={(e) => setWalletAmount(e.target.value)}
+            onValueChange={(v) => setWalletAmount(v == null ? "" : String(v))}
             hasError={!!walletErrors.amount}
           />
           <Button size="sm" onClick={() => walletOp("charge")}>
@@ -379,11 +378,10 @@ export default function FinanceView() {
               </option>
             ))}
           </DashboardSelect>
-          <Input
-            type="number"
-            placeholder="مبلغ انعام (تومان)"
+          <MoneyInput
+            placeholder="مبلغ انعام"
             value={tipAmount}
-            onChange={(e) => setTipAmount(e.target.value)}
+            onValueChange={(v) => setTipAmount(v == null ? "" : String(v))}
           />
           <DashboardSelect
             value={tipAppointmentId}

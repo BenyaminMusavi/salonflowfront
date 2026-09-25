@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { Label } from "@/shared/components/primitives/label/Label";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Switch } from "@/shared/components/primitives/switch/Switch";
@@ -152,13 +153,11 @@ export default function BranchEditorItem({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>تلفن شعبه</Label>
-          <Input
-            type="tel"
+          <PhoneInput
+            kind="landline"
             placeholder="021…"
             value={values.phone}
-            onChange={(e) => update({ phone: e.target.value })}
-            dir="ltr"
-            className="text-left"
+            onValueChange={(phone) => update({ phone })}
           />
         </div>
         <div className="flex flex-col gap-1.5">

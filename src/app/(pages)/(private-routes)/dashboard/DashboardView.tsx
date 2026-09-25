@@ -45,6 +45,7 @@ import {
   type DashboardToastState,
 } from "./_components";
 import { dashboardQuietButtonClass } from "./_components/buttonClasses";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 const STATUS_FILTERS: Array<{ value: "all" | AppointmentStatus; label: string }> = [
   { value: "all", label: "همه" },
@@ -57,7 +58,7 @@ const STATUS_FILTERS: Array<{ value: "all" | AppointmentStatus; label: string }>
 
 function formatClock(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString("fa-IR", {
+    return new Date(iso).toLocaleTimeString(APP_LOCALE, {
       hour: "2-digit",
       minute: "2-digit",
     });

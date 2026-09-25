@@ -7,6 +7,7 @@ import { useMutateExportPlatformReport } from "@/services/domains/admin/hooks/us
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { downloadBlob } from "@/shared/utils/downloadBlob";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function ReferralPerformanceTab({ from, to }: { from: string; to: string }) {
   const { data, isLoading, isError } = useQueryAdminReferralPerformance({
@@ -52,7 +53,7 @@ export function ReferralPerformanceTab({ from, to }: { from: string; to: string 
           <div className="rounded-xl border border-border bg-surface p-4">
             <p className="text-xs text-foreground-muted">مجموع روز پاداش اعطاشده</p>
             <p className="mt-1 text-xl font-bold text-foreground">
-              {result.totalRewardDaysGranted.toLocaleString("fa-IR")} روز
+              {result.totalRewardDaysGranted.toLocaleString(APP_LOCALE)} روز
             </p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4">
@@ -99,7 +100,7 @@ export function ReferralPerformanceTab({ from, to }: { from: string; to: string 
                   >
                     <td className="px-4 py-3 font-medium">{row.status}</td>
                     <td className="px-4 py-3 text-foreground-muted">
-                      {row.count.toLocaleString("fa-IR")}
+                      {row.count.toLocaleString(APP_LOCALE)}
                     </td>
                   </tr>
                 ))

@@ -1,6 +1,7 @@
 import CurrencyFormatterFATOMAN from '@/shared/utils/currency/formatter/CurrencyFormatter.FATOMAN';
 import { TIconCurrency } from '@/shared/utils/currency/icons/IconCurrencyType';
 import { FC } from 'react';
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 /**
  * Interface for the formatted currency object.
@@ -88,7 +89,7 @@ export class Currency {
   constructor({ amount, locale, formatter, currencyCode }: ICurrency) {
     this.amount = amount;
     this.currencyCode = currencyCode || 'TOMAN';
-    this.locale = locale || 'fa-IR';
+    this.locale = locale || APP_LOCALE;
     this.formatter = formatter || new CurrencyFormatterFATOMAN();
   }
 

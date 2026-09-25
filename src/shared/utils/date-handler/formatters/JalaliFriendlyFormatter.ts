@@ -1,4 +1,5 @@
 import {IDateFormatter} from "@/shared/utils/date-handler/interfaces/date-formatter.interface";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 /**
  * A strategy to format dates into a human-readable Jalali format.
@@ -6,7 +7,7 @@ import {IDateFormatter} from "@/shared/utils/date-handler/interfaces/date-format
  */
 export class JalaliFriendlyFormatter implements IDateFormatter {
     public format(date: Date): string {
-        const formatter = new Intl.DateTimeFormat('fa-IR', {
+        const formatter = new Intl.DateTimeFormat(APP_LOCALE, {
             calendar: 'persian',
             year: 'numeric',
             month: 'long',

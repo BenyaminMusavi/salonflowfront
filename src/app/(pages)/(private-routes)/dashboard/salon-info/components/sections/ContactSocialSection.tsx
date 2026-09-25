@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/shared/components/primitives/input/Input";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { Label } from "@/shared/components/primitives/label/Label";
 
 export interface ContactSocialValues {
@@ -43,16 +44,13 @@ export default function ContactSocialSection({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="salon-whatsapp">واتساپ</Label>
-        <Input
+        <PhoneInput
           id="salon-whatsapp"
-          type="tel"
           placeholder="0912…"
           value={values.whatsappNumber}
-          onChange={(e) =>
-            onChange({ ...values, whatsappNumber: e.target.value })
+          onValueChange={(whatsappNumber) =>
+            onChange({ ...values, whatsappNumber })
           }
-          dir="ltr"
-          className="text-left"
         />
       </div>
       <div className="flex flex-col gap-1.5">

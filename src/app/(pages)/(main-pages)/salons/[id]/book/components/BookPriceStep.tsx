@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ICalculatePriceResult } from "@/services/domains/salons/types/booking-browse.type";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 interface BookPriceStepProps {
   price?: ICalculatePriceResult | null;
@@ -94,7 +95,7 @@ export default function BookPriceStep({
 
           <p className="mt-3 text-xs text-foreground-muted">
             لغو رایگان تا{" "}
-            {price.freeCancellationWindowHours.toLocaleString("fa-IR")} ساعت
+            {price.freeCancellationWindowHours.toLocaleString(APP_LOCALE)} ساعت
             قبل از نوبت
           </p>
 

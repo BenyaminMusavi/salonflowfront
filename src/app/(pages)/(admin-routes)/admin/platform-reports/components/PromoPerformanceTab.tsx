@@ -7,6 +7,7 @@ import { useMutateExportPlatformReport } from "@/services/domains/admin/hooks/us
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { downloadBlob } from "@/shared/utils/downloadBlob";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function PromoPerformanceTab({ from, to }: { from: string; to: string }) {
   const { data, isLoading, isError } = useQueryAdminPromoPerformance({
@@ -84,7 +85,7 @@ export function PromoPerformanceTab({ from, to }: { from: string; to: string }) 
                       {row.code}
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
-                      {row.usageCount.toLocaleString("fa-IR")}
+                      {row.usageCount.toLocaleString(APP_LOCALE)}
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
                       {formatToman(row.revenue)} تومان

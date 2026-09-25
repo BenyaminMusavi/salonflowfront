@@ -537,7 +537,7 @@ export default function SalonInfoView() {
               }
               usernameNote={
                 isApproved && basicInfo.username.trim() !== (salon.username ?? "")
-                  ? "با تغییر آدرس، لینک قبلی همچنان کار می‌کند، ولی تا ۳۰ روز نمی‌توانید دوباره آن را تغییر دهید."
+                  ? "با تغییر آدرس، لینک قبلی همچنان کار می‌کند، ولی تا 30 روز نمی‌توانید دوباره آن را تغییر دهید."
                   : undefined
               }
             />

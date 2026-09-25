@@ -101,7 +101,7 @@ export default function SalonUsernameField({
         status && <div className="text-xs">{status}</div>
       )}
       <p className="text-xs text-foreground-muted">
-        ۳ تا ۳۰ کاراکتر؛ فقط حروف کوچک انگلیسی، عدد و خط تیره.
+        3 تا 30 کاراکتر؛ فقط حروف کوچک انگلیسی، عدد و خط تیره.
       </p>
       {note && <p className="text-xs text-warning">{note}</p>}
     </div>

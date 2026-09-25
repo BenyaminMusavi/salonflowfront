@@ -1,4 +1,5 @@
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function AdminPagination({
   page,
@@ -27,7 +28,7 @@ export function AdminPagination({
         قبلی
       </button>
       <span className="text-xs text-foreground-muted">
-        صفحهٔ {page.toLocaleString("fa-IR")} از {totalPages.toLocaleString("fa-IR")}
+        صفحهٔ {page.toLocaleString(APP_LOCALE)} از {totalPages.toLocaleString(APP_LOCALE)}
       </span>
       <button
         type="button"

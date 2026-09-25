@@ -1,5 +1,6 @@
 import { SalonApprovalStatus, TrustStatus } from "@/services/common/enums/domain-enums";
 import { BadgeProps } from "@/shared/components/primitives/badge/Badge";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function salonApprovalStatusLabel(status: SalonApprovalStatus): string {
   switch (status) {
@@ -61,7 +62,7 @@ export function trustStatusVariant(
 
 export function formatAdminDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("fa-IR", {
+    return new Date(iso).toLocaleDateString(APP_LOCALE, {
       year: "numeric",
       month: "long",
       day: "numeric",

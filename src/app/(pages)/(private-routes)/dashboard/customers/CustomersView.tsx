@@ -13,6 +13,7 @@ import {
   DashboardEmptyState,
   DashboardSkeleton,
 } from "../_components";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 /** Salon customers (SalonOwner/Staff) — each row opens that customer's appointments in this salon. */
 export default function CustomersView() {
@@ -92,8 +93,8 @@ export default function CustomersView() {
             قبلی
           </button>
           <span className="text-xs text-foreground-muted">
-            صفحه {result.page.toLocaleString("fa-IR")} از{" "}
-            {result.totalPages.toLocaleString("fa-IR")}
+            صفحه {result.page.toLocaleString(APP_LOCALE)} از{" "}
+            {result.totalPages.toLocaleString(APP_LOCALE)}
           </span>
           <button
             type="button"

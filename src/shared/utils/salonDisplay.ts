@@ -1,9 +1,10 @@
 import { API_BASE_URL } from "@/services/common/apiAddress";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
-/** Format Toman amounts for display (fa-IR digits, no currency suffix). */
+/** Format Toman amounts for display (Latin digits with "," separators, no currency suffix). */
 export function formatToman(amount: number | null | undefined): string {
   if (amount == null || !Number.isFinite(amount)) return "—";
-  return new Intl.NumberFormat("fa-IR").format(amount);
+  return new Intl.NumberFormat(APP_LOCALE).format(amount);
 }
 
 /** Resolve API media paths against NEXT_PUBLIC_API_DOMAIN for <img> / next/image. */

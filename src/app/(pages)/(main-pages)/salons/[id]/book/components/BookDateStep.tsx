@@ -2,14 +2,15 @@
 
 import { IAvailableDate } from "@/services/domains/salons/types/booking-browse.type";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 function parseFaParts(date: string) {
   try {
     const d = new Date(`${date}T12:00:00`);
     return {
-      weekday: d.toLocaleDateString("fa-IR", { weekday: "short" }),
-      day: d.toLocaleDateString("fa-IR", { day: "numeric" }),
-      month: d.toLocaleDateString("fa-IR", { month: "short" }),
+      weekday: d.toLocaleDateString(APP_LOCALE, { weekday: "short" }),
+      day: d.toLocaleDateString(APP_LOCALE, { day: "numeric" }),
+      month: d.toLocaleDateString(APP_LOCALE, { month: "short" }),
     };
   } catch {
     return { weekday: "—", day: date, month: "" };

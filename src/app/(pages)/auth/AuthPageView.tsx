@@ -34,7 +34,7 @@ function AuthPageContent() {
           </Button>
         </div>
         <div className={"flex justify-center"}>
-          <span className={"font-medium text-[12px] opacity-60"}>نسخه ۰.۱</span>
+          <span className={"font-medium text-[12px] opacity-60"}>نسخه 0.1</span>
         </div>
       </div>
     </div>

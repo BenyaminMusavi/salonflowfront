@@ -19,7 +19,7 @@ export const changePasswordFormSchema = (hasPassword: boolean) =>
         : z.string().optional(),
       password: z
         .string({ message: "لطفا رمز عبور جدید را وارد نمایید" })
-        .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد")
+        .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد")
         .regex(
           PASSWORD_RULE,
           "رمز عبور باید شامل حروف بزرگ، کوچک، عدد و کاراکتر ویژه باشد"

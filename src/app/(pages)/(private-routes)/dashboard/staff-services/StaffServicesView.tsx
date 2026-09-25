@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import {
   useMutateStaffServices,
   useQueryCatalogOfferings,
@@ -166,20 +167,14 @@ export default function StaffServicesView() {
                 </label>
                 {row.isActive ? (
                   <div className="mt-2 grid grid-cols-1 gap-2">
-                    <Input
-                      type="number"
+                    <MoneyInput
                       placeholder="قیمت اختصاصی (اختیاری)"
-                      value={row.customPrice ?? ""}
-                      onChange={(e) =>
+                      value={row.customPrice ?? null}
+                      onValueChange={(customPrice) =>
                         setRows((prev) =>
                           prev.map((it) =>
                             it.serviceOfferingId === row.serviceOfferingId
-                              ? {
-                                  ...it,
-                                  customPrice: e.target.value
-                                    ? Number(e.target.value)
-                                    : null,
-                                }
+                              ? { ...it, customPrice }
                               : it
                           )
                         )

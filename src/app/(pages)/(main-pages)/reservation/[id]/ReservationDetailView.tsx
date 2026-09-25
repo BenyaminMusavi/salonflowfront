@@ -195,12 +195,12 @@ export default function ReservationDetailView() {
         <div className="flex flex-col gap-2">
           {!freeCancel && (
             <p className="text-xs text-orange-400">
-              کمتر از ۲۴ ساعت تا نوبت مانده؛ لغو ممکن است شامل جریمه بیعانه شود.
+              کمتر از 24 ساعت تا نوبت مانده؛ لغو ممکن است شامل جریمه بیعانه شود.
             </p>
           )}
           {freeCancel && (
             <p className="text-xs text-foreground-muted">
-              لغو در پنجره رایگان (≥ ۲۴ ساعت) معمولاً بیعانه را به کیف پول
+              لغو در پنجره رایگان (≥ 24 ساعت) معمولاً بیعانه را به کیف پول
               برمی‌گرداند.
             </p>
           )}

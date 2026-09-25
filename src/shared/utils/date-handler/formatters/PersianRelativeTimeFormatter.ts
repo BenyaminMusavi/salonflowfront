@@ -1,4 +1,5 @@
 import {IDateFormatter} from "@/shared/utils/date-handler/interfaces/date-formatter.interface";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 /**
  * A strategy to format dates into a relative time format in Persian.
@@ -11,7 +12,7 @@ export class PersianRelativeTimeFormatter implements IDateFormatter {
         const diffInDays = diffInSeconds / (60 * 60 * 24);
 
         // The only change needed is the locale: 'fa-IR'
-        const rtf = new Intl.RelativeTimeFormat('fa-IR', { numeric: 'auto' });
+        const rtf = new Intl.RelativeTimeFormat(APP_LOCALE, { numeric: 'auto' });
 
         if (Math.abs(diffInDays) > 365) {
             return rtf.format(Math.round(diffInDays / 365), 'year');

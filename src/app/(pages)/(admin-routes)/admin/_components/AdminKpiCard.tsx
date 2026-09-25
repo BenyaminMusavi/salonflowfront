@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/shared/utils/className";
 import type { Icon } from "@phosphor-icons/react";
+import { APP_LOCALE } from "@/shared/utils/locale";
 
 export function AdminKpiCard({
   title,
@@ -30,7 +31,7 @@ export function AdminKpiCard({
       <div className="min-w-0">
         <p className="text-xs text-foreground-muted">{title}</p>
         <p className="mt-1 text-xl font-bold text-foreground">
-          {typeof value === "number" ? value.toLocaleString("fa-IR") : value}
+          {typeof value === "number" ? value.toLocaleString(APP_LOCALE) : value}
         </p>
       </div>
     </>
