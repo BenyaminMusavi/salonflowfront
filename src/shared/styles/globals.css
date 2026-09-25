@@ -44,7 +44,10 @@
     ========================== */
 
     --color-surface: #00182f;
-    --color-surface-hover: #82d0c8;
+    /* Subtle hover/highlight tint over bg-surface (cards, inputs, list items, skeletons). Derived
+       from surface + primary so it follows the theme; the old strong accent (#82d0c8 dark /
+       #124640 light) sat under text-foreground and made text unreadable on hover. */
+    --color-surface-hover: color-mix(in srgb, var(--color-surface) 90%, var(--color-primary) 10%);
     --color-surface-active: color-mix(in srgb, var(--color-surface-hover) 65%, var(--color-background));
     --color-surface-disabled: #263431;
     --color-surface-secondary: var(--color-surface);
@@ -228,7 +231,6 @@
     --color-border: #e0e3eb;
 
     --color-surface: #ffffff;
-    --color-surface-hover: #124640;
     --color-surface-disabled: #e3eae8;
 
     --color-success: #07a35d;
@@ -317,7 +319,8 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-overlay) 5%, transparent) inset !important;
-    -webkit-text-fill-color: var(--color-on-media) !important;
-    caret-color: var(--color-foreground-inverse) !important;
+    /* Theme text color — on-media (always white) made autofilled values invisible in light theme. */
+    -webkit-text-fill-color: var(--color-foreground) !important;
+    caret-color: var(--color-foreground) !important;
     transition: background-color 9999s ease-in-out 0s;
 }
