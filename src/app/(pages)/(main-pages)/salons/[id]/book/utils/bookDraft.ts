@@ -3,7 +3,10 @@ import {
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 
-const DRAFT_VERSION = 2;
+// v3: 5-step flow (services → staff → date+time → invoice → confirm). Older drafts used the
+// 7-step order, so their step numbers would land on the wrong screen — they're discarded.
+const DRAFT_VERSION = 3;
+const LAST_STEP = 5;
 
 export interface IBookWizardDraft {
   version: number;
@@ -13,8 +16,10 @@ export interface IBookWizardDraft {
   selectedServices: IBranchService[];
   date: string | null;
   staff: IStaffAvailability | null;
-  /** When true, staff is intentionally null (first available). */
+  /** «اولین نوبت» chosen: staff comes from the first-available lookup (or from the picked slot). */
   useFirstAvailable?: boolean;
+  /** First-available lookup succeeded and prefilled date/time/staff. */
+  firstAvailableResolved?: boolean;
   /** StaffMember.PublicId for create payload */
   resolvedStaffPublicId?: string | null;
   resolvedStaffName?: string | null;
@@ -36,7 +41,7 @@ export function loadBookDraft(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as IBookWizardDraft;
     if (parsed?.version !== DRAFT_VERSION) return null;
-    if (typeof parsed.step !== "number" || parsed.step < 1 || parsed.step > 7) {
+    if (typeof parsed.step !== "number" || parsed.step < 1 || parsed.step > LAST_STEP) {
       return null;
     }
     return parsed;

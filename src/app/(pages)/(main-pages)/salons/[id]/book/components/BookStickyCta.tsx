@@ -1,5 +1,7 @@
 "use client";
 
+import { BOOK_TOTAL_STEPS } from "./BookProgressHeader";
+
 interface BookStickyCtaProps {
   step: number;
   canContinue: boolean;
@@ -36,7 +38,7 @@ export default function BookStickyCta({
           >
             بازگشت
           </button>
-          {step < 7 ? (
+          {step < BOOK_TOTAL_STEPS ? (
             <button
               type="button"
               onClick={onContinue}

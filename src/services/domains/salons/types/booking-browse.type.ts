@@ -90,6 +90,25 @@ export interface IGetSalonAvailableSlotsParams {
   staffProfilePublicId?: string | null;
 }
 
+/** Raw GET /api/booking/first-available payload (start/end are UTC instants, like /booking/slots). */
+export interface IFirstAvailableSlotDto {
+  /** Salon-local calendar day of `start`, yyyy-MM-dd. */
+  date: string;
+  start: string;
+  end: string;
+  staffPublicId: string;
+  staffName?: string | null;
+}
+
+/** «اولین نوبت» mapped for the wizard: local "HH:mm:ss" times, like ISalonBrowseSlot. */
+export interface IFirstAvailableSlot {
+  date: string;
+  time: string;
+  endTime: string;
+  staffPublicId: string;
+  staffName: string | null;
+}
+
 export type TBranchServicesEntity = TResponse<IBranchService[]>;
 export type TAvailableDatesEntity = TResponse<IAvailableDate[]>;
 export type TStaffAvailabilityEntity = TResponse<IStaffAvailability[]>;

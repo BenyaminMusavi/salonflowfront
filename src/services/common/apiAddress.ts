@@ -86,6 +86,8 @@ export const API_ADDRESS = {
 
   BOOKING: {
     SLOTS: "/api/booking/slots",
+    /** Earliest free slot across the staff who perform the chosen services (booking «اولین نوبت»). */
+    FIRST_AVAILABLE: "/api/booking/first-available",
     CREATE: "/api/booking/create",
   },
 

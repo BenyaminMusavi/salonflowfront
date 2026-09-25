@@ -11,17 +11,19 @@ export const STAFF_FOR_OFFERINGS_QUERY_KEY = "STAFF_FOR_OFFERINGS_QUERY_KEY";
 export const useQueryStaffForOfferings = (
   salonPublicId: string | number | undefined,
   offeringPublicIds: Array<string | number>,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; branchPublicId?: string | null; matchAll?: boolean }
 ) => {
   const ids = [...offeringPublicIds]
     .filter((id) => id !== "" && id != null)
     .map(String)
     .sort();
+  const branchPublicId = options?.branchPublicId ?? null;
+  const matchAll = options?.matchAll ?? false;
 
   return useQuery({
-    queryKey: [STAFF_FOR_OFFERINGS_QUERY_KEY, salonPublicId, ids],
+    queryKey: [STAFF_FOR_OFFERINGS_QUERY_KEY, salonPublicId, ids, branchPublicId, matchAll],
     queryFn: () =>
-      staffProfileService.getStaffForOfferings(salonPublicId!, ids),
+      staffProfileService.getStaffForOfferings(salonPublicId!, ids, { branchPublicId, matchAll }),
     enabled:
       salonPublicId != null &&
       salonPublicId !== "" &&

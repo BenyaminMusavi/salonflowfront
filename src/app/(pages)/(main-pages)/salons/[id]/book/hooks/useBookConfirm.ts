@@ -11,6 +11,7 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { clearBookDraft } from "../utils/bookDraft";
+import { BOOK_TOTAL_STEPS } from "../components/BookProgressHeader";
 
 interface UseBookConfirmParams {
   salonPublicId: string | undefined;
@@ -99,7 +100,7 @@ export function useBookConfirm(params: UseBookConfirmParams) {
       });
       clearBookDraft(salonPublicId);
       setCreatedId(res.data);
-      setStep(7);
+      setStep(BOOK_TOTAL_STEPS);
     } catch (e) {
       setError(
         getApiErrorMessage(

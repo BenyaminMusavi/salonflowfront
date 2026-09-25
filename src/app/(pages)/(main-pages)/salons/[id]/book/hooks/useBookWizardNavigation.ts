@@ -6,29 +6,35 @@ import {
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { BOOK_TOTAL_STEPS } from "../components/BookProgressHeader";
 
+/**
+ * Booking wizard steps:
+ * 1 services (+ branch picker when the salon has several) · 2 staff or «اولین نوبت» ·
+ * 3 date + free times · 4 invoice (pre-factor) · 5 confirm & book.
+ */
 interface UseBookWizardNavigationParams {
   salonPublicId: string | undefined;
   branches: ISalonBranch[];
   step: number;
   branchPublicId: string | null;
   selectedServices: IBranchService[];
-  date: string | null;
   staff: IStaffAvailability | null;
   useFirstAvailable: boolean;
+  /** True while the «اولین نوبت» lookup is in flight — can't leave the staff step yet. */
+  firstAvailableLoading: boolean;
   price: unknown;
+  date: string | null;
   slotTime: string | null;
   resolvedStaffPublicId: string | null;
   draftReadyRef: MutableRefObject<boolean>;
-  /** Shared with useBookDraftPersistence's rehydrate effect. */
-  skipBranchHandledRef: MutableRefObject<boolean>;
   setStep: (updater: number | ((s: number) => number)) => void;
   setBranchPublicId: (v: string | null) => void;
   setBranchName: (v: string) => void;
   setError: (v: string) => void;
 }
 
-/** Step-guard logic (canGoNext/goNext/goBack) plus the auto-skip-single-branch effect. */
+/** Step-guard logic (canGoNext/goNext/goBack) plus auto-selecting a salon's only branch. */
 export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
   const {
     salonPublicId,
@@ -36,14 +42,14 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
     step,
     branchPublicId,
     selectedServices,
-    date,
     staff,
     useFirstAvailable,
+    firstAvailableLoading,
     price,
+    date,
     slotTime,
     resolvedStaffPublicId,
     draftReadyRef,
-    skipBranchHandledRef,
     setStep,
     setBranchPublicId,
     setBranchName,
@@ -52,40 +58,28 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
 
   const router = useRouter();
 
-  // Auto-select + auto-skip single branch
+  // A single-branch salon never shows the branch picker.
   useEffect(() => {
-    if (!draftReadyRef.current || skipBranchHandledRef.current) return;
-    if (branches.length !== 1) {
-      if (branches.length > 1) skipBranchHandledRef.current = true;
-      return;
-    }
-
-    const only = branches[0];
-    skipBranchHandledRef.current = true;
-    setBranchPublicId(only.publicId);
-    setBranchName(only.name);
-    setStep((s) => (s === 1 ? 2 : s));
-  }, [branches]);
+    if (!draftReadyRef.current || branchPublicId || branches.length !== 1) return;
+    setBranchPublicId(branches[0].publicId);
+    setBranchName(branches[0].name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branches, branchPublicId]);
 
   const canGoNext = (): boolean => {
     switch (step) {
       case 1:
-        return !!branchPublicId;
-      case 2:
         return (
+          !!branchPublicId &&
           selectedServices.length > 0 &&
-          selectedServices.every(
-            (s) => !!s.offeringPublicId && !!s.servicePublicId
-          )
+          selectedServices.every((s) => !!s.offeringPublicId && !!s.servicePublicId)
         );
+      case 2:
+        return (useFirstAvailable && !firstAvailableLoading) || !!staff;
       case 3:
-        return !!date;
+        return !!date && !!slotTime && !!resolvedStaffPublicId;
       case 4:
-        return useFirstAvailable || !!staff;
-      case 5:
         return !!price;
-      case 6:
-        return !!slotTime && !!resolvedStaffPublicId;
       default:
         return true;
     }
@@ -93,42 +87,26 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
 
   const goNext = () => {
     setError("");
-    if (step === 2) {
-      const missingType = selectedServices.some((s) => !s.servicePublicId);
-      const missingOffering = selectedServices.some((s) => !s.offeringPublicId);
-      if (missingType) {
-        setError(
-          "شناسه نوع سرویس برای تاریخ‌ها در دسترس نیست. لطفاً بعداً دوباره تلاش کنید."
-        );
-        return;
-      }
-      if (missingOffering) {
-        setError(
-          "شناسه offering برای ثبت نهایی پیدا نشد. ممکن است کاتالوگ سالن ناقص باشد."
-        );
-        return;
-      }
+    if (step === 1 && !branchPublicId) {
+      setError("ابتدا شعبه را انتخاب کنید.");
+      return;
     }
-    if (step === 6 && !resolvedStaffPublicId) {
-      setError(
-        "پرسنل این ساعت مشخص نشد. پرسنل دیگری انتخاب کنید یا دوباره تلاش کنید."
-      );
+    if (step === 3 && slotTime && !resolvedStaffPublicId) {
+      setError("پرسنل این ساعت مشخص نشد. پرسنل دیگری انتخاب کنید یا دوباره تلاش کنید.");
       return;
     }
     if (!canGoNext()) {
-      setError("لطفاً این مرحله را تکمیل کنید.");
+      setError(
+        step === 3 ? "تاریخ و ساعت نوبت را انتخاب کنید." : "لطفاً این مرحله را تکمیل کنید."
+      );
       return;
     }
-    setStep((s) => Math.min(7, s + 1));
+    setStep((s) => Math.min(BOOK_TOTAL_STEPS, s + 1));
   };
 
   const goBack = () => {
     setError("");
     if (step === 1) {
-      router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
-      return;
-    }
-    if (step === 2 && branches.length === 1) {
       router.push(RouteAddress.SALONS.DETAILS(salonPublicId!));
       return;
     }

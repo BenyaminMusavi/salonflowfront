@@ -1,15 +1,15 @@
-import { MutableRefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   IBranchService,
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
-import { loadBookDraft, saveBookDraft } from "../utils/bookDraft";
+import { IBookWizardDraft, loadBookDraft, saveBookDraft } from "../utils/bookDraft";
+
+type TDraftFields = Omit<IBookWizardDraft, "version">;
 
 interface UseBookDraftPersistenceParams {
   salonPublicId: string | undefined;
   createdId: string | null;
-  /** Shared with useBookWizardNavigation's auto-skip-single-branch effect. */
-  skipBranchHandledRef: MutableRefObject<boolean>;
   step: number;
   branchPublicId: string | null;
   branchName: string;
@@ -17,6 +17,7 @@ interface UseBookDraftPersistenceParams {
   date: string | null;
   staff: IStaffAvailability | null;
   useFirstAvailable: boolean;
+  firstAvailableResolved: boolean;
   resolvedStaffPublicId: string | null;
   resolvedStaffName: string | null;
   slotTime: string | null;
@@ -29,6 +30,7 @@ interface UseBookDraftPersistenceParams {
   setDate: (v: string | null) => void;
   setStaff: (v: IStaffAvailability | null) => void;
   setUseFirstAvailable: (v: boolean) => void;
+  setFirstAvailableResolved: (v: boolean) => void;
   setResolvedStaffPublicId: (v: string | null) => void;
   setResolvedStaffName: (v: string | null) => void;
   setSlotTime: (v: string | null) => void;
@@ -38,37 +40,24 @@ interface UseBookDraftPersistenceParams {
 
 /** Rehydrates and persists the book wizard's sessionStorage draft (see utils/bookDraft.ts). */
 export function useBookDraftPersistence(params: UseBookDraftPersistenceParams) {
-  const {
-    salonPublicId,
-    createdId,
-    skipBranchHandledRef,
-    step,
-    branchPublicId,
-    branchName,
-    selectedServices,
-    date,
-    staff,
-    useFirstAvailable,
-    resolvedStaffPublicId,
-    resolvedStaffName,
-    slotTime,
-    slotEndTime,
-    notes,
-    setStep,
-    setBranchPublicId,
-    setBranchName,
-    setSelectedServices,
-    setDate,
-    setStaff,
-    setUseFirstAvailable,
-    setResolvedStaffPublicId,
-    setResolvedStaffName,
-    setSlotTime,
-    setSlotEndTime,
-    setNotes,
-  } = params;
-
+  const { salonPublicId, createdId } = params;
   const draftReadyRef = useRef(false);
+
+  const fields: TDraftFields = {
+    step: params.step,
+    branchPublicId: params.branchPublicId,
+    branchName: params.branchName,
+    selectedServices: params.selectedServices,
+    date: params.date,
+    staff: params.staff,
+    useFirstAvailable: params.useFirstAvailable,
+    firstAvailableResolved: params.firstAvailableResolved,
+    resolvedStaffPublicId: params.resolvedStaffPublicId,
+    resolvedStaffName: params.resolvedStaffName,
+    slotTime: params.slotTime,
+    slotEndTime: params.slotEndTime,
+    notes: params.notes,
+  };
 
   // Rehydrate draft once per salon
   useEffect(() => {
@@ -77,78 +66,34 @@ export function useBookDraftPersistence(params: UseBookDraftPersistenceParams) {
     draftReadyRef.current = true;
     if (!draft) return;
 
-    setStep(draft.step);
-    setBranchPublicId(draft.branchPublicId);
-    setBranchName(draft.branchName);
-    setSelectedServices(draft.selectedServices ?? []);
-    setDate(draft.date);
-    setStaff(draft.staff);
-    setUseFirstAvailable(Boolean(draft.useFirstAvailable));
-    setResolvedStaffPublicId(
-      typeof draft.resolvedStaffPublicId === "string"
-        ? draft.resolvedStaffPublicId
-        : null
+    params.setStep(draft.step);
+    params.setBranchPublicId(draft.branchPublicId);
+    params.setBranchName(draft.branchName);
+    params.setSelectedServices(draft.selectedServices ?? []);
+    params.setDate(draft.date);
+    params.setStaff(draft.staff);
+    params.setUseFirstAvailable(Boolean(draft.useFirstAvailable));
+    params.setFirstAvailableResolved(Boolean(draft.firstAvailableResolved));
+    params.setResolvedStaffPublicId(
+      typeof draft.resolvedStaffPublicId === "string" ? draft.resolvedStaffPublicId : null
     );
-    setResolvedStaffName(draft.resolvedStaffName ?? null);
-    setSlotTime(draft.slotTime);
-    setSlotEndTime(draft.slotEndTime);
-    setNotes(draft.notes ?? "");
-    if (draft.branchPublicId != null || draft.step > 1) {
-      skipBranchHandledRef.current = true;
-    }
+    params.setResolvedStaffName(draft.resolvedStaffName ?? null);
+    params.setSlotTime(draft.slotTime);
+    params.setSlotEndTime(draft.slotEndTime);
+    params.setNotes(draft.notes ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salonPublicId]);
 
   // Persist draft
+  const serialized = JSON.stringify(fields);
   useEffect(() => {
     if (!salonPublicId || !draftReadyRef.current || createdId != null) return;
-    saveBookDraft(salonPublicId, {
-      step,
-      branchPublicId,
-      branchName,
-      selectedServices,
-      date,
-      staff,
-      useFirstAvailable,
-      resolvedStaffPublicId,
-      resolvedStaffName,
-      slotTime,
-      slotEndTime,
-      notes,
-    });
-  }, [
-    salonPublicId,
-    step,
-    branchPublicId,
-    branchName,
-    selectedServices,
-    date,
-    staff,
-    useFirstAvailable,
-    resolvedStaffPublicId,
-    resolvedStaffName,
-    slotTime,
-    slotEndTime,
-    notes,
-    createdId,
-  ]);
+    saveBookDraft(salonPublicId, JSON.parse(serialized) as TDraftFields);
+  }, [salonPublicId, serialized, createdId]);
 
   const persistDraftNow = () => {
     if (!salonPublicId) return;
-    saveBookDraft(salonPublicId, {
-      step,
-      branchPublicId,
-      branchName,
-      selectedServices,
-      date,
-      staff,
-      useFirstAvailable,
-      resolvedStaffPublicId,
-      resolvedStaffName,
-      slotTime,
-      slotEndTime,
-      notes,
-    });
+    saveBookDraft(salonPublicId, fields);
   };
 
   return { draftReadyRef, persistDraftNow };

@@ -7,6 +7,8 @@ import {
 } from "@/services/domains/salons/types/salons.type";
 import { TSalonEntity } from "@/services/domains/salons/types/salon.type";
 import {
+  IFirstAvailableSlot,
+  IFirstAvailableSlotDto,
   IGetSalonAvailableSlotsParams,
   ISalonBrowseSlot,
   TAvailableDatesEntity,
@@ -79,11 +81,46 @@ class SalonService {
     );
   }
 
-  async getAvailableDates(branchPublicId: string, serviceTypePublicId: string) {
+  /** `staffPublicId` narrows the calendar to that staff member's working days (see booking flow report). */
+  async getAvailableDates(
+    branchPublicId: string,
+    serviceTypePublicId: string,
+    staffPublicId?: string | null
+  ) {
     return await axiosInstance.get<unknown, TAvailableDatesEntity>(
       API_ADDRESS.SALON.BRANCH_AVAILABLE_DATES(branchPublicId),
-      { params: { serviceTypePublicId } }
+      { params: { serviceTypePublicId, staffPublicId: staffPublicId || undefined } }
     );
+  }
+
+  /**
+   * Earliest free slot among the staff who perform all the given offerings — one call instead of
+   * scanning every staff member's day. Resolves to `null` when there is no free slot in the booking
+   * window (404 / empty body).
+   */
+  async getFirstAvailable(params: {
+    salonPublicId: string;
+    branchPublicId: string;
+    offeringPublicIds: string[];
+  }): Promise<IFirstAvailableSlot | null> {
+    try {
+      const res = await axiosInstance.get<unknown, TResponse<IFirstAvailableSlotDto | null>>(
+        API_ADDRESS.BOOKING.FIRST_AVAILABLE,
+        { params, paramsSerializer: { indexes: null } }
+      );
+      const dto = res.data;
+      if (!dto?.start || !dto.staffPublicId) return null;
+      return {
+        date: dto.date,
+        time: toLocalTimeString(dto.start),
+        endTime: toLocalTimeString(dto.end),
+        staffPublicId: dto.staffPublicId,
+        staffName: dto.staffName ?? null,
+      };
+    } catch (e) {
+      if ((e as { response?: { status?: number } })?.response?.status === 404) return null;
+      throw e;
+    }
   }
 
   async getStaffAvailability(

@@ -1,17 +1,22 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
 import { useQueryAvailableDates } from "@/services/domains/salons/hooks/useQueryAvailableDates";
-import { useQueryStaffAvailability } from "@/services/domains/salons/hooks/useQueryStaffAvailability";
 import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
+import {
+  FIRST_AVAILABLE_QUERY_KEY,
+  useQueryFirstAvailable,
+} from "@/services/domains/salons/hooks/useQueryFirstAvailable";
+import { useQueryClient } from "@tanstack/react-query";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import {
   IBranchService,
+  IFirstAvailableSlot,
   ISalonBranch,
   ISalonBrowseSlot,
   IStaffAvailability,
@@ -32,19 +37,27 @@ import { useBookConfirm } from "./hooks/useBookConfirm";
 import { resolveStaffFromSlotResponse } from "./utils/resolveSlotStaff";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
+/**
+ * Customer booking wizard:
+ * 1 services (+ branch picker for multi-branch salons) → 2 staff or «اولین نوبت» →
+ * 3 date with its free times underneath → 4 invoice → 5 confirm & book.
+ *
+ * «اولین نوبت» asks GET /api/booking/first-available once and prefills date, time and staff; the
+ * date step then only loads that staff member's times. If the lookup fails, the date step falls
+ * back to every staff member's free times and the staff is taken from the picked slot.
+ */
 export default function BookView() {
   const params = useParams<{ id: string }>();
   const salonPublicId = params?.id;
+  const queryClient = useQueryClient();
 
-  const { data: salonRes, isLoading: salonLoading } =
-    useQuerySalonById(salonPublicId);
+  const { data: salonRes, isLoading: salonLoading } = useQuerySalonById(salonPublicId);
   const salon = salonRes?.data;
 
   const branches: ISalonBranch[] = useMemo(
     () =>
       (salon?.branches ?? []).filter(
-        (b): b is ISalonBranch =>
-          typeof b.publicId === "string" && b.publicId.length > 0
+        (b): b is ISalonBranch => typeof b.publicId === "string" && b.publicId.length > 0
       ),
     [salon?.branches]
   );
@@ -52,82 +65,117 @@ export default function BookView() {
   const [step, setStep] = useState(1);
   const [branchPublicId, setBranchPublicId] = useState<string | null>(null);
   const [branchName, setBranchName] = useState("");
-  const [selectedServices, setSelectedServices] = useState<IBranchService[]>(
-    []
-  );
-  const [date, setDate] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<IBranchService[]>([]);
   const [staff, setStaff] = useState<IStaffAvailability | null>(null);
   const [useFirstAvailable, setUseFirstAvailable] = useState(false);
-  const [resolvedStaffPublicId, setResolvedStaffPublicId] = useState<
-    string | null
-  >(null);
-  const [resolvedStaffName, setResolvedStaffName] = useState<string | null>(
-    null
-  );
+  const [firstAvailableResolved, setFirstAvailableResolved] = useState(false);
+  const [date, setDate] = useState<string | null>(null);
+  const [resolvedStaffPublicId, setResolvedStaffPublicId] = useState<string | null>(null);
+  const [resolvedStaffName, setResolvedStaffName] = useState<string | null>(null);
   const [slotTime, setSlotTime] = useState<string | null>(null);
   const [slotEndTime, setSlotEndTime] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
 
-  // Shared between useBookDraftPersistence's rehydrate effect and
-  // useBookWizardNavigation's auto-skip-single-branch effect.
-  const skipBranchHandledRef = useRef(false);
-
-  const clearSlotAndStaffResolution = () => {
+  const clearSlot = () => {
     setSlotTime(null);
     setSlotEndTime(null);
+  };
+
+  /** Everything chosen after the services (staff, first-available, date, time). */
+  const resetFromStaff = () => {
+    setStaff(null);
+    setUseFirstAvailable(false);
+    setFirstAvailableResolved(false);
+    setDate(null);
     setResolvedStaffPublicId(null);
     setResolvedStaffName(null);
+    clearSlot();
   };
 
   const { data: branchServicesRes, isLoading: servicesLoading } =
     useQueryBranchServices(branchPublicId);
 
-  const branchServices = useMemo(() => {
-    const raw = branchServicesRes?.data ?? [];
-    return raw.filter(
-      (s) =>
-        typeof s.offeringPublicId === "string" &&
-        s.offeringPublicId.length > 0 &&
-        typeof s.servicePublicId === "string" &&
-        s.servicePublicId.length > 0
-    );
-  }, [branchServicesRes?.data]);
+  const branchServices = useMemo(
+    () =>
+      (branchServicesRes?.data ?? []).filter(
+        (s) =>
+          typeof s.offeringPublicId === "string" &&
+          s.offeringPublicId.length > 0 &&
+          typeof s.servicePublicId === "string" &&
+          s.servicePublicId.length > 0
+      ),
+    [branchServicesRes?.data]
+  );
 
   const offeringPublicIds = useMemo(
     () => selectedServices.map((s) => s.offeringPublicId).filter(Boolean),
     [selectedServices]
   );
-
   const serviceTypePublicIds = useMemo(
     () => selectedServices.map((s) => s.servicePublicId).filter(Boolean),
     [selectedServices]
   );
-
   const primaryServiceTypePublicId = serviceTypePublicIds[0] ?? null;
 
+  // Step 2 — staff who perform the selected services.
+  const { data: staffProfilesRes, isLoading: staffLoading } = useQueryStaffForOfferings(
+    salonPublicId,
+    offeringPublicIds,
+    { enabled: step >= 2, branchPublicId, matchAll: true }
+  );
+  const staffProfiles = useMemo(() => staffProfilesRes?.data ?? [], [staffProfilesRes?.data]);
+  const staffList: IStaffAvailability[] = useMemo(
+    () =>
+      staffProfiles
+        .filter((p): p is typeof p & { staffPublicId: string } => !!p.staffPublicId)
+        .map((p) => ({
+          staffPublicId: p.staffPublicId,
+          fullName: p.firstName || "پرسنل",
+          profileImageUrl: p.avatarUrl ?? null,
+          staffMemberId: p.staffMemberId,
+        })),
+    [staffProfiles]
+  );
+
+  // Step 2 — «اولین نوبت»: one lookup instead of every staff member's times.
+  const firstAvailableQuery = useQueryFirstAvailable({
+    salonPublicId,
+    branchPublicId,
+    offeringPublicIds,
+    enabled: useFirstAvailable && step === 2,
+  });
+
+  useEffect(() => {
+    const found = firstAvailableQuery.data;
+    if (!useFirstAvailable || firstAvailableResolved || !found) return;
+    const name =
+      found.staffName ||
+      staffList.find((s) => s.staffPublicId === found.staffPublicId)?.fullName ||
+      null;
+    setDate(found.date);
+    setSlotTime(found.time);
+    setSlotEndTime(found.endTime);
+    setResolvedStaffPublicId(found.staffPublicId);
+    setResolvedStaffName(name);
+    setStaff({ staffPublicId: found.staffPublicId, fullName: name ?? "پرسنل" });
+    setFirstAvailableResolved(true);
+  }, [firstAvailableQuery.data, useFirstAvailable, firstAvailableResolved, staffList]);
+
+  /** Whose calendar/times step 3 loads: the chosen or first-available staff; null = everyone. */
+  const scheduleStaffPublicId = useFirstAvailable
+    ? firstAvailableResolved
+      ? resolvedStaffPublicId
+      : null
+    : (staff?.staffPublicId ?? null);
+
+  // Step 3 — dates, and the free times of the selected date underneath.
   const { data: datesRes, isLoading: datesLoading } = useQueryAvailableDates(
     branchPublicId,
-    primaryServiceTypePublicId
-  );
-
-  const { data: staffRes, isLoading: staffLoading } = useQueryStaffAvailability(
-    branchPublicId,
     primaryServiceTypePublicId,
-    date
-  );
-
-  const {
-    data: priceRes,
-    isLoading: priceLoading,
-    isError: priceError,
-    refetch: refetchPrice,
-  } = useQueryCalculatePrice(
-    branchPublicId,
-    serviceTypePublicIds,
-    useFirstAvailable ? null : staff?.staffPublicId,
-    step >= 5
+    scheduleStaffPublicId,
+    { enabled: step >= 3 }
   );
 
   const {
@@ -140,33 +188,45 @@ export default function BookView() {
     branchPublicId: branchPublicId ?? undefined,
     date: date ?? undefined,
     offeringPublicIds,
-    staffProfilePublicId: useFirstAvailable ? null : staff?.staffPublicId,
-    enabled: step >= 6,
+    staffProfilePublicId: scheduleStaffPublicId,
+    enabled: step >= 3 && !!date,
   });
 
-  const { data: staffProfilesRes } = useQueryStaffForOfferings(
-    salonPublicId,
-    offeringPublicIds,
-    { enabled: offeringPublicIds.length > 0 && step >= 4 }
-  );
+  // Step 4 — invoice for the staff actually doing the booking.
+  const {
+    data: priceRes,
+    isLoading: priceLoading,
+    isError: priceError,
+    refetch: refetchPrice,
+  } = useQueryCalculatePrice(branchPublicId, serviceTypePublicIds, resolvedStaffPublicId, step >= 4);
 
   const price = priceRes?.data;
   const dates = datesRes?.data ?? [];
-  const staffList = staffRes?.data ?? [];
   const slotsData = slotsRes?.data;
   const slots = slotsData?.slots ?? [];
-  const staffProfiles = staffProfilesRes?.data ?? [];
 
   const staffLabel = useFirstAvailable
     ? resolvedStaffName
-      ? `اولین زمان آزاد · ${resolvedStaffName}`
-      : "اولین زمان آزاد"
+      ? `اولین نوبت · ${resolvedStaffName}`
+      : "اولین نوبت"
     : staff?.fullName || resolvedStaffName || "—";
+
+  const firstAvailableResult: IFirstAvailableSlot | null | undefined =
+    firstAvailableResolved && date && slotTime && resolvedStaffPublicId
+      ? {
+          date,
+          time: slotTime,
+          endTime: slotEndTime ?? slotTime,
+          staffPublicId: resolvedStaffPublicId,
+          staffName: resolvedStaffName,
+        }
+      : firstAvailableQuery.isSuccess
+        ? firstAvailableQuery.data
+        : undefined;
 
   const { draftReadyRef, persistDraftNow } = useBookDraftPersistence({
     salonPublicId,
     createdId,
-    skipBranchHandledRef,
     step,
     branchPublicId,
     branchName,
@@ -174,6 +234,7 @@ export default function BookView() {
     date,
     staff,
     useFirstAvailable,
+    firstAvailableResolved,
     resolvedStaffPublicId,
     resolvedStaffName,
     slotTime,
@@ -186,6 +247,7 @@ export default function BookView() {
     setDate,
     setStaff,
     setUseFirstAvailable,
+    setFirstAvailableResolved,
     setResolvedStaffPublicId,
     setResolvedStaffName,
     setSlotTime,
@@ -199,14 +261,14 @@ export default function BookView() {
     step,
     branchPublicId,
     selectedServices,
-    date,
     staff,
     useFirstAvailable,
+    firstAvailableLoading: useFirstAvailable && firstAvailableQuery.isFetching && !firstAvailableResolved,
     price,
+    date,
     slotTime,
     resolvedStaffPublicId,
     draftReadyRef,
-    skipBranchHandledRef,
     setStep,
     setBranchPublicId,
     setBranchName,
@@ -232,26 +294,42 @@ export default function BookView() {
     setBranchPublicId(branch.publicId);
     setBranchName(branch.name);
     setSelectedServices([]);
-    setDate(null);
-    setStaff(null);
-    setUseFirstAvailable(false);
-    clearSlotAndStaffResolution();
+    resetFromStaff();
   };
 
   const toggleService = (svc: IBranchService) => {
-    setSelectedServices((prev) => {
-      const exists = prev.some(
-        (s) => s.offeringPublicId === svc.offeringPublicId
-      );
-      if (exists) {
-        return prev.filter((s) => s.offeringPublicId !== svc.offeringPublicId);
-      }
-      return [...prev, svc];
-    });
-    setDate(null);
-    setStaff(null);
-    setUseFirstAvailable(false);
-    clearSlotAndStaffResolution();
+    setSelectedServices((prev) =>
+      prev.some((s) => s.offeringPublicId === svc.offeringPublicId)
+        ? prev.filter((s) => s.offeringPublicId !== svc.offeringPublicId)
+        : [...prev, svc]
+    );
+    resetFromStaff();
+  };
+
+  const selectStaff = (s: IStaffAvailability) => {
+    resetFromStaff();
+    setStaff(s);
+    setResolvedStaffPublicId(s.staffPublicId);
+    setResolvedStaffName(s.fullName);
+  };
+
+  const selectFirstAvailable = () => {
+    resetFromStaff();
+    setUseFirstAvailable(true);
+    // Always re-ask, and drop the previous answer first: the earliest slot may have been taken
+    // since, and a failed re-ask must not fall back to (and re-apply) the stale result.
+    void queryClient.resetQueries({ queryKey: [FIRST_AVAILABLE_QUERY_KEY] });
+  };
+
+  const selectDate = (nextDate: string) => {
+    setDate(nextDate);
+    clearSlot();
+    setError("");
+    // Fallback mode (no first-available result): staff is decided by the slot picked below.
+    if (useFirstAvailable && !firstAvailableResolved) {
+      setResolvedStaffPublicId(null);
+      setResolvedStaffName(null);
+    }
   };
 
   const selectSlot = (slot: ISalonBrowseSlot) => {
@@ -259,36 +337,23 @@ export default function BookView() {
     setSlotEndTime(slot.endTime);
     setError("");
 
-    if (useFirstAvailable) {
-      const resolved = resolveStaffFromSlotResponse({
-        slot,
-        slotsData,
-        staffList,
-        staffProfiles,
-      });
-      if (!resolved?.staffPublicId) {
-        setResolvedStaffPublicId(null);
-        setResolvedStaffName(null);
-        setError(
-          "پرسنل این ساعت از پاسخ سرور مشخص نشد. پرسنل مشخصی انتخاب کنید یا دوباره تلاش کنید."
-        );
-        return;
-      }
-      setResolvedStaffPublicId(resolved.staffPublicId);
-      setResolvedStaffName(resolved.fullName);
-      if (resolved.staff) setStaff(resolved.staff);
+    if (scheduleStaffPublicId) {
+      setResolvedStaffPublicId(scheduleStaffPublicId);
+      setResolvedStaffName(staff?.fullName ?? resolvedStaffName);
       return;
     }
 
-    if (staff?.staffPublicId) {
-      setResolvedStaffPublicId(staff.staffPublicId);
-      setResolvedStaffName(staff.fullName);
+    const resolved = resolveStaffFromSlotResponse({ slot, slotsData, staffList, staffProfiles });
+    if (!resolved?.staffPublicId) {
+      setResolvedStaffPublicId(null);
+      setResolvedStaffName(null);
+      setError(
+        "پرسنل این ساعت از پاسخ سرور مشخص نشد. پرسنل مشخصی انتخاب کنید یا دوباره تلاش کنید."
+      );
       return;
     }
-
-    setResolvedStaffPublicId(null);
-    setResolvedStaffName(null);
-    setError("شناسه پرسنل یافت نشد. پرسنل دیگری را انتخاب کنید.");
+    setResolvedStaffPublicId(resolved.staffPublicId);
+    setResolvedStaffName(resolved.fullName);
   };
 
   if (salonLoading) {
@@ -308,92 +373,91 @@ export default function BookView() {
   }
 
   if (createdId != null) {
-    return (
-      <BookSuccessPanel
-        bookingId={createdId}
-        salonId={salonPublicId ?? salon.id}
-      />
-    );
+    return <BookSuccessPanel bookingId={createdId} salonId={salonPublicId ?? salon.id} />;
   }
 
-  const showBranchChip = Boolean(branchName) && step > 1;
+  const showBranchPicker = branches.length > 1;
+  const showBranchChip = showBranchPicker && Boolean(branchName) && step > 1;
 
   return (
     <div className="flex flex-col pb-28">
-      <TopNavigation fallbackHref={RouteAddress.SALONS.DETAILS(salonPublicId!)}>رزرو نوبت</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.SALONS.DETAILS(salonPublicId!)}>
+        رزرو نوبت
+      </TopNavigation>
       {salon.name ? (
-        <p className="-mt-1 px-safe-area text-xs text-foreground-muted">
-          {salon.name}
-        </p>
+        <p className="-mt-1 px-safe-area text-xs text-foreground-muted">{salon.name}</p>
       ) : null}
 
-      <BookProgressHeader
-        step={step}
-        branchChip={showBranchChip ? branchName : null}
-      />
+      <BookProgressHeader step={step} branchChip={showBranchChip ? branchName : null} />
 
       <div className="mt-4 flex flex-col gap-4 px-safe-area">
         {error && (
-          <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
-            {error}
-          </p>
+          <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">{error}</p>
         )}
 
         {step === 1 && (
-          <BookBranchStep
-            branches={branches}
-            selectedBranchPublicId={branchPublicId}
-            onSelect={selectBranch}
-          />
+          <>
+            {showBranchPicker && (
+              <BookBranchStep
+                branches={branches}
+                selectedBranchPublicId={branchPublicId}
+                onSelect={selectBranch}
+              />
+            )}
+            {branchPublicId && (
+              <BookServicesStep
+                services={branchServices}
+                selectedServices={selectedServices}
+                isLoading={servicesLoading}
+                onToggle={toggleService}
+              />
+            )}
+          </>
         )}
 
         {step === 2 && (
-          <BookServicesStep
-            services={branchServices}
-            selectedServices={selectedServices}
-            isLoading={servicesLoading}
-            onToggle={toggleService}
-          />
-        )}
-
-        {step === 3 && (
-          <BookDateStep
-            dates={dates}
-            selectedDate={date}
-            isLoading={datesLoading}
-            onSelect={(nextDate) => {
-              setDate(nextDate);
-              setStaff(null);
-              setUseFirstAvailable(false);
-              clearSlotAndStaffResolution();
-            }}
-            onChangeServices={() => setStep(2)}
-          />
-        )}
-
-        {step === 4 && (
           <BookStaffStep
             staffList={staffList}
             selectedStaffPublicId={staff?.staffPublicId ?? null}
             useFirstAvailable={useFirstAvailable}
+            firstAvailable={{
+              isLoading: firstAvailableQuery.isFetching && !firstAvailableResolved,
+              result: firstAvailableResult,
+              isError: firstAvailableQuery.isError,
+            }}
             isLoading={staffLoading}
-            onSelectFirstAvailable={() => {
-              setUseFirstAvailable(true);
-              setStaff(null);
-              clearSlotAndStaffResolution();
-            }}
-            onSelectStaff={(s) => {
-              setUseFirstAvailable(false);
-              setStaff(s);
-              clearSlotAndStaffResolution();
-              setResolvedStaffPublicId(s.staffPublicId);
-              setResolvedStaffName(s.fullName);
-            }}
-            onChangeDate={() => setStep(3)}
+            onSelectFirstAvailable={selectFirstAvailable}
+            onSelectStaff={selectStaff}
+            onChangeServices={() => setStep(1)}
           />
         )}
 
-        {step === 5 && (
+        {step === 3 && (
+          <>
+            <BookDateStep
+              dates={dates}
+              selectedDate={date}
+              isLoading={datesLoading}
+              onSelect={selectDate}
+              onChangeServices={() => setStep(1)}
+            />
+            {date && (
+              <BookSlotsStep
+                slots={slots}
+                selectedTime={slotTime}
+                isLoading={slotsLoading}
+                isError={slotsError}
+                onSelect={selectSlot}
+                onChangeStaff={() => setStep(2)}
+                onRetry={() => {
+                  void refetchSlots();
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {step === 4 && (
           <BookPriceStep
             price={price}
             isLoading={priceLoading}
@@ -404,22 +468,7 @@ export default function BookView() {
           />
         )}
 
-        {step === 6 && (
-          <BookSlotsStep
-            slots={slots}
-            selectedTime={slotTime}
-            isLoading={slotsLoading}
-            isError={slotsError}
-            onSelect={selectSlot}
-            onChangeDate={() => setStep(3)}
-            onChangeStaff={() => setStep(4)}
-            onRetry={() => {
-              void refetchSlots();
-            }}
-          />
-        )}
-
-        {step === 7 && (
+        {step === 5 && (
           <BookConfirmStep
             salonName={salon.name}
             branchName={branchName}
