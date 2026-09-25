@@ -38,5 +38,9 @@ export const useQuerySalonAvailableSlots = (
         staffProfilePublicId: params.staffProfilePublicId,
       }),
     enabled,
+    // Never cached (backend contract): a slot shown a minute ago may already be booked.
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 };

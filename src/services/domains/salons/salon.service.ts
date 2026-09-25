@@ -1,3 +1,4 @@
+import { utcToSalonTime } from "@/shared/utils/salonTime";
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
@@ -81,15 +82,22 @@ class SalonService {
     );
   }
 
-  /** `staffPublicId` narrows the calendar to that staff member's working days (see booking flow report). */
+  /**
+   * Bookable days for the chosen offerings (next 30 days). With `offeringPublicIds` the backend
+   * checks real capacity for all services together; `staffPublicId` narrows it to one staff member.
+   * (The legacy serviceTypePublicId-only form only checks working days — never use it for booking.)
+   */
   async getAvailableDates(
     branchPublicId: string,
-    serviceTypePublicId: string,
+    offeringPublicIds: string[],
     staffPublicId?: string | null
   ) {
     return await axiosInstance.get<unknown, TAvailableDatesEntity>(
       API_ADDRESS.SALON.BRANCH_AVAILABLE_DATES(branchPublicId),
-      { params: { serviceTypePublicId, staffPublicId: staffPublicId || undefined } }
+      {
+        params: { offeringPublicIds, staffPublicId: staffPublicId || undefined },
+        paramsSerializer: { indexes: null },
+      }
     );
   }
 
@@ -278,14 +286,11 @@ const salonService = new SalonService();
 export default salonService;
 
 /**
- * GET /api/booking/slots returns UTC instants (e.g. "2026-09-05T05:30:00Z"). The rest of
- * the booking wizard (date step, create-booking payload in booking-mappers.ts) works with
- * plain local "HH:mm:ss" wall-clock strings, matching the existing app-wide convention of
- * reading Date getters in the browser's own local time (see DashboardCalendarGrid.tsx's
- * formatClock) rather than converting through an explicit IANA zone.
+ * GET /api/booking/slots and /first-available return UTC instants (e.g. "2026-09-05T05:30:00Z").
+ * The booking wizard works with salon-local "HH:mm:ss" wall-clock strings, converted explicitly
+ * through Asia/Tehran (backend contract) — never the device timezone, or a customer abroad would
+ * see (and book) shifted times. booking-mappers.ts converts back the same way on create.
  */
 function toLocalTimeString(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return utcToSalonTime(iso);
 }

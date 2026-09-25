@@ -117,7 +117,6 @@ export default function BookView() {
     () => selectedServices.map((s) => s.servicePublicId).filter(Boolean),
     [selectedServices]
   );
-  const primaryServiceTypePublicId = serviceTypePublicIds[0] ?? null;
 
   // Step 2 — staff who perform the selected services.
   const { data: staffProfilesRes, isLoading: staffLoading } = useQueryStaffForOfferings(
@@ -173,9 +172,10 @@ export default function BookView() {
   // Step 3 — dates, and the free times of the selected date underneath.
   const { data: datesRes, isLoading: datesLoading } = useQueryAvailableDates(
     branchPublicId,
-    primaryServiceTypePublicId,
+    offeringPublicIds,
     scheduleStaffPublicId,
-    { enabled: step >= 3 }
+    // Only while on the date step: with no cache, every visit to it re-asks (backend contract).
+    { enabled: step === 3 }
   );
 
   const {
@@ -189,7 +189,7 @@ export default function BookView() {
     date: date ?? undefined,
     offeringPublicIds,
     staffProfilePublicId: scheduleStaffPublicId,
-    enabled: step >= 3 && !!date,
+    enabled: step === 3 && !!date,
   });
 
   // Step 4 — invoice for the staff actually doing the booking.
@@ -264,6 +264,12 @@ export default function BookView() {
     staff,
     useFirstAvailable,
     firstAvailableLoading: useFirstAvailable && firstAvailableQuery.isFetching && !firstAvailableResolved,
+    // 404 «نوبت آزادی پیدا نشد»: the user has to pick a staff member manually instead.
+    firstAvailableNone:
+      useFirstAvailable &&
+      !firstAvailableResolved &&
+      firstAvailableQuery.isSuccess &&
+      firstAvailableQuery.data === null,
     price,
     date,
     slotTime,
@@ -285,6 +291,14 @@ export default function BookView() {
     selectedServices,
     notes,
     persistDraftNow,
+    onSlotRejected: () => {
+      clearSlot();
+      // In fallback mode the staff came from the rejected slot; the next slot decides again.
+      if (useFirstAvailable && !firstAvailableResolved) {
+        setResolvedStaffPublicId(null);
+        setResolvedStaffName(null);
+      }
+    },
     setError,
     setCreatedId,
     setStep,

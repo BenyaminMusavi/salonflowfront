@@ -81,7 +81,7 @@ function firstAvailableSubtitle(selected: boolean, state: FirstAvailableState) {
     );
   }
   if (state.result) return formatFirstAvailable(state.result);
-  if (state.result === null) return "در بازه‌ی رزرو، نوبت آزادی برای این خدمات پیدا نشد.";
+  if (state.result === null) return "نوبت آزادی پیدا نشد؛ یکی از پرسنل زیر را انتخاب کنید.";
   return "در مرحله‌ی بعد، ساعت‌های آزاد همه‌ی پرسنل نمایش داده می‌شود.";
 }
 

@@ -3,6 +3,7 @@ import { IBranchService } from "@/services/domains/salons/types/booking-browse.t
 import { useCreateBooking } from "@/services/domains/booking/hooks/useCreateBooking";
 import {
   getApiErrorMessage,
+  isSubscriptionFieldError,
   toBookingStartTime,
 } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -23,6 +24,8 @@ interface UseBookConfirmParams {
   selectedServices: IBranchService[];
   notes: string;
   persistDraftNow: () => void;
+  /** Clears the picked time after create fails, so a fresh one is chosen from re-fetched slots. */
+  onSlotRejected: () => void;
   setError: (v: string) => void;
   setCreatedId: (v: string | null) => void;
   setStep: (updater: number | ((s: number) => number)) => void;
@@ -40,6 +43,7 @@ export function useBookConfirm(params: UseBookConfirmParams) {
     selectedServices,
     notes,
     persistDraftNow,
+    onSlotRejected,
     setError,
     setCreatedId,
     setStep,
@@ -109,6 +113,13 @@ export function useBookConfirm(params: UseBookConfirmParams) {
           { audience: "customer" }
         )
       );
+      // Usually the slot was taken meanwhile (backend contract): back to the date/time step,
+      // which re-fetches free times on mount. A subscription lock can't be fixed by another
+      // slot, so that one stays on the confirm step.
+      if (!isSubscriptionFieldError(e)) {
+        onSlotRejected();
+        setStep(3);
+      }
     }
   };
 

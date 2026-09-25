@@ -1,3 +1,5 @@
+import { salonWallClockToUtcIso } from "@/shared/utils/salonTime";
+
 /**
  * The backend's booking-create/quick-book endpoints require startTime as a UTC ISO
  * instant (see the backend's OpenAPI snapshot, D:\SourceSalon\docs\openapi\v1.json).
@@ -7,13 +9,12 @@
  * backend would otherwise misinterpret as already being UTC and silently shift by
  * the local offset (e.g. "10:00" local becoming a check against 13:30 local in
  * Asia/Tehran), corrupting which slot actually gets booked.
+ *
+ * The wall-clock is the SALON's (Asia/Tehran), never the device's: a customer booking from
+ * abroad picks the salon's 10:00, which must still be sent as 06:30Z.
  */
 export function toBookingStartTime(date: string, time: string): string {
-  const normalized =
-    time.length === 5 ? `${time}:00` : time.length === 8 ? time : `${time}:00`;
-  const [year, month, day] = date.split("-").map(Number);
-  const [hours, minutes, seconds] = normalized.split(":").map(Number);
-  return new Date(year, month - 1, day, hours, minutes, seconds).toISOString();
+  return salonWallClockToUtcIso(date, time);
 }
 
 export const SUBSCRIPTION_OWNER_LOCK_MESSAGE =

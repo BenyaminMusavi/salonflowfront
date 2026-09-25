@@ -23,6 +23,8 @@ interface UseBookWizardNavigationParams {
   useFirstAvailable: boolean;
   /** True while the «اولین نوبت» lookup is in flight — can't leave the staff step yet. */
   firstAvailableLoading: boolean;
+  /** «اولین نوبت» found no free slot (404) — a staff member must be picked instead. */
+  firstAvailableNone: boolean;
   price: unknown;
   date: string | null;
   slotTime: string | null;
@@ -45,6 +47,7 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
     staff,
     useFirstAvailable,
     firstAvailableLoading,
+    firstAvailableNone,
     price,
     date,
     slotTime,
@@ -75,7 +78,7 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
           selectedServices.every((s) => !!s.offeringPublicId && !!s.servicePublicId)
         );
       case 2:
-        return (useFirstAvailable && !firstAvailableLoading) || !!staff;
+        return (useFirstAvailable && !firstAvailableLoading && !firstAvailableNone) || !!staff;
       case 3:
         return !!date && !!slotTime && !!resolvedStaffPublicId;
       case 4:
@@ -87,6 +90,10 @@ export function useBookWizardNavigation(params: UseBookWizardNavigationParams) {
 
   const goNext = () => {
     setError("");
+    if (step === 2 && firstAvailableNone) {
+      setError("نوبت آزادی پیدا نشد؛ لطفاً یکی از پرسنل را انتخاب کنید.");
+      return;
+    }
     if (step === 1 && !branchPublicId) {
       setError("ابتدا شعبه را انتخاب کنید.");
       return;
