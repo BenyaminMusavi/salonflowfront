@@ -314,6 +314,18 @@
     background: var(--color-primary-active);
 }
 
+/* iOS Safari auto-zooms into any focused field whose font-size is under 16px (most of ours are
+   text-sm = 14px) and doesn't zoom back out, breaking the layout. 16px on iOS only stops that
+   while keeping pinch-zoom (unlike maximum-scale=1). Unlayered on purpose so it beats Tailwind's
+   text-* utilities; no field in the app is larger than 16px. */
+@supports (-webkit-touch-callout: none) {
+    input,
+    textarea,
+    select {
+        font-size: 16px;
+    }
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
