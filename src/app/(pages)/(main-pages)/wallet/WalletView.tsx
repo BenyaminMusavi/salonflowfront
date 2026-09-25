@@ -7,7 +7,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDateTime } from "@/shared/utils/salonTime";
 
 export default function WalletView() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function WalletView() {
                 </p>
                 <p className="text-xs text-foreground-muted">
                   {tx.description || "بدون توضیح"}{" "}
-                  {tx.createdAt ? `• ${new Date(tx.createdAt).toLocaleString(APP_LOCALE)}` : ""}
+                  {tx.createdAt ? `• ${formatSalonDateTime(tx.createdAt)}` : ""}
                 </p>
               </div>
             ))}

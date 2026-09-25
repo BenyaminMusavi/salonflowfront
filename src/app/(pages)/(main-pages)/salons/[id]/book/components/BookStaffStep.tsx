@@ -8,7 +8,7 @@ import {
 } from "@/services/domains/salons/types/booking-browse.type";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import { cn } from "@/shared/utils/className";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDate, ymdToDate } from "@/shared/utils/salonTime";
 
 export interface FirstAvailableState {
   isLoading: boolean;
@@ -59,7 +59,7 @@ function StaffAvatar({ name, imageUrl }: { name: string; imageUrl?: string | nul
 function formatFirstAvailable(slot: IFirstAvailableSlot): string {
   let day = slot.date;
   try {
-    day = new Date(`${slot.date}T12:00:00`).toLocaleDateString(APP_LOCALE, {
+    day = formatSalonDate(ymdToDate(slot.date), {
       weekday: "long",
       day: "numeric",
       month: "long",

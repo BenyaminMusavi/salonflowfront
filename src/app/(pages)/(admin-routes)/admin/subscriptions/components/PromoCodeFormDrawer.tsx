@@ -12,6 +12,7 @@ import {
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import { salonWallClockToUtcIso, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
   useMutateCreatePromoCode,
@@ -57,8 +58,8 @@ export function PromoCodeFormDrawer({
     setDiscountType(target?.discountType ?? PromoDiscountType.Percentage);
     setDiscountValue(target ? String(target.discountValue) : "");
     setMaxRedemptions(target?.maxRedemptions != null ? String(target.maxRedemptions) : "");
-    setStartsAt(target?.startsAt?.slice(0, 10) ?? "");
-    setEndsAt(target?.endsAt?.slice(0, 10) ?? "");
+    setStartsAt(target?.startsAt ? utcToSalonYmd(target.startsAt) : "");
+    setEndsAt(target?.endsAt ? utcToSalonYmd(target.endsAt) : "");
   }, [open, target]);
 
   const { mutateAsync: create, isPending: isCreating } = useMutateCreatePromoCode();
@@ -87,8 +88,8 @@ export function PromoCodeFormDrawer({
       discountType,
       discountValue: value,
       maxRedemptions: maxRedemptionsValue,
-      startsAt: startsAt ? `${startsAt}T00:00:00` : null,
-      endsAt: endsAt ? `${endsAt}T23:59:59` : null,
+      startsAt: startsAt ? salonWallClockToUtcIso(startsAt, "00:00") : null,
+      endsAt: endsAt ? salonWallClockToUtcIso(endsAt, "23:59:59") : null,
     };
 
     try {

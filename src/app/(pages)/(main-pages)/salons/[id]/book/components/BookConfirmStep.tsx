@@ -4,10 +4,11 @@ import { IBranchService } from "@/services/domains/salons/types/booking-browse.t
 import { ICalculatePriceResult } from "@/services/domains/salons/types/booking-browse.type";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDate, ymdToDate } from "@/shared/utils/salonTime";
 
 function formatFaDate(date: string) {
   try {
-    return new Date(`${date}T12:00:00`).toLocaleDateString(APP_LOCALE, {
+    return formatSalonDate(ymdToDate(date), {
       weekday: "long",
       day: "numeric",
       month: "long",

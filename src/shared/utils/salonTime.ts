@@ -1,5 +1,7 @@
+import { APP_LOCALE } from "./locale";
+
 /**
- * Salon wall-clock time is always Asia/Tehran, independent of the viewer's device timezone
+ * All times and dates in the app are Asia/Tehran, independent of the viewer's device timezone
  * (backend contract: slot/first-available start/end are UTC and must be converted explicitly —
  * a customer abroad must still see and book the salon's own local times).
  */
@@ -39,6 +41,64 @@ function salonOffsetMinutes(instant: Date): number {
   } catch {
     return TEHRAN_FALLBACK_OFFSET_MINUTES;
   }
+}
+
+type TDateInput = string | number | Date;
+
+/** Intl formatting of an instant in salon time (Persian words, Latin digits, Jalali calendar). */
+export function formatSalonDateTime(value: TDateInput, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(value).toLocaleString(APP_LOCALE, { ...options, timeZone: SALON_TIME_ZONE });
+}
+
+export function formatSalonDate(value: TDateInput, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(value).toLocaleDateString(APP_LOCALE, { ...options, timeZone: SALON_TIME_ZONE });
+}
+
+export function formatSalonTime(value: TDateInput, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(value).toLocaleTimeString(APP_LOCALE, { ...options, timeZone: SALON_TIME_ZONE });
+}
+
+/**
+ * A calendar day ("yyyy-MM-dd", no time) as a Date for formatting with the salon zone: UTC noon
+ * falls on the same Tehran day, whatever the device timezone (local-midnight parsing doesn't).
+ */
+export function ymdToDate(ymd: string): Date {
+  return new Date(`${ymd}T12:00:00Z`);
+}
+
+const ymdFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: SALON_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Salon-calendar day ("yyyy-MM-dd") of an instant — e.g. the day a UTC appointment falls on. */
+export function utcToSalonYmd(value: TDateInput): string {
+  return ymdFormatter.format(new Date(value));
+}
+
+/** Today's date in Tehran ("yyyy-MM-dd"), not the device's. */
+export function salonTodayYmd(now: Date = new Date()): string {
+  return utcToSalonYmd(now);
+}
+
+/** Calendar arithmetic on "yyyy-MM-dd" (timezone-free). */
+export function addDaysYmd(ymd: string, days: number): string {
+  const d = ymdToDate(ymd);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Hour/minute of an instant on the salon clock (for calendar-grid positioning). */
+export function salonClockParts(value: TDateInput): { hours: number; minutes: number } {
+  const [hours, minutes] = utcToSalonTime(new Date(value).toISOString()).split(":").map(Number);
+  return { hours, minutes };
+}
+
+/** Day of week on the salon calendar, same numbering as Date#getDay (0 = Sunday). */
+export function salonWeekday(value: TDateInput = new Date()): number {
+  return ymdToDate(utcToSalonYmd(value)).getUTCDay();
 }
 
 /** Salon-local date ("yyyy-MM-dd") + time ("HH:mm" / "HH:mm:ss") → UTC ISO instant. */

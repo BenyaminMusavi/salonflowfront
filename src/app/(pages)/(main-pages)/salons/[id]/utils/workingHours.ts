@@ -1,4 +1,5 @@
 import { ISalonWorkingHour } from "@/services/domains/salons/types/salon.type";
+import { salonWeekday } from "@/shared/utils/salonTime";
 
 /** JS getDay(): 0=Sun … 6=Sat. Only used to convert a JS Date to a day-name string for
  * matching against workingHours[].dayName — unrelated to the working-schedules/onboarding
@@ -54,8 +55,9 @@ export function sortByIranianWeek<T extends { dayName?: string | null }>(
   });
 }
 
+/** Weekday on the salon (Tehran) calendar — near midnight it can differ from the device's. */
 function todayFaDayName(date = new Date()): string {
-  return FA_DAY_BY_WEEKDAY[date.getDay()];
+  return FA_DAY_BY_WEEKDAY[salonWeekday(date)];
 }
 
 export function findTodayWorkingHour(
@@ -65,7 +67,7 @@ export function findTodayWorkingHour(
   if (!hours?.length) return undefined;
 
   const faToday = normalizeDayLabel(todayFaDayName(date));
-  const enToday = EN_DAY_BY_WEEKDAY[date.getDay()];
+  const enToday = EN_DAY_BY_WEEKDAY[salonWeekday(date)];
 
   return hours.find((h) => {
     const label = normalizeDayLabel(h.dayName ?? "");

@@ -13,7 +13,7 @@ import {
   DashboardSkeleton,
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDateTime } from "@/shared/utils/salonTime";
 
 export default function DashboardNotificationsView() {
   const query = useQueryNotifications({ pageSize: 30 });
@@ -57,7 +57,7 @@ export default function DashboardNotificationsView() {
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-[11px] text-foreground-muted">
                   {n.createdAt
-                    ? new Date(n.createdAt).toLocaleString(APP_LOCALE)
+                    ? formatSalonDateTime(n.createdAt)
                     : ""}
                 </p>
                 {!n.readAt ? (

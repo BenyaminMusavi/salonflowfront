@@ -12,6 +12,7 @@ import {
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import { salonWallClockToUtcIso, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
   useMutateCreateCampaign,
@@ -53,8 +54,8 @@ export function CampaignFormDrawer({
     setName(target?.name ?? "");
     setDiscountType(target?.discountType ?? PlanCampaignDiscountType.Percentage);
     setDiscountValue(target ? String(target.discountValue) : "");
-    setStartsAt(target?.startsAt?.slice(0, 10) ?? "");
-    setEndsAt(target?.endsAt?.slice(0, 10) ?? "");
+    setStartsAt(target?.startsAt ? utcToSalonYmd(target.startsAt) : "");
+    setEndsAt(target?.endsAt ? utcToSalonYmd(target.endsAt) : "");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- plans loads async; re-running on it would clobber user edits
   }, [open, target]);
 
@@ -82,8 +83,8 @@ export function CampaignFormDrawer({
       name: name.trim(),
       discountType,
       discountValue: value,
-      startsAt: `${startsAt}T00:00:00`,
-      endsAt: `${endsAt}T23:59:59`,
+      startsAt: salonWallClockToUtcIso(startsAt, "00:00"),
+      endsAt: salonWallClockToUtcIso(endsAt, "23:59:59"),
     };
 
     try {

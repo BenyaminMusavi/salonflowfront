@@ -1,16 +1,14 @@
+import { addDaysYmd, salonTodayYmd, utcToSalonYmd } from "@/shared/utils/salonTime";
+
+/** "yyyy-MM-dd" of an instant on the salon (Tehran) calendar. */
 export function toDateOnly(d: Date): string {
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return utcToSalonYmd(d);
 }
 
-/** Guide default: 30 Tehran-calendar days through today. */
+/** Guide default: 30 Tehran-calendar days through today (Tehran's today, not the device's). */
 export function defaultReportRange(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(from.getDate() - 29);
-  return { from: toDateOnly(from), to: toDateOnly(to) };
+  const to = salonTodayYmd();
+  return { from: addDaysYmd(to, -29), to };
 }
 
 export function asReportRows<T>(payload: unknown): T[] {

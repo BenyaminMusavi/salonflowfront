@@ -3,7 +3,7 @@
 import DatePicker from "@/shared/components/composites/date-picker/DatePicker";
 import { formatDateToGregorian } from "@/shared/components/composites/date-picker/DatePickerFormField";
 import moment from "moment-jalaali";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { addDaysYmd, formatSalonDate, salonTodayYmd, ymdToDate } from "@/shared/utils/salonTime";
 
 function toJalaliDisplay(gregorian: string): string {
   if (!gregorian) return "";
@@ -40,17 +40,12 @@ export function DashboardDateField({
 }
 
 export function shiftGregorianDate(date: string, days: number): string {
-  const next = new Date(`${date}T12:00:00`);
-  next.setDate(next.getDate() + days);
-  const y = next.getFullYear();
-  const m = `${next.getMonth() + 1}`.padStart(2, "0");
-  const d = `${next.getDate()}`.padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return addDaysYmd(date, days);
 }
 
 export function formatJalaliDayLabel(date: string): string {
   try {
-    return new Date(`${date}T12:00:00`).toLocaleDateString(APP_LOCALE, {
+    return formatSalonDate(ymdToDate(date), {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -60,10 +55,7 @@ export function formatJalaliDayLabel(date: string): string {
   }
 }
 
+/** Today on the salon (Tehran) calendar — not the device's. */
 export function todayGregorian(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = `${now.getMonth() + 1}`.padStart(2, "0");
-  const d = `${now.getDate()}`.padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return salonTodayYmd();
 }

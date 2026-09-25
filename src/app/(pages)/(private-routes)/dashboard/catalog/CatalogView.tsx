@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
+import { salonWallClockToUtcIso } from "@/shared/utils/salonTime";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import {
   Drawer,
@@ -209,8 +210,9 @@ export default function CatalogView() {
             ? Number(ruleStaffMemberId)
             : null,
         durationMinutes: ruleDuration ? Number(ruleDuration) : null,
-        validFrom: ruleValidFrom ? new Date(ruleValidFrom).toISOString() : null,
-        validTo: ruleValidTo ? new Date(ruleValidTo).toISOString() : null,
+        // Start of the chosen day on the salon (Tehran) calendar, as a UTC instant.
+        validFrom: ruleValidFrom ? salonWallClockToUtcIso(ruleValidFrom, "00:00") : null,
+        validTo: ruleValidTo ? salonWallClockToUtcIso(ruleValidTo, "00:00") : null,
       });
       setToast({ type: "success", message: "قانون قیمت‌گذاری ثبت شد." });
       resetPricingRuleForm();

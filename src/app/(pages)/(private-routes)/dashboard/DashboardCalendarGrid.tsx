@@ -20,7 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/primitives/dialog/Dialog";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import {
+  formatSalonTime,
+  salonClockParts,
+  salonWallClockToUtcIso,
+  utcToSalonTime,
+  utcToSalonYmd,
+} from "@/shared/utils/salonTime";
 
 // Fixed business-hours window rather than deriving from working-schedules — a
 // reasonable default for a first version; can be made schedule-aware later.
@@ -34,13 +40,13 @@ const HOUR_LABELS = Array.from(
 const COLUMN_HEIGHT_PX = 48 * (DAY_END_HOUR - DAY_START_HOUR);
 
 function minutesSinceDayStart(iso: string): number {
-  const d = new Date(iso);
-  return (d.getHours() - DAY_START_HOUR) * 60 + d.getMinutes();
+  const { hours, minutes } = salonClockParts(iso);
+  return (hours - DAY_START_HOUR) * 60 + minutes;
 }
 
 function formatClock(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString(APP_LOCALE, {
+    return formatSalonTime(iso, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -99,21 +105,20 @@ export default function DashboardCalendarGrid({
 
   const openReschedule = (item: IStaffDayBoardItem) => {
     setRescheduleTarget(item);
-    const d = new Date(item.startTime);
-    setNewTime(
-      `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-    );
+    setNewTime(utcToSalonTime(item.startTime).slice(0, 5));
   };
 
   const confirmReschedule = async () => {
     if (!rescheduleTarget || !newTime) return;
-    const base = new Date(rescheduleTarget.startTime);
-    const [h, m] = newTime.split(":").map(Number);
-    base.setHours(h, m, 0, 0);
+    // Same salon day as the original appointment, new salon-clock time → UTC.
+    const newStartTime = salonWallClockToUtcIso(
+      utcToSalonYmd(rescheduleTarget.startTime),
+      newTime
+    );
     try {
       await lifecycle.reschedule.mutateAsync({
         id: rescheduleTarget.appointmentId,
-        newStartTime: base.toISOString(),
+        newStartTime,
       });
       onToast({ type: "success", message: "نوبت جابه‌جا شد." });
       setRescheduleTarget(null);

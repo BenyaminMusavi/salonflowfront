@@ -41,11 +41,11 @@ import {
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { DashboardSelect, type DashboardToastState } from "./_components";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonTime } from "@/shared/utils/salonTime";
 
 function formatClock(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString(APP_LOCALE, {
+    return formatSalonTime(iso, {
       hour: "2-digit",
       minute: "2-digit",
     });
