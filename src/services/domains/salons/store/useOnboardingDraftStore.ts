@@ -59,6 +59,7 @@ const initial = {
   submitted: false,
   basicInfo: {
     name: "",
+    username: "",
     description: "",
     instagramHandle: "",
     whatsappNumber: "",

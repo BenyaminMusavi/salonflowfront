@@ -34,6 +34,7 @@ function galleryPublicId(item: string | ISalonGalleryItem): string | null {
 export function mapSalonToBasicInfo(salon: ISalon): BasicInfoValues {
   return {
     name: salon.name ?? "",
+    username: salon.username ?? "",
     description: salon.description ?? "",
   };
 }

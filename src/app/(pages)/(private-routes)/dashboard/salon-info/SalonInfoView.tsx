@@ -9,7 +9,12 @@ import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnbo
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
 import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  getApiErrorMessage,
+  getApiFieldErrorMessage,
+} from "@/services/domains/booking/utils/booking-mappers";
+import { SalonApprovalStatus } from "@/services/common/enums/domain-enums";
+import SalonLinkCard from "@/shared/components/composites/salon-share/SalonLinkCard";
 import type { IOnboardingBranch } from "@/services/domains/salons/types/onboarding.type";
 import {
   DashboardPage,
@@ -116,8 +121,11 @@ export default function SalonInfoView() {
   );
   const [basicInfo, setBasicInfo] = useState<BasicInfoValues>({
     name: "",
+    username: "",
     description: "",
   });
+  /** Server 400 on `username` from the last save; cleared as soon as the field is edited. */
+  const [usernameServerError, setUsernameServerError] = useState("");
   const [contactInfo, setContactInfo] = useState<ContactSocialValues>({
     instagramHandle: "",
     whatsappNumber: "",
@@ -282,11 +290,17 @@ export default function SalonInfoView() {
       setToast({ type: "error", message: "نام سالن الزامی است." });
       return;
     }
+    const username = basicInfo.username.trim();
+    if (!username) {
+      setToast({ type: "error", message: "آدرس اختصاصی سالن الزامی است." });
+      return;
+    }
 
     try {
       await saveBasicInfo.mutateAsync({
         publicId: salonPublicId,
         name,
+        username,
         description: basicInfo.description.trim() || null,
         instagramHandle: contactInfo.instagramHandle.trim() || null,
         whatsappNumber: contactInfo.whatsappNumber.trim() || null,
@@ -295,6 +309,7 @@ export default function SalonInfoView() {
 
       setDraftBasicInfo({
         name,
+        username,
         description: basicInfo.description.trim(),
         instagramHandle: contactInfo.instagramHandle.trim(),
         whatsappNumber: contactInfo.whatsappNumber.trim(),
@@ -312,11 +327,18 @@ export default function SalonInfoView() {
 
       profileBaselineRef.current = { basicInfo, contactInfo };
       setProfileSubmitted(false);
+      setUsernameServerError("");
       setToast({ type: "success", message: "اطلاعات سالن با موفقیت ذخیره شد." });
     } catch (err) {
+      // A username error means nothing was saved; the form keeps every typed value so
+      // only the username needs fixing.
+      const usernameError = getApiFieldErrorMessage(err, "username");
+      if (usernameError) setUsernameServerError(usernameError);
       setToast({
         type: "error",
-        message: getApiErrorMessage(err, "ذخیره اطلاعات سالن ناموفق بود."),
+        message: usernameError
+          ? "آدرس اختصاصی را اصلاح کنید؛ هیچ تغییری ذخیره نشد."
+          : getApiErrorMessage(err, "ذخیره اطلاعات سالن ناموفق بود."),
       });
     }
   };
@@ -415,6 +437,7 @@ export default function SalonInfoView() {
     }
   };
 
+  const isApproved = salon?.approvalStatus === SalonApprovalStatus.Approved;
   const showLoading = !!salonPublicId && salonQuery.isLoading && !salon;
   const showError =
     !!salonPublicId &&
@@ -472,6 +495,12 @@ export default function SalonInfoView() {
             onToast={setToast}
           />
 
+          <SalonLinkCard
+            username={salon.username}
+            salonName={salon.name}
+            isApproved={isApproved}
+          />
+
           <section
             id="salon-profile"
             className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
@@ -489,10 +518,26 @@ export default function SalonInfoView() {
 
             <BasicInfoSection
               values={basicInfo}
-              onChange={setBasicInfo}
+              onChange={(next) => {
+                if (next.username !== basicInfo.username) setUsernameServerError("");
+                setBasicInfo(next);
+              }}
               nameError={
                 profileSubmitted && !basicInfo.name.trim()
                   ? "نام سالن الزامی است."
+                  : undefined
+              }
+              salonPublicId={salonPublicId as string}
+              savedUsername={salon.username}
+              usernameError={
+                usernameServerError ||
+                (profileSubmitted && !basicInfo.username.trim()
+                  ? "آدرس اختصاصی سالن الزامی است."
+                  : undefined)
+              }
+              usernameNote={
+                isApproved && basicInfo.username.trim() !== (salon.username ?? "")
+                  ? "با تغییر آدرس، لینک قبلی همچنان کار می‌کند، ولی تا ۳۰ روز نمی‌توانید دوباره آن را تغییر دهید."
                   : undefined
               }
             />

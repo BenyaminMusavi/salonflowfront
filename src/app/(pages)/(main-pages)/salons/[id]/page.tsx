@@ -1,5 +1,10 @@
 import SalonsDetailView from "./SalonsDetailView";
 
-export default function SalonsDetailPage() {
-  return <SalonsDetailView />;
+export default async function SalonsDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <SalonsDetailView source={{ id }} />;
 }

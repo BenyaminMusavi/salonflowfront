@@ -1,5 +1,7 @@
 import { useQueryApprovedSalons } from "./useQueryApprovedSalons";
 import { useQuerySalonById } from "./useQuerySalonById";
+import { useQuerySalonByUsername } from "./useQuerySalonByUsername";
+import { useQueryUsernameAvailability } from "./useQueryUsernameAvailability";
 import { useQueryBranchServices } from "./useQueryBranchServices";
 import { useQueryAvailableDates } from "./useQueryAvailableDates";
 import { useQueryStaffAvailability } from "./useQueryStaffAvailability";
@@ -19,6 +21,8 @@ import { useMutateSubmitForReview } from "./useMutateSubmitForReview";
 export {
   useQueryApprovedSalons,
   useQuerySalonById,
+  useQuerySalonByUsername,
+  useQueryUsernameAvailability,
   useQueryBranchServices,
   useQueryAvailableDates,
   useQueryStaffAvailability,

@@ -30,6 +30,9 @@ export const API_ADDRESS = {
     BASE: "/api/salons",
     APPROVED: "/api/salons",
     BY_ID: (id: string | number) => `/api/salons/${id}`,
+    BY_USERNAME: (username: string) =>
+      `/api/salons/by-username/${encodeURIComponent(username)}`,
+    USERNAME_AVAILABILITY: "/api/salons/username-availability",
     BRANCH_SERVICES: (branchPublicId: string) =>
       `/api/salons/branches/${branchPublicId}/services`,
     BRANCH_AVAILABLE_DATES: (branchPublicId: string) =>

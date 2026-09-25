@@ -1,3 +1,4 @@
+export { useDebouncedValue } from "./useDebouncedValue";
 export { useDragScroll } from "./useDragScroll";
 export { useMediaQuery } from "./useMediaQuery";
 export { usePrefersReducedMotion } from "./usePrefersReducedMotion";

@@ -43,6 +43,8 @@ export const RouteAddress = {
   SALONS: {
     DETAILS: (id: string | number) => `/salons/${id}`,
     BOOK: (id: string | number) => `/salons/${id}/book`,
+    /** Public share link — only for sharing/QR; internal navigation keeps the Guid routes above. */
+    BY_USERNAME: (username: string) => `/s/${encodeURIComponent(username)}`,
   },
   WALLET: {
     BASE: "/wallet",

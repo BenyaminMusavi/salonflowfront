@@ -3,9 +3,11 @@
 import { Input } from "@/shared/components/primitives/input/Input";
 import { TextArea } from "@/shared/components/primitives/textArea/TextArea";
 import { Label } from "@/shared/components/primitives/label/Label";
+import SalonUsernameField from "@/shared/components/composites/salon-username/SalonUsernameField";
 
 export interface BasicInfoValues {
   name: string;
+  username: string;
   description: string;
 }
 
@@ -14,6 +16,11 @@ interface BasicInfoSectionProps {
   onChange: (values: BasicInfoValues) => void;
   /** Shown under the name field once a save attempt exposed an invalid value. */
   nameError?: string;
+  salonPublicId: string;
+  /** Username as last loaded from the API — skips the availability call while unchanged. */
+  savedUsername?: string | null;
+  usernameError?: string;
+  usernameNote?: string;
 }
 
 /**
@@ -25,6 +32,10 @@ export default function BasicInfoSection({
   values,
   onChange,
   nameError,
+  salonPublicId,
+  savedUsername,
+  usernameError,
+  usernameNote,
 }: BasicInfoSectionProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -43,6 +54,14 @@ export default function BasicInfoSection({
           <p className="text-xs text-content-error">{nameError}</p>
         )}
       </div>
+      <SalonUsernameField
+        value={values.username}
+        onChange={(username) => onChange({ ...values, username })}
+        salonPublicId={salonPublicId}
+        currentUsername={savedUsername}
+        error={usernameError}
+        note={usernameNote}
+      />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="salon-description">توضیحات</Label>
         <TextArea

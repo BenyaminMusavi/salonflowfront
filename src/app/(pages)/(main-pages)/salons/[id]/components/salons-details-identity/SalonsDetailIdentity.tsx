@@ -2,10 +2,13 @@
 
 import { StarIcon } from "@phosphor-icons/react";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
+import SalonShareButton from "@/shared/components/composites/salon-share/SalonShareButton";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 
 interface SalonsDetailIdentityProps {
   name: string;
+  /** Current public-link username; the share button is hidden without it. */
+  username?: string | null;
   /** MediaUsageType.Profile — shown here as the salon's logo badge. */
   logoUrl?: string | null;
   rating?: number | null;
@@ -35,6 +38,7 @@ function SalonLogoBadge({ name, logoUrl }: { name: string; logoUrl?: string | nu
 
 export default function SalonsDetailIdentity({
   name,
+  username,
   logoUrl,
   rating,
   isFavorite = false,
@@ -49,6 +53,11 @@ export default function SalonsDetailIdentity({
         <h1 className="truncate text-2xl font-bold text-foreground">{name}</h1>
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <SalonShareButton
+          username={username}
+          salonName={name}
+          className="h-9 w-9 rounded-full bg-surface"
+        />
         <FavoriteHeartButton
           isFavorite={isFavorite}
           disabled={!canFavorite}

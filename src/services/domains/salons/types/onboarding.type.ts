@@ -4,6 +4,8 @@ import { GenderType, StaffInvitationStatus } from "@/services/common/enums/domai
 export interface ISaveBasicInfoRequest {
   publicId: string | null;
   name: string;
+  /** Public-link username — required on create; on edit, null/empty keeps the current one. */
+  username?: string | null;
   description?: string | null;
   instagramHandle?: string | null;
   whatsappNumber?: string | null;
@@ -78,6 +80,7 @@ export interface ISalonOnboardingDraft {
   publicId: string;
   approvalStatus: number;
   name: string;
+  username: string | null;
   description: string | null;
   instagramHandle: string | null;
   whatsappNumber: string | null;
@@ -88,7 +91,15 @@ export interface ISalonOnboardingDraft {
   schedule: IOnboardingScheduleDay[];
 }
 
+/** GET /api/salons/username-availability — `username` is the normalized value that would be saved. */
+export interface IUsernameAvailability {
+  username: string;
+  available: boolean;
+  reason: "invalid" | "reserved" | "taken" | null;
+}
+
 export type TSaveBasicInfoEntity = TResponse<ISaveBasicInfoResult>;
+export type TUsernameAvailabilityEntity = TResponse<IUsernameAvailability>;
 export type TSaveBranchesEntity = TResponse<IOnboardingBranch[]>;
 export type TSaveServicesEntity = TResponse<IOnboardingService[]>;
 export type TSaveStaffEntity = TResponse<IOnboardingStaff[]>;

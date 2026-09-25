@@ -28,6 +28,9 @@ export interface ISalon {
   /** Salon.Id — required by GET /api/reviews?salonId= and POST /api/salon-reports, which still take long, not Guid. */
   salonId: number;
   name: string;
+  /** Current public-link username (`/s/{username}`). Only for the share link / QR — every API
+   * call and internal route keeps using the Guid `id`. Always read it fresh from the API. */
+  username?: string | null;
   description?: string | null;
   address?: string | null;
   city?: string | null;

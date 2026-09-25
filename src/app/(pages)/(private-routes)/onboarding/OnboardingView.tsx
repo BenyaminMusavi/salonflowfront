@@ -24,7 +24,9 @@ import {
 import {
   getApiErrorFieldData,
   getApiErrorMessage,
+  getApiFieldErrorMessage,
 } from "@/services/domains/booking/utils/booking-mappers";
+import SalonUsernameField from "@/shared/components/composites/salon-username/SalonUsernameField";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
@@ -133,6 +135,8 @@ export default function OnboardingView() {
   const serviceTypes = serviceTypesRes?.data ?? [];
 
   const [error, setError] = useState("");
+  /** Field error for «آدرس اختصاصی» (client required-check or server 400); cleared on edit. */
+  const [usernameError, setUsernameError] = useState("");
   const [saving, setSaving] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [gateBlocked, setGateBlocked] = useState(false);
@@ -247,9 +251,16 @@ export default function OnboardingView() {
         if (!draft.basicInfo.name.trim()) {
           throw new Error("نام سالن الزامی است.");
         }
+        const username = draft.basicInfo.username?.trim() ?? "";
+        // Required on create; on an existing draft an empty value keeps the server's current one.
+        if (!draft.salonPublicId && !username) {
+          setUsernameError("آدرس اختصاصی سالن الزامی است.");
+          return;
+        }
         const res = await salonService.saveBasicInfo({
           publicId: draft.salonPublicId,
           name: draft.basicInfo.name.trim(),
+          username: username || null,
           description: draft.basicInfo.description || null,
           instagramHandle: draft.basicInfo.instagramHandle || null,
           whatsappNumber: draft.basicInfo.whatsappNumber || null,
@@ -363,6 +374,14 @@ export default function OnboardingView() {
           ? e.message
           : getApiErrorMessage(e, "ذخیره این مرحله ناموفق بود.");
 
+      // Username 400 = nothing was saved; show it under the field and keep every typed value.
+      const usernameFieldError =
+        step === 1 ? getApiFieldErrorMessage(e, "username") : undefined;
+      if (usernameFieldError) {
+        setUsernameError(usernameFieldError);
+        return;
+      }
+
       // Creating a brand-new salon (step 1, no existing publicId) 400s with this
       // shape when the user already has one Pending — surface it as a dedicated
       // screen instead of an inline form error.
@@ -463,6 +482,7 @@ export default function OnboardingView() {
 
       draft.setBasicInfo({
         name: data.name,
+        username: data.username ?? "",
         description: data.description ?? "",
         instagramHandle: data.instagramHandle ?? "",
         whatsappNumber: data.whatsappNumber ?? "",
@@ -659,12 +679,24 @@ export default function OnboardingView() {
             {(
               [
                 ["name", "نام سالن *"],
+                ["username", ""],
                 ["description", "توضیحات"],
                 ["instagramHandle", "اینستاگرام"],
                 ["whatsappNumber", "واتساپ"],
                 ["websiteUrl", "وبسایت"],
               ] as const
-            ).map(([key, label]) => (
+            ).map(([key, label]) => key === "username" ? (
+              <SalonUsernameField
+                key={key}
+                value={draft.basicInfo.username ?? ""}
+                onChange={(username) => {
+                  setUsernameError("");
+                  draft.setBasicInfo({ username });
+                }}
+                salonPublicId={draft.salonPublicId}
+                error={usernameError || undefined}
+              />
+            ) : (
               <label key={key} className="flex flex-col gap-1 text-sm">
                 <span className="text-foreground-muted">{label}</span>
                 {key === "description" ? (

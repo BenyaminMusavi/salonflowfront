@@ -94,6 +94,16 @@ export function getApiErrorMessage(
 }
 
 /** Extracts the first field error's `data` payload (e.g. `{ publicId }` on a pending-salon conflict) — usually undefined. */
+/** Message of a validation error on one field (backend field names arrive lowercased). */
+export function getApiFieldErrorMessage(error: unknown, field: string): string | undefined {
+  const errors = getErrorBody(error)?.errors;
+  if (!Array.isArray(errors)) return undefined;
+  const match = errors.find(
+    (item) => (item as { field?: unknown })?.field?.toString().toLowerCase() === field.toLowerCase()
+  ) as { message?: string } | undefined;
+  return match?.message || undefined;
+}
+
 export function getApiErrorFieldData<T = unknown>(error: unknown): T | undefined {
   const data = getErrorBody(error);
   if (!data) return undefined;

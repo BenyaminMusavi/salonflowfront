@@ -28,6 +28,7 @@ import {
   TSaveServicesEntity,
   TSaveStaffEntity,
   TStaffRosterEntity,
+  TUsernameAvailabilityEntity,
 } from "@/services/domains/salons/types/onboarding.type";
 
 class SalonService {
@@ -54,6 +55,21 @@ class SalonService {
   async getById(id: string) {
     return await axiosInstance.get<unknown, TSalonEntity>(
       API_ADDRESS.SALON.BY_ID(id)
+    );
+  }
+
+  /** Public `/s/{username}` page; also resolves a salon's previous usernames (response carries the current one). */
+  async getByUsername(username: string) {
+    return await axiosInstance.get<unknown, TSalonEntity>(
+      API_ADDRESS.SALON.BY_USERNAME(username)
+    );
+  }
+
+  /** Pass `salonPublicId` when editing so the salon's own current/previous usernames count as free. */
+  async checkUsernameAvailability(username: string, salonPublicId?: string | null) {
+    return await axiosInstance.get<unknown, TUsernameAvailabilityEntity>(
+      API_ADDRESS.SALON.USERNAME_AVAILABILITY,
+      { params: { username, salonPublicId: salonPublicId || undefined } }
     );
   }
 

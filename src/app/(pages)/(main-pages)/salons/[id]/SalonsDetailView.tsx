@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { WarningCircleIcon } from "@phosphor-icons/react";
 import SalonsDetailHero from "./components/salons-details-hero/SalonsDetailHero";
 import SalonsDetailIdentity from "./components/salons-details-identity/SalonsDetailIdentity";
@@ -14,18 +15,38 @@ import SalonReviewsSection from "./components/salon-reviews-section/SalonReviews
 import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
+import { useQuerySalonByUsername } from "@/services/domains/salons/hooks/useQuerySalonByUsername";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
-import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
-export default function SalonsDetailView() {
-  const params = useParams<{ id: string }>();
-  const salonPublicId = params?.id;
+/** `/salons/{id}` loads by Guid; the public share link `/s/{username}` loads by username. */
+export type SalonDetailSource = { id: string } | { username: string };
+
+export default function SalonsDetailView({ source }: { source: SalonDetailSource }) {
+  const router = useRouter();
+  const requestedUsername = "username" in source ? source.username : undefined;
   const [reportOpen, setReportOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuerySalonById(salonPublicId);
+  const byId = useQuerySalonById("id" in source ? source.id : undefined);
+  const byUsername = useQuerySalonByUsername(requestedUsername);
+  const { data, isLoading, isError, error } = requestedUsername ? byUsername : byId;
   const salon = data?.data;
+  // API calls (favorites, booking) always use the Guid, even on the username route.
+  const salonPublicId = "id" in source ? source.id : salon?.id;
+
+  // An old username still resolves; move the address bar to the current one.
+  const currentUsername = salon?.username;
+  useEffect(() => {
+    if (
+      requestedUsername &&
+      currentUsername &&
+      currentUsername !== requestedUsername.toLowerCase()
+    ) {
+      router.replace(RouteAddress.SALONS.BY_USERNAME(currentUsername));
+    }
+  }, [requestedUsername, currentUsername, router]);
 
   const numericSalonId = salon?.salonId;
   const { isFavorite, canToggle, isPending, toggle } =
@@ -43,11 +64,23 @@ export default function SalonsDetailView() {
   }
 
   if (isError || !salon) {
+    const notFound =
+      !isError || (error as { response?: { status?: number } })?.response?.status === 404;
     return (
       <div className="-mt-20 flex flex-col pb-32">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
-        <div className="flex h-[40vh] items-center justify-center px-safe-area text-center text-sm text-error">
-          سالن یافت نشد یا در کاتالوگ عمومی در دسترس نیست.
+        <div className="flex h-[40vh] flex-col items-center justify-center gap-3 px-safe-area text-center">
+          <p className="text-sm text-error">
+            {notFound
+              ? "سالن پیدا نشد."
+              : "دریافت اطلاعات سالن ناموفق بود. لطفاً دوباره تلاش کنید."}
+          </p>
+          <Link
+            href={RouteAddress.SEARCH.BASE}
+            className="text-sm font-bold text-primary"
+          >
+            جستجوی سالن‌ها
+          </Link>
         </div>
       </div>
     );
@@ -64,6 +97,7 @@ export default function SalonsDetailView() {
       <div className="mt-5 flex flex-col">
         <SalonsDetailIdentity
           name={salon.name}
+          username={salon.username}
           logoUrl={salon.imageUrl}
           rating={salon.rating}
           isFavorite={isFavorite}
