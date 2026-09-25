@@ -4,7 +4,7 @@ import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useQueryAdminPromoPerformance } from "@/services/domains/admin/hooks/useQueryAdminPlatformReports";
 import { useMutateExportPlatformReport } from "@/services/domains/admin/hooks/useMutateExportPlatformReport";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import { formatRialAsToman } from "@/services/domains/subscriptions/utils/subscription-display";
 import { downloadBlob } from "@/shared/utils/downloadBlob";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
 import { APP_LOCALE } from "@/shared/utils/locale";
@@ -88,7 +88,7 @@ export function PromoPerformanceTab({ from, to }: { from: string; to: string }) 
                       {row.usageCount.toLocaleString(APP_LOCALE)}
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
-                      {formatToman(row.revenue)} تومان
+                      {formatRialAsToman(row.revenue)} تومان
                     </td>
                   </tr>
                 ))

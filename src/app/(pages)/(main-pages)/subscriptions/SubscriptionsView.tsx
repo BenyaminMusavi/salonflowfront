@@ -21,8 +21,10 @@ import {
   ICheckoutPreviewResult,
   ISubscriptionPlan,
 } from "@/services/domains/subscriptions/types/subscriptions.type";
-import { effectivePlanPrice } from "@/services/domains/subscriptions/utils/subscription-display";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import {
+  effectivePlanPrice,
+  formatRialAsToman,
+} from "@/services/domains/subscriptions/utils/subscription-display";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -67,11 +69,27 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
   },
 ];
 
-/** Every plan the backend returns, ordered shortest-duration first — whatever exists is shown, nothing is filtered out. */
+/** Every active plan the backend returns, in the admin-set sortOrder (then shortest first). */
 function sortPlansForDisplay(plans: ISubscriptionPlan[]) {
   return [...plans].sort(
-    (a, b) => a.durationMonths - b.durationMonths || a.price - b.price
+    (a, b) =>
+      (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+      a.durationMonths - b.durationMonths ||
+      a.price - b.price
   );
+}
+
+/** «20٪ تخفیف افتتاحیه — 10 روز باقی مانده»; the discounted price itself always comes from the server. */
+function planDiscountLabel(plan: ISubscriptionPlan): string {
+  const title = [
+    plan.discountPercent != null ? `${plan.discountPercent}٪ تخفیف` : "تخفیف",
+    plan.campaignName ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const remaining =
+    plan.discountRemainingDays != null ? ` — ${plan.discountRemainingDays} روز باقی مانده` : "";
+  return title + remaining;
 }
 
 export default function SubscriptionsView() {
@@ -200,7 +218,7 @@ export default function SubscriptionsView() {
           <p className="mt-2 text-xs text-foreground-muted">
             شماره فاکتور: {invoiceId}
             {invoiceAmount != null
-              ? ` — مبلغ: ${formatToman(invoiceAmount)} تومان`
+              ? ` — مبلغ: ${formatRialAsToman(invoiceAmount)} تومان`
               : ""}
           </p>
           <button
@@ -257,12 +275,12 @@ export default function SubscriptionsView() {
                       </span>
                       <span className="text-sm">
                         {hasCampaign && (
-                          <span className="me-2 text-xs text-error line-through">
-                            {formatToman(plan.price)}
+                          <span className="me-2 text-xs text-foreground-muted line-through">
+                            {formatRialAsToman(plan.price)}
                           </span>
                         )}
                         <span className="font-bold text-foreground">
-                          {formatToman(price)} تومان
+                          {formatRialAsToman(price)} تومان
                         </span>
                       </span>
                     </div>
@@ -271,9 +289,9 @@ export default function SubscriptionsView() {
                         {plan.description}
                       </p>
                     )}
-                    {hasCampaign && plan.campaignName && (
-                      <p className="mt-1 text-xs text-primary">
-                        {plan.campaignName}
+                    {hasCampaign && (
+                      <p className="mt-1 w-fit rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        {planDiscountLabel(plan)}
                       </p>
                     )}
                   </button>
@@ -361,7 +379,7 @@ export default function SubscriptionsView() {
                     {appliedPromo.result.campaignName
                       ? ` (${appliedPromo.result.campaignName})`
                       : ""}
-                    — {formatToman(appliedPromo.result.discountAmount)} تومان
+                    — {formatRialAsToman(appliedPromo.result.discountAmount)} تومان
                     تخفیف اعمال شد.
                   </p>
                 )}
@@ -449,7 +467,7 @@ export default function SubscriptionsView() {
             <p className="text-center text-xs text-foreground-muted">
               مبلغ قابل پرداخت:{" "}
               <span className="font-bold text-foreground">
-                {totalPrice != null ? `${formatToman(totalPrice)} تومان` : "—"}
+                {totalPrice != null ? `${formatRialAsToman(totalPrice)} تومان` : "—"}
               </span>
             </p>
             <button

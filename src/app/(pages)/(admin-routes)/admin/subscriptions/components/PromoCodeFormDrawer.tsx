@@ -12,6 +12,10 @@ import {
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import {
+  rialToToman,
+  tomanToRial,
+} from "@/services/domains/subscriptions/utils/subscription-display";
 import { salonWallClockToUtcIso, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { useQuerySubscriptionPlans } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionPlans";
 import {
@@ -56,7 +60,16 @@ export function PromoCodeFormDrawer({
     setCode(target?.code ?? "");
     setPlanId(target?.planId != null ? String(target.planId) : ANY_PLAN_VALUE);
     setDiscountType(target?.discountType ?? PromoDiscountType.Percentage);
-    setDiscountValue(target ? String(target.discountValue) : "");
+    // Fixed amounts are stored in RIALS; the form works in Toman.
+    setDiscountValue(
+      target
+        ? String(
+            target.discountType === PromoDiscountType.FixedAmount
+              ? rialToToman(target.discountValue)
+              : target.discountValue
+          )
+        : ""
+    );
     setMaxRedemptions(target?.maxRedemptions != null ? String(target.maxRedemptions) : "");
     setStartsAt(target?.startsAt ? utcToSalonYmd(target.startsAt) : "");
     setEndsAt(target?.endsAt ? utcToSalonYmd(target.endsAt) : "");
@@ -86,7 +99,7 @@ export function PromoCodeFormDrawer({
 
     const sharedPayload = {
       discountType,
-      discountValue: value,
+      discountValue: discountType === PromoDiscountType.FixedAmount ? tomanToRial(value) : value,
       maxRedemptions: maxRedemptionsValue,
       startsAt: startsAt ? salonWallClockToUtcIso(startsAt, "00:00") : null,
       endsAt: endsAt ? salonWallClockToUtcIso(endsAt, "23:59:59") : null,

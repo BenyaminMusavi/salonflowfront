@@ -4,7 +4,7 @@ import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useQueryAdminReferralPerformance } from "@/services/domains/admin/hooks/useQueryAdminPlatformReports";
 import { useMutateExportPlatformReport } from "@/services/domains/admin/hooks/useMutateExportPlatformReport";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import { formatRialAsToman } from "@/services/domains/subscriptions/utils/subscription-display";
 import { downloadBlob } from "@/shared/utils/downloadBlob";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
 import { APP_LOCALE } from "@/shared/utils/locale";
@@ -59,7 +59,7 @@ export function ReferralPerformanceTab({ from, to }: { from: string; to: string 
           <div className="rounded-xl border border-border bg-surface p-4">
             <p className="text-xs text-foreground-muted">درآمد حاصل از دعوت‌شدگان</p>
             <p className="mt-1 text-xl font-bold text-foreground">
-              {formatToman(result.inviteeRevenueGenerated)} تومان
+              {formatRialAsToman(result.inviteeRevenueGenerated)} تومان
             </p>
           </div>
         </div>

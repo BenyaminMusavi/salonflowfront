@@ -7,13 +7,13 @@ export {
   useMutatePreviewCheckout,
 } from "./useMutateSubscriptions";
 export { useMutateMarkInvoicePaid } from "./useMutateMarkInvoicePaid";
-export { useQueryAdminCampaigns } from "./useQueryAdminCampaigns";
 export {
-  useMutateCreateCampaign,
-  useMutateUpdateCampaign,
-  useMutateActivateCampaign,
-  useMutateDeactivateCampaign,
-} from "./useMutateCampaignActions";
+  useQueryAdminSubscriptionPlans,
+  useMutateSaveAdminPlan,
+  useMutateToggleAdminPlan,
+  useMutateSetAdminPlanDiscount,
+  useMutateRemoveAdminPlanDiscount,
+} from "./useAdminSubscriptionPlans";
 export { useQueryAdminPromoCodes } from "./useQueryAdminPromoCodes";
 export {
   useMutateCreatePromoCode,

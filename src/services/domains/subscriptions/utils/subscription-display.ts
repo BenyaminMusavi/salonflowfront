@@ -1,5 +1,4 @@
 import {
-  PlanCampaignDiscountType,
   PlatformInvoiceStatus,
   PromoDiscountType,
   SubscriptionStatus,
@@ -94,15 +93,30 @@ export function effectivePlanPrice(plan: {
   return plan.price;
 }
 
-/** Shared by campaigns and promo codes — both use the same Percentage/FixedAmount shape. */
-export function formatDiscountValue(
-  discountType: PlanCampaignDiscountType | PromoDiscountType,
-  value: number
-): string {
-  if (discountType === PlanCampaignDiscountType.Percentage) {
+/*
+ * Subscription money (plans, discounts, checkout, platform invoices, promo fixed amounts, platform
+ * reports) is in RIALS in the API, while the UI speaks Toman. Convert only at the edges:
+ * rialToToman for display, tomanToRial for what an admin types into a form.
+ */
+export function rialToToman(rial: number): number {
+  return Math.round(rial / 10);
+}
+
+export function tomanToRial(toman: number): number {
+  return Math.round(toman * 10);
+}
+
+/** "1,000,000" from a rial amount (no currency word — callers append «تومان»). */
+export function formatRialAsToman(rial: number | null | undefined): string {
+  return rial == null || !Number.isFinite(rial) ? "—" : formatToman(rialToToman(rial));
+}
+
+/** Promo codes: percentage, or a fixed amount stored in RIALS and shown in Toman. */
+export function formatDiscountValue(discountType: PromoDiscountType, value: number): string {
+  if (discountType === PromoDiscountType.Percentage) {
     return `${value.toLocaleString(APP_LOCALE)}٪`;
   }
-  return `${formatToman(value)} تومان`;
+  return `${formatRialAsToman(value)} تومان`;
 }
 
 /** Whole days left until `endDate`, or null if there is no end date to count down to. */

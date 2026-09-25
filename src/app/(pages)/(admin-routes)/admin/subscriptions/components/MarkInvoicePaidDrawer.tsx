@@ -13,7 +13,7 @@ import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { useMutateMarkInvoicePaid } from "@/services/domains/subscriptions/hooks/useMutateMarkInvoicePaid";
 import { IAdminPlatformInvoiceListItem } from "@/services/domains/subscriptions/types/subscriptions.type";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import { formatRialAsToman } from "@/services/domains/subscriptions/utils/subscription-display";
 
 export function MarkInvoicePaidDrawer({
   invoice,
@@ -71,7 +71,7 @@ export function MarkInvoicePaidDrawer({
                 <div className="flex items-center justify-between py-1">
                   <span className="text-foreground-muted">مبلغ</span>
                   <span className="font-bold text-foreground">
-                    {formatToman(invoice.grandTotal)} تومان
+                    {formatRialAsToman(invoice.grandTotal)} تومان
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">

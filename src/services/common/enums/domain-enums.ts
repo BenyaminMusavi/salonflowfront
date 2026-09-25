@@ -96,11 +96,6 @@ export enum PromoDiscountType {
   FixedAmount = 2,
 }
 
-export enum PlanCampaignDiscountType {
-  Percentage = 1,
-  FixedAmount = 2,
-}
-
 export enum ReviewModerationStatus {
   Pending = 1,
   Approved = 2,

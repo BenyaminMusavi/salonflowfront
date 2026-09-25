@@ -1,23 +1,31 @@
 import { TPagedResult, TResponse } from "@/services/common/data-types/SharedDataTypes";
 import {
-  PlanCampaignDiscountType,
   PlatformInvoiceStatus,
   PromoDiscountType,
   SubscriptionStatus,
 } from "@/services/common/enums/domain-enums";
 
+/** Public plan (`GET /api/subscriptions/plans`, active plans only). Amounts are in RIALS. */
 export interface ISubscriptionPlan {
   id: number;
   publicId?: string;
   name: string;
   description?: string | null;
   durationMonths: number;
+  /** RIALS */
   price: number;
   currency?: string;
   maxSalons: number;
   trialDays?: number;
+  sortOrder?: number;
+  /** Price after the plan discount, in RIALS — what checkout charges. null = no discount. */
   campaignPrice?: number | null;
+  /** Discount title, e.g. «افتتاحیه». */
   campaignName?: string | null;
+  discountPercent?: number | null;
+  /** UTC ISO; null = no end date. */
+  discountEndsAt?: string | null;
+  discountRemainingDays?: number | null;
 }
 
 export interface ISubscription {
@@ -138,39 +146,58 @@ export type TAdminPlatformInvoicesListEntity = TResponse<
   TPagedResult<IAdminPlatformInvoiceListItem>
 >;
 
-/** Admin discount campaign on a subscription plan — `GET/POST/PUT /api/subscriptions/campaigns`. */
-export interface IPlanCampaign {
-  id: number;
-  planId: number;
+/** A plan's single percentage discount (admin view). `endsAt`/`remainingDays` null = no end date. */
+export interface IAdminPlanDiscount {
   name: string;
-  discountType: PlanCampaignDiscountType;
-  discountValue: number;
-  /** ISO datetime */
+  percent: number;
+  /** UTC ISO */
   startsAt: string;
-  /** ISO datetime */
-  endsAt: string;
+  endsAt: string | null;
+  remainingDays: number | null;
+  /** false = scheduled: startsAt hasn't arrived yet. */
+  isEffectiveNow: boolean;
+  /** Price after the discount, in RIALS — always show this, never compute it client-side. */
+  finalPrice: number;
+}
+
+/** `GET/POST/PUT /api/admin/subscription-plans` — every amount is in RIALS (currency "IRR"). */
+export interface IAdminSubscriptionPlan {
+  publicId: string;
+  name: string;
+  description: string | null;
+  durationMonths: number;
+  /** RIALS */
+  price: number;
+  currency: string;
+  maxSalons: number;
+  trialDays: number;
+  sortOrder: number;
   isActive: boolean;
+  activeSubscriberCount: number;
+  discount: IAdminPlanDiscount | null;
 }
 
-export interface ICreatePlanCampaignRequest {
-  planId: number;
+/** Create / edit a plan. `price` in RIALS. Omitted optional fields keep their value on edit. */
+export interface IAdminSaveSubscriptionPlanRequest {
   name: string;
-  discountType: PlanCampaignDiscountType;
-  discountValue: number;
-  startsAt: string;
-  endsAt: string;
+  description?: string | null;
+  durationMonths: number;
+  price: number;
+  maxSalons?: number;
+  trialDays?: number;
+  sortOrder?: number;
 }
 
-export interface IUpdatePlanCampaignRequest {
+/** Sets (replaces) the plan's discount. No `durationDays` = no end date; no `startsAt` = now. */
+export interface IAdminSetPlanDiscountRequest {
   name: string;
-  discountType: PlanCampaignDiscountType;
-  discountValue: number;
-  startsAt: string;
-  endsAt: string;
+  percent: number;
+  durationDays?: number | null;
+  startsAt?: string | null;
 }
 
-export type TPlanCampaignsEntity = TResponse<IPlanCampaign[]>;
-export type TPlanCampaignEntity = TResponse<IPlanCampaign>;
+export type TAdminSubscriptionPlansEntity = TResponse<IAdminSubscriptionPlan[]>;
+export type TAdminSubscriptionPlanEntity = TResponse<IAdminSubscriptionPlan>;
 
 /** Admin platform-wide promo code — `GET/POST/PUT /api/subscriptions/promos`. Distinct from a
  * plan campaign: a promo is a code the buyer types in, not an automatic price override. */

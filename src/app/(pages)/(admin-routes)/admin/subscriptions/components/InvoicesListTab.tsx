@@ -11,7 +11,7 @@ import {
   platformInvoiceStatusLabel,
   platformInvoiceStatusVariant,
 } from "@/services/domains/subscriptions/utils/subscription-display";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import { formatRialAsToman } from "@/services/domains/subscriptions/utils/subscription-display";
 import { IAdminPlatformInvoiceListItem } from "@/services/domains/subscriptions/types/subscriptions.type";
 import { AdminPagination } from "../../_components/AdminPagination";
 import { AdminEmptyState } from "../../_components/AdminEmptyState";
@@ -130,7 +130,7 @@ export function InvoicesListTab() {
                       </p>
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
-                      {formatToman(invoice.grandTotal)} تومان
+                      {formatRialAsToman(invoice.grandTotal)} تومان
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={platformInvoiceStatusVariant(invoice.status)}>

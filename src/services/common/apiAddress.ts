@@ -143,12 +143,6 @@ export const API_ADDRESS = {
     INVOICES_ME: "/api/subscriptions/invoices/me",
     INVOICE_MARK_PAID: (invoiceId: number) =>
       `/api/subscriptions/invoices/${invoiceId}/mark-paid`,
-    CAMPAIGNS: "/api/subscriptions/campaigns",
-    CAMPAIGN_BY_ID: (campaignId: number) => `/api/subscriptions/campaigns/${campaignId}`,
-    CAMPAIGN_ACTIVATE: (campaignId: number) =>
-      `/api/subscriptions/campaigns/${campaignId}/activate`,
-    CAMPAIGN_DEACTIVATE: (campaignId: number) =>
-      `/api/subscriptions/campaigns/${campaignId}/deactivate`,
     PROMOS: "/api/subscriptions/promos",
     PROMO_BY_ID: (promoId: number) => `/api/subscriptions/promos/${promoId}`,
     PROMO_ACTIVATE: (promoId: number) => `/api/subscriptions/promos/${promoId}/activate`,
@@ -275,6 +269,15 @@ export const API_ADDRESS = {
     USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
     SUBSCRIPTIONS: "/api/admin/subscriptions",
     SUBSCRIPTION_INVOICES: "/api/admin/subscriptions/invoices",
+    SUBSCRIPTION_PLANS: "/api/admin/subscription-plans",
+    SUBSCRIPTION_PLAN_BY_ID: (planPublicId: string) =>
+      `/api/admin/subscription-plans/${planPublicId}`,
+    SUBSCRIPTION_PLAN_ACTIVATE: (planPublicId: string) =>
+      `/api/admin/subscription-plans/${planPublicId}/activate`,
+    SUBSCRIPTION_PLAN_DEACTIVATE: (planPublicId: string) =>
+      `/api/admin/subscription-plans/${planPublicId}/deactivate`,
+    SUBSCRIPTION_PLAN_DISCOUNT: (planPublicId: string) =>
+      `/api/admin/subscription-plans/${planPublicId}/discount`,
     PLATFORM_REPORTS_PROMO: "/api/admin/platform-reports/promo-performance",
     PLATFORM_REPORTS_REFERRAL: "/api/admin/platform-reports/referral-performance",
     PLATFORM_REPORTS_EXPORT: "/api/admin/platform-reports/export",

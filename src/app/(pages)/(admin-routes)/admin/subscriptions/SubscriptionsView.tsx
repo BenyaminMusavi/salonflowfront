@@ -4,27 +4,27 @@ import { useState } from "react";
 import { cn } from "@/shared/utils/className";
 import { SubscriptionsListTab } from "./components/SubscriptionsListTab";
 import { InvoicesListTab } from "./components/InvoicesListTab";
-import { CampaignsListTab } from "./components/CampaignsListTab";
+import { PlansListTab } from "./components/PlansListTab";
 import { PromoCodesListTab } from "./components/PromoCodesListTab";
 
 const TABS = [
+  { id: "plans", label: "طرح‌ها" },
   { id: "subscriptions", label: "اشتراک‌ها" },
   { id: "invoices", label: "فاکتورها" },
-  { id: "campaigns", label: "کمپین‌ها" },
   { id: "promos", label: "کدهای تخفیف" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 export default function SubscriptionsView() {
-  const [tab, setTab] = useState<TabId>("subscriptions");
+  const [tab, setTab] = useState<TabId>("plans");
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="text-lg font-bold text-foreground">اشتراک و صورتحساب</h1>
         <p className="mt-1 text-xs text-foreground-muted">
-          نمای کلی اشتراک مالکان سالن‌ها و ثبت پرداخت فاکتورهای پلتفرمی.
+          مدیریت طرح‌های اشتراک و تخفیف‌شان، اشتراک مالکان سالن‌ها و ثبت پرداخت فاکتورهای پلتفرمی.
         </p>
       </div>
 
@@ -46,12 +46,12 @@ export default function SubscriptionsView() {
         ))}
       </div>
 
-      {tab === "subscriptions" ? (
+      {tab === "plans" ? (
+        <PlansListTab />
+      ) : tab === "subscriptions" ? (
         <SubscriptionsListTab />
       ) : tab === "invoices" ? (
         <InvoicesListTab />
-      ) : tab === "campaigns" ? (
-        <CampaignsListTab />
       ) : (
         <PromoCodesListTab />
       )}

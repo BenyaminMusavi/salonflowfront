@@ -1,19 +1,19 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
+  IAdminSaveSubscriptionPlanRequest,
+  IAdminSetPlanDiscountRequest,
   ICheckoutPreviewRequest,
   ICheckoutRequest,
-  ICreatePlanCampaignRequest,
   ICreatePromoCodeRequest,
   IMarkInvoicePaidRequest,
   IStartTrialRequest,
-  IUpdatePlanCampaignRequest,
   IUpdatePromoCodeRequest,
+  TAdminSubscriptionPlanEntity,
+  TAdminSubscriptionPlansEntity,
   TCheckoutEntity,
   TCheckoutPreviewEntity,
   TEntitlementEntity,
-  TPlanCampaignEntity,
-  TPlanCampaignsEntity,
   TPlatformInvoicesEntity,
   TPromoCodeEntity,
   TPromoCodesEntity,
@@ -88,37 +88,55 @@ class SubscriptionsService {
     );
   }
 
-  /** Admin-only — planId filters to one plan's campaigns, omit for all. */
-  async listCampaigns(planId?: number) {
-    return await axiosInstance.get<unknown, TPlanCampaignsEntity>(
-      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGNS,
-      { params: { planId } }
+  /* ---------- Admin: subscription plans (amounts in RIALS) ---------- */
+
+  /** All plans, active and inactive, with subscriber counts and their discount. */
+  async listAdminPlans() {
+    return await axiosInstance.get<unknown, TAdminSubscriptionPlansEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLANS
     );
   }
 
-  async createCampaign(data: ICreatePlanCampaignRequest) {
-    return await axiosInstance.post<unknown, TPlanCampaignEntity>(
-      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGNS,
+  /** New plans are active immediately. */
+  async createAdminPlan(data: IAdminSaveSubscriptionPlanRequest) {
+    return await axiosInstance.post<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLANS,
       data
     );
   }
 
-  async updateCampaign(campaignId: number, data: IUpdatePlanCampaignRequest) {
-    return await axiosInstance.put<unknown, TPlanCampaignEntity>(
-      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_BY_ID(campaignId),
+  /** Price/duration changes only affect future purchases. */
+  async updateAdminPlan(planPublicId: string, data: IAdminSaveSubscriptionPlanRequest) {
+    return await axiosInstance.put<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLAN_BY_ID(planPublicId),
       data
     );
   }
 
-  async activateCampaign(campaignId: number) {
-    return await axiosInstance.post<unknown, void>(
-      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_ACTIVATE(campaignId)
+  async activateAdminPlan(planPublicId: string) {
+    return await axiosInstance.post<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLAN_ACTIVATE(planPublicId)
     );
   }
 
-  async deactivateCampaign(campaignId: number) {
-    return await axiosInstance.post<unknown, void>(
-      API_ADDRESS.SUBSCRIPTIONS.CAMPAIGN_DEACTIVATE(campaignId)
+  /** Hides the plan from purchase; current subscribers keep it until their period ends. */
+  async deactivateAdminPlan(planPublicId: string) {
+    return await axiosInstance.post<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLAN_DEACTIVATE(planPublicId)
+    );
+  }
+
+  /** One discount per plan — setting a new one replaces the old. */
+  async setAdminPlanDiscount(planPublicId: string, data: IAdminSetPlanDiscountRequest) {
+    return await axiosInstance.put<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLAN_DISCOUNT(planPublicId),
+      data
+    );
+  }
+
+  async removeAdminPlanDiscount(planPublicId: string) {
+    return await axiosInstance.delete<unknown, TAdminSubscriptionPlanEntity>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_PLAN_DISCOUNT(planPublicId)
     );
   }
 
