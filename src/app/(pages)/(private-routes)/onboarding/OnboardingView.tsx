@@ -29,6 +29,8 @@ import {
 import SalonUsernameField from "@/shared/components/composites/salon-username/SalonUsernameField";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
+import { DurationPicker } from "@/shared/components/primitives/input/DurationPicker";
+import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
@@ -309,6 +311,9 @@ export default function OnboardingView() {
       if (step === 3) {
         if (draft.services.length === 0) {
           throw new Error("حداقل یک خدمت اضافه کنید.");
+        }
+        if (draft.services.some((s) => !isValidServiceDuration(s.durationMinutes))) {
+          throw new Error("مدت هر خدمت باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 8 ساعت).");
         }
         const payload = draft.services.map((s) => ({
           ...s,
@@ -876,19 +881,14 @@ export default function OnboardingView() {
                   }}
                   inputWrapperClassname="rounded-2xl"
                 />
-                <input
-                  type="number"
-                  placeholder="مدت (دقیقه)"
-                  value={s.durationMinutes || ""}
-                  onChange={(e) => {
+                <DurationPicker
+                  label="مدت خدمت"
+                  value={s.durationMinutes || null}
+                  onChange={(minutes) => {
                     const next = [...draft.services];
-                    next[idx] = {
-                      ...s,
-                      durationMinutes: Number(e.target.value) || 0,
-                    };
+                    next[idx] = { ...s, durationMinutes: minutes ?? 45 };
                     draft.setServices(next);
                   }}
-                  className={fieldClass}
                 />
                 <button
                   type="button"

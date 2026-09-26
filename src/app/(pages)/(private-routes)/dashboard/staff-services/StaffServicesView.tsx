@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
-import { Input } from "@/shared/components/primitives/input/Input";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import { DurationPicker } from "@/shared/components/primitives/input/DurationPicker";
+import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import {
   useMutateStaffServices,
   useQueryCatalogOfferings,
@@ -82,6 +83,17 @@ export default function StaffServicesView() {
   const onSave = async () => {
     if (!selectedStaffId) {
       setToast({ type: "error", message: "ابتدا یک پرسنل انتخاب کنید." });
+      return;
+    }
+    if (
+      rows.some(
+        (row) =>
+          row.isActive &&
+          row.customDurationMinutes != null &&
+          !isValidServiceDuration(row.customDurationMinutes)
+      )
+    ) {
+      setToast({ type: "error", message: "مدت اختصاصی باید مضرب 15 دقیقه باشد." });
       return;
     }
     try {
@@ -180,20 +192,15 @@ export default function StaffServicesView() {
                         )
                       }
                     />
-                    <Input
-                      type="number"
-                      placeholder="مدت اختصاصی (دقیقه)"
-                      value={row.customDurationMinutes ?? ""}
-                      onChange={(e) =>
+                    <DurationPicker
+                      label="مدت اختصاصی (اختیاری)"
+                      optional
+                      value={row.customDurationMinutes ?? null}
+                      onChange={(customDurationMinutes) =>
                         setRows((prev) =>
                           prev.map((it) =>
                             it.serviceOfferingId === row.serviceOfferingId
-                              ? {
-                                  ...it,
-                                  customDurationMinutes: e.target.value
-                                    ? Number(e.target.value)
-                                    : null,
-                                }
+                              ? { ...it, customDurationMinutes }
                               : it
                           )
                         )

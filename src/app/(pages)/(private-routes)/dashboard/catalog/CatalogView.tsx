@@ -5,6 +5,8 @@ import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { salonWallClockToUtcIso } from "@/shared/utils/salonTime";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import { DurationPicker } from "@/shared/components/primitives/input/DurationPicker";
+import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import {
   Drawer,
   DrawerContent,
@@ -145,6 +147,9 @@ export default function CatalogView() {
       if (!editingId && !serviceTypePublicId) {
         throw new Error("نوع سرویس را انتخاب کنید.");
       }
+      if (!isValidServiceDuration(Number(durationMinutes))) {
+        throw new Error("مدت سرویس باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 8 ساعت).");
+      }
 
       const commonBody = {
         branchId: branchId ? Number(branchId) : null,
@@ -193,6 +198,10 @@ export default function CatalogView() {
     }
     if (ruleScopeType === PricingRuleScopeType.StaffSpecific && !ruleStaffMemberId) {
       setToast({ type: "error", message: "برای این محدوده، پرسنل را انتخاب کنید." });
+      return;
+    }
+    if (ruleDuration && !isValidServiceDuration(Number(ruleDuration))) {
+      setToast({ type: "error", message: "مدت اختصاصی باید مضرب 15 دقیقه باشد." });
       return;
     }
 
@@ -372,11 +381,11 @@ export default function CatalogView() {
             value={rulePrice}
             onValueChange={(v) => setRulePrice(v == null ? "" : String(v))}
           />
-          <Input
-            type="number"
-            placeholder="مدت اختصاصی به دقیقه (اختیاری)"
-            value={ruleDuration}
-            onChange={(e) => setRuleDuration(e.target.value)}
+          <DurationPicker
+            label="مدت اختصاصی (اختیاری)"
+            optional
+            value={ruleDuration ? Number(ruleDuration) : null}
+            onChange={(minutes) => setRuleDuration(minutes == null ? "" : String(minutes))}
           />
           <DashboardDateField
             name="pricing-rule-valid-from"
@@ -484,11 +493,10 @@ export default function CatalogView() {
               value={basePrice}
               onValueChange={(v) => setBasePrice(v == null ? "" : String(v))}
             />
-            <Input
-              type="number"
-              placeholder="مدت (دقیقه)"
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(e.target.value)}
+            <DurationPicker
+              label="مدت سرویس"
+              value={durationMinutes ? Number(durationMinutes) : null}
+              onChange={(minutes) => setDurationMinutes(String(minutes ?? 45))}
             />
             <MoneyInput
               placeholder="بیعانه (اختیاری)"
