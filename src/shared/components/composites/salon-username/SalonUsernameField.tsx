@@ -23,7 +23,7 @@ interface SalonUsernameFieldProps {
   id?: string;
   value: string;
   onChange: (value: string) => void;
-  /** Edit mode: lets the salon's own current/previous usernames count as free. Omit on create. */
+  /** Edit mode: lets the salon's own current username count as free. Omit on create. */
   salonPublicId?: string | null;
   /** Saved username — no availability call while the field still holds it. */
   currentUsername?: string | null;

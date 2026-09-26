@@ -61,14 +61,14 @@ class SalonService {
     );
   }
 
-  /** Public `/s/{username}` page; also resolves a salon's previous usernames (response carries the current one). */
+  /** Public `/s/{username}` page. Only the current username resolves — an old one is 404. */
   async getByUsername(username: string) {
     return await axiosInstance.get<unknown, TSalonEntity>(
       API_ADDRESS.SALON.BY_USERNAME(username)
     );
   }
 
-  /** Pass `salonPublicId` when editing so the salon's own current/previous usernames count as free. */
+  /** Pass `salonPublicId` when editing so the salon's own current username counts as free. */
   async checkUsernameAvailability(username: string, salonPublicId?: string | null) {
     return await axiosInstance.get<unknown, TUsernameAvailabilityEntity>(
       API_ADDRESS.SALON.USERNAME_AVAILABILITY,

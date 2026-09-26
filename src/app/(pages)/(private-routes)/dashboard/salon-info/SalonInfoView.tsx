@@ -535,11 +535,8 @@ export default function SalonInfoView() {
                   ? "آدرس اختصاصی سالن الزامی است."
                   : undefined)
               }
-              usernameNote={
-                isApproved && basicInfo.username.trim() !== (salon.username ?? "")
-                  ? "لینک قبلی از کار نمی‌افتد و بازدیدکننده را خودکار به لینک جدید می‌برد (برای QR و کارت‌های چاپ‌شده). بعد از این تغییر، تا 30 روز نمی‌توانید دوباره آدرس را عوض کنید."
-                  : undefined
-              }
+              // Backend rule: after approval at most 2 changes, and an old address stops working (404).
+              usernameNote="بعد از تأیید سالن فقط 2 بار می‌توانید آدرس را تغییر دهید. با تغییر آدرس، لینک قبلی دیگر کار نمی‌کند."
             />
 
             <div className="my-4 border-t border-border" />

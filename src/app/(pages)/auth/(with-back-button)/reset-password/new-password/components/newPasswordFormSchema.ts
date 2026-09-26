@@ -1,12 +1,9 @@
 import { z } from "zod";
+import { newPasswordField } from "@/shared/utils/passwordRules";
 
 export const newPasswordFormSchema = () =>
   z.object({
-    password: z
-      .string({
-        message: "لطفا رمز عبور را وارد نمایید",
-      })
-      .min(1, "لطفا رمز عبور را وارد نمایید"),
+    password: newPasswordField("لطفا رمز عبور جدید را وارد نمایید"),
     repeatPassword: z
       .string({
         message: "لطفا تکرار رمز عبور را وارد نمایید",

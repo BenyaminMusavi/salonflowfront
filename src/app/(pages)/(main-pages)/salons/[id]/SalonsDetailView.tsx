@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { WarningCircleIcon } from "@phosphor-icons/react";
 import SalonsDetailHero from "./components/salons-details-hero/SalonsDetailHero";
@@ -18,14 +18,12 @@ import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalon
 import { useQuerySalonByUsername } from "@/services/domains/salons/hooks/useQuerySalonByUsername";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
-import { useRouter } from "next/navigation";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
 /** `/salons/{id}` loads by Guid; the public share link `/s/{username}` loads by username. */
 export type SalonDetailSource = { id: string } | { username: string };
 
 export default function SalonsDetailView({ source }: { source: SalonDetailSource }) {
-  const router = useRouter();
   const requestedUsername = "username" in source ? source.username : undefined;
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -35,18 +33,6 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
   const salon = data?.data;
   // API calls (favorites, booking) always use the Guid, even on the username route.
   const salonPublicId = "id" in source ? source.id : salon?.id;
-
-  // An old username still resolves; move the address bar to the current one.
-  const currentUsername = salon?.username;
-  useEffect(() => {
-    if (
-      requestedUsername &&
-      currentUsername &&
-      currentUsername !== requestedUsername.toLowerCase()
-    ) {
-      router.replace(RouteAddress.SALONS.BY_USERNAME(currentUsername));
-    }
-  }, [requestedUsername, currentUsername, router]);
 
   const numericSalonId = salon?.salonId;
   const { isFavorite, canToggle, isPending, toggle } =

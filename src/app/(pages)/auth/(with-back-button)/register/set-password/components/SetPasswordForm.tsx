@@ -1,14 +1,16 @@
 "use client";
 import React from "react";
 import { CaretLeft, LockKey } from "@phosphor-icons/react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { InputReactHookForm } from "@/shared/components/primitives/input/InputReactHookForm";
 import { Button } from "@/shared/components/primitives/button/Button";
+import { PasswordRequirements } from "@/shared/components/composites/password-requirements/PasswordRequirements";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
 import { TSetPasswordFormSchema } from "./setPasswordFormSchema";
 
 function SetPasswordForm() {
   const { control } = useFormContext<TSetPasswordFormSchema>();
+  const password = useWatch({ control, name: "password" }) as string | undefined;
   const isLoading = useFormLoading();
 
   return (
@@ -16,7 +18,7 @@ function SetPasswordForm() {
       <div
         className={"w-full py-6 items-center flex flex-col gap-x-2 gap-y-4 "}
       >
-        <div className={"flex w-full"}>
+        <div className={"flex w-full flex-col gap-2"}>
           <InputReactHookForm
             startIcon={<LockKey size={20} />}
             label={"رمز عبور"}
@@ -27,6 +29,7 @@ function SetPasswordForm() {
             type={"password"}
             autoComplete={"new-password"}
           />
+          <PasswordRequirements value={password} />
         </div>
 
         <div className={"flex w-full"}>

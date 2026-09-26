@@ -1,15 +1,17 @@
 "use client";
 import React from "react";
 import { CaretLeft, LockKey } from "@phosphor-icons/react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { InputReactHookForm } from "@/shared/components/primitives/input/InputReactHookForm";
 import { Button } from "@/shared/components/primitives/button/Button";
+import { PasswordRequirements } from "@/shared/components/composites/password-requirements/PasswordRequirements";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
 import { TChangePasswordFormSchema } from "./changePasswordFormSchema";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 
 function ChangePasswordForm() {
   const { control } = useFormContext<TChangePasswordFormSchema>();
+  const password = useWatch({ control, name: "password" }) as string | undefined;
   const isLoading = useFormLoading();
   // SF-QA-034: an OTP-only user setting their first password has no current one to enter.
   const hasPassword = useTokenStore((s) => s.token?.hasPassword ?? true);
@@ -34,7 +36,7 @@ function ChangePasswordForm() {
           </div>
         )}
 
-        <div className={"flex w-full"}>
+        <div className={"flex w-full flex-col gap-2"}>
           <InputReactHookForm
             startIcon={<LockKey size={20} />}
             label={"رمز عبور جدید"}
@@ -45,6 +47,7 @@ function ChangePasswordForm() {
             type={"password"}
             autoComplete={"new-password"}
           />
+          <PasswordRequirements value={password} />
         </div>
 
         <div className={"flex w-full"}>

@@ -1,18 +1,10 @@
 import { z } from "zod";
-
-// Mirrors the backend rule (BACKEND_UPDATE_REPORT.md): 8+ chars, upper, lower, digit, special.
-const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+import { newPasswordField } from "@/shared/utils/passwordRules";
 
 export const setPasswordFormSchema = () =>
   z
     .object({
-      password: z
-        .string({ message: "لطفا رمز عبور را وارد نمایید" })
-        .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد")
-        .regex(
-          PASSWORD_RULE,
-          "رمز عبور باید شامل حروف بزرگ، کوچک، عدد و کاراکتر ویژه باشد"
-        ),
+      password: newPasswordField("لطفا رمز عبور را وارد نمایید"),
       repeatPassword: z
         .string({ message: "لطفا تکرار رمز عبور را وارد نمایید" })
         .min(1, "لطفا تکرار رمز عبور را وارد نمایید"),
