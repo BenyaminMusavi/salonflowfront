@@ -7,9 +7,14 @@ import { useDebouncedValue } from "@/shared/hooks";
 import { useSalonShareLink } from "@/shared/utils/salonShareLink";
 import { useQueryUsernameAvailability } from "@/services/domains/salons/hooks/useQueryUsernameAvailability";
 import type { IUsernameAvailability } from "@/services/domains/salons/types/onboarding.type";
+import {
+  normalizeUsernameInput,
+  USERNAME_MAX,
+  usernameFormatProblem,
+} from "@/shared/utils/salonUsername";
 
 const REASON_TEXT: Record<NonNullable<IUsernameAvailability["reason"]>, string> = {
-  invalid: "فرمت آدرس نامعتبر است",
+  invalid: "فرمت آدرس نامعتبر است؛ فقط حروف انگلیسی، عدد و خط تیره (-)",
   reserved: "این آدرس رزرو شده است",
   taken: "این آدرس قبلاً استفاده شده است",
 };
@@ -46,16 +51,28 @@ export default function SalonUsernameField({
   const isCurrent = !!currentUsername && debounced === currentUsername;
   const { display } = useSalonShareLink(trimmed || null);
 
+  // Precise local hint (which character, too short, …); the server check only runs once the
+  // format looks right, and its answer is still what counts on save.
+  const typingPaused = debounced === trimmed;
+  const formatProblem = isCurrent ? null : usernameFormatProblem(trimmed, typingPaused);
+
   const availability = useQueryUsernameAvailability(
     debounced,
     salonPublicId,
-    !isCurrent
+    !isCurrent && !usernameFormatProblem(debounced, true)
   );
   const result = availability.data?.data;
-  const settled = debounced === trimmed && !isCurrent && !!trimmed;
+  const settled = typingPaused && !isCurrent && !!trimmed && !formatProblem;
 
   let status: React.ReactNode = null;
-  if (settled && availability.isFetching) {
+  if (formatProblem) {
+    status = (
+      <span className="flex items-center gap-1 text-content-error">
+        <XCircleIcon size={14} weight="fill" className="shrink-0" />
+        {formatProblem}
+      </span>
+    );
+  } else if (settled && availability.isFetching) {
     status = (
       <span className="flex items-center gap-1 text-foreground-muted">
         <CircleNotchIcon size={14} className="animate-spin" /> در حال بررسی…
@@ -85,12 +102,13 @@ export default function SalonUsernameField({
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}
+        maxLength={USERNAME_MAX}
         value={value}
-        hasError={!!error}
-        aria-invalid={!!error}
-        onChange={(e) => onChange(e.target.value.toLowerCase())}
+        hasError={!!error || !!formatProblem}
+        aria-invalid={!!error || !!formatProblem}
+        onChange={(e) => onChange(normalizeUsernameInput(e.target.value))}
       />
-      {display && (
+      {display && !formatProblem && (
         <p dir="ltr" className="break-all text-left text-xs text-foreground-muted">
           {display}
         </p>
@@ -101,7 +119,11 @@ export default function SalonUsernameField({
         status && <div className="text-xs">{status}</div>
       )}
       <p className="text-xs text-foreground-muted">
-        3 تا 30 کاراکتر؛ فقط حروف کوچک انگلیسی، عدد و خط تیره.
+        3 تا 30 کاراکتر: حروف انگلیسی، عدد و خط تیره (-)؛ مثل{" "}
+        <span dir="ltr" className="font-medium">
+          nazanin-beauty
+        </span>
+        . فاصله و «_» خودکار به «-» تبدیل می‌شوند.
       </p>
       {note && <p className="text-xs text-warning">{note}</p>}
     </div>
