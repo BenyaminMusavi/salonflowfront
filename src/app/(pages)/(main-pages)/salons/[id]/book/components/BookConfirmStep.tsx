@@ -30,13 +30,15 @@ interface BookConfirmStepProps {
   slotTime: string | null;
   slotEndTime: string | null;
   staffLabel: string;
+  /** Small tag next to the staff name, e.g. «اولین نوبت». */
+  staffTag?: string | null;
   price?: ICalculatePriceResult | null;
   notes: string;
   onNotesChange: (value: string) => void;
   isLoggedIn: boolean;
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function ReviewRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
       <span className="shrink-0 text-sm text-foreground-muted">{label}</span>
@@ -55,6 +57,7 @@ export default function BookConfirmStep({
   slotTime,
   slotEndTime,
   staffLabel,
+  staffTag,
   price,
   notes,
   onNotesChange,
@@ -87,7 +90,19 @@ export default function BookConfirmStep({
           value={date ? formatFaDate(date) : "—"}
         />
         <ReviewRow label="ساعت" value={timeLabel} />
-        <ReviewRow label="پرسنل" value={staffLabel || "—"} />
+        <ReviewRow
+          label="پرسنل"
+          value={
+            <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+              {staffTag ? (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  {staffTag}
+                </span>
+              ) : null}
+              <span>{staffLabel || "—"}</span>
+            </span>
+          }
+        />
       </div>
 
       {price ? (

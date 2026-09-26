@@ -56,7 +56,11 @@ function StaffAvatar({ name, imageUrl }: { name: string; imageUrl?: string | nul
   );
 }
 
-function formatFirstAvailable(slot: IFirstAvailableSlot): string {
+/**
+ * Found slot as two lines — when on top, who underneath — instead of one «…، ساعت … · با …»
+ * sentence, which got hard to read (and jumbled in RTL) with two-part staff names.
+ */
+function FirstAvailableResult({ slot }: { slot: IFirstAvailableSlot }) {
   let day = slot.date;
   try {
     day = formatSalonDate(ymdToDate(slot.date), {
@@ -67,8 +71,19 @@ function formatFirstAvailable(slot: IFirstAvailableSlot): string {
   } catch {
     // keep yyyy-MM-dd
   }
-  const time = slot.time.slice(0, 5);
-  return slot.staffName ? `${day}، ساعت ${time} · با ${slot.staffName}` : `${day}، ساعت ${time}`;
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="text-sm font-bold text-primary">
+        {day} · ساعت {slot.time.slice(0, 5)}
+      </span>
+      {slot.staffName ? (
+        <span className="flex min-w-0 items-center gap-1 text-foreground-muted">
+          <UserIcon size={14} className="shrink-0" />
+          <span className="truncate">{slot.staffName}</span>
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 function firstAvailableSubtitle(selected: boolean, state: FirstAvailableState) {
@@ -80,7 +95,7 @@ function firstAvailableSubtitle(selected: boolean, state: FirstAvailableState) {
       </span>
     );
   }
-  if (state.result) return formatFirstAvailable(state.result);
+  if (state.result) return <FirstAvailableResult slot={state.result} />;
   if (state.result === null) return "نوبت آزادی پیدا نشد؛ یکی از پرسنل زیر را انتخاب کنید.";
   return "در مرحله‌ی بعد، ساعت‌های آزاد همه‌ی پرسنل نمایش داده می‌شود.";
 }
@@ -112,14 +127,9 @@ export default function BookStaffStep({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-foreground">اولین نوبت</p>
-          <p
-            className={cn(
-              "mt-1 text-xs",
-              useFirstAvailable && firstAvailable.result ? "font-medium text-primary" : "text-foreground-muted"
-            )}
-          >
+          <div className="mt-1 text-xs text-foreground-muted">
             {firstAvailableSubtitle(useFirstAvailable, firstAvailable)}
-          </p>
+          </div>
         </div>
       </button>
 

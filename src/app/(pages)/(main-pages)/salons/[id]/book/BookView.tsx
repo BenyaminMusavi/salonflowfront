@@ -205,11 +205,8 @@ export default function BookView() {
   const slotsData = slotsRes?.data;
   const slots = slotsData?.slots ?? [];
 
-  const staffLabel = useFirstAvailable
-    ? resolvedStaffName
-      ? `اولین نوبت · ${resolvedStaffName}`
-      : "اولین نوبت"
-    : staff?.fullName || resolvedStaffName || "—";
+  // The name alone; «اولین نوبت» is shown as a separate tag next to it on the confirm step.
+  const staffLabel = staff?.fullName || resolvedStaffName || "—";
 
   const firstAvailableResult: IFirstAvailableSlot | null | undefined =
     firstAvailableResolved && date && slotTime && resolvedStaffPublicId
@@ -491,6 +488,7 @@ export default function BookView() {
             slotTime={slotTime}
             slotEndTime={slotEndTime}
             staffLabel={staffLabel}
+            staffTag={useFirstAvailable ? "اولین نوبت" : null}
             price={price}
             notes={notes}
             onNotesChange={setNotes}
