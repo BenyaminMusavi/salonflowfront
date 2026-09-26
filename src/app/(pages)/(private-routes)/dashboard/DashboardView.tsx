@@ -11,6 +11,7 @@ import {
 import DashboardCalendarGrid from "./DashboardCalendarGrid";
 import QuickBookDrawer from "./QuickBookDrawer";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
+import NoShowDialog from "./NoShowDialog";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import { formatAppointmentDateTime } from "@/services/domains/appointments/utils/appointment-display";
@@ -77,6 +78,7 @@ export default function DashboardView() {
   const [viewMode, setViewMode] = useState<"agenda" | "grid">("agenda");
   const [bookOpen, setBookOpen] = useState(false);
   const [cancelId, setCancelId] = useState<number | null>(null);
+  const [noShowId, setNoShowId] = useState<number | null>(null);
 
   const salonDetail = useQuerySalonById(salonPublicId || undefined);
   const branches = salonDetail.data?.data?.branches ?? [];
@@ -148,16 +150,22 @@ export default function DashboardView() {
   const doLifecycle = async (
     action: "checkin" | "complete" | "noshow" | "cancel",
     appointmentId: number,
-    reason?: string
+    options?: { reason?: string; notifyCustomer?: boolean }
   ) => {
     try {
       if (action === "checkin") await lifecycle.checkIn.mutateAsync(appointmentId);
       if (action === "complete") await lifecycle.complete.mutateAsync(appointmentId);
-      if (action === "noshow") await lifecycle.noShow.mutateAsync(appointmentId);
+      if (action === "noshow") {
+        await lifecycle.noShow.mutateAsync({
+          id: appointmentId,
+          notifyCustomer: options?.notifyCustomer ?? false,
+        });
+      }
       if (action === "cancel") {
         await lifecycle.cancel.mutateAsync({
           id: appointmentId,
-          reason: reason || "لغو توسط سالن",
+          reason: options?.reason || "لغو توسط سالن",
+          notifyCustomer: options?.notifyCustomer ?? true,
         });
       }
       setToast({ type: "success", message: "وضعیت نوبت به‌روزرسانی شد." });
@@ -169,10 +177,16 @@ export default function DashboardView() {
     }
   };
 
-  const handleConfirmCancel = async (reason: string) => {
+  const handleConfirmCancel = async (reason: string, notifyCustomer: boolean) => {
     if (cancelId == null) return;
-    await doLifecycle("cancel", cancelId, reason);
+    await doLifecycle("cancel", cancelId, { reason, notifyCustomer });
     setCancelId(null);
+  };
+
+  const handleConfirmNoShow = async (notifyCustomer: boolean) => {
+    if (noShowId == null) return;
+    await doLifecycle("noshow", noShowId, { notifyCustomer });
+    setNoShowId(null);
   };
 
   return (
@@ -402,7 +416,7 @@ export default function DashboardView() {
                           variant="outline"
                           className={dashboardQuietButtonClass}
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("noshow", item.numericId)}
+                          onClick={() => setNoShowId(item.numericId)}
                         >
                           عدم حضور
                         </Button>
@@ -431,7 +445,7 @@ export default function DashboardView() {
                           variant="outline"
                           className={dashboardQuietButtonClass}
                           disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("noshow", item.numericId)}
+                          onClick={() => setNoShowId(item.numericId)}
                         >
                           عدم حضور
                         </Button>
@@ -472,6 +486,13 @@ export default function DashboardView() {
         onClose={() => setCancelId(null)}
         onConfirm={handleConfirmCancel}
         isPending={lifecycle.cancel.isPending}
+      />
+
+      <NoShowDialog
+        appointmentId={noShowId}
+        onClose={() => setNoShowId(null)}
+        onConfirm={handleConfirmNoShow}
+        isPending={lifecycle.noShow.isPending}
       />
 
       <DashboardToast toast={toast} onDismiss={() => setToast(null)} />

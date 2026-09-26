@@ -57,6 +57,8 @@ export interface IMyAppointmentDetail {
 
 export interface ICancelAppointmentRequest {
   reason: string;
+  /** Salon-side only: SMS the customer about the cancellation (backend default: true). */
+  notifyCustomer?: boolean;
 }
 
 export interface ISalonAppointmentServiceLine {
@@ -120,6 +122,13 @@ export interface IQuickBookResult {
 
 export interface IRescheduleAppointmentRequest {
   newStartTime: string;
+  /** SMS the customer the new time (backend default: true). */
+  notifyCustomer?: boolean;
+}
+
+/** Optional body of POST /appointments/{id}/no-show (backend default: no SMS). */
+export interface INoShowAppointmentRequest {
+  notifyCustomer?: boolean;
 }
 
 /** One staff member's day, from GET /appointments/staff/{staffMemberId}/day-board. */

@@ -180,7 +180,8 @@ export default function DashboardLayoutClient({
     if (!hasHydrated || !tokenReady) return;
 
     if (!isLoggedIn) {
-      router.replace(getLoginHref(RouteAddress.DASHBOARD.BASE));
+      // Return to the exact dashboard page (e.g. /dashboard/my-appointments from an SMS link).
+      router.replace(getLoginHref(pathname || RouteAddress.DASHBOARD.BASE));
       return;
     }
 

@@ -21,3 +21,4 @@ export { DashboardAdvanced } from "./DashboardAdvanced";
 export { OwnerBottomNav, OwnerSubnav } from "./OwnerNav";
 export { OWNER_NAV_GROUPS, getOwnerNavGroup } from "./nav";
 export { useIsSalonStaff } from "./useIsSalonStaff";
+export { NotifyCustomerCheckbox } from "./NotifyCustomerCheckbox";

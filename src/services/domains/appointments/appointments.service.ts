@@ -3,6 +3,7 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   ICreateSalonAppointmentRequest,
   ICancelAppointmentRequest,
+  INoShowAppointmentRequest,
   IQuickBookRequest,
   IRescheduleAppointmentRequest,
   ISalonAppointmentsQuery,
@@ -109,9 +110,10 @@ class AppointmentsService {
     );
   }
 
-  async noShow(id: number) {
+  async noShow(id: number, body: INoShowAppointmentRequest = {}) {
     return await axiosInstance.post<unknown, void>(
-      API_ADDRESS.APPOINTMENTS.NO_SHOW(id)
+      API_ADDRESS.APPOINTMENTS.NO_SHOW(id),
+      body
     );
   }
 

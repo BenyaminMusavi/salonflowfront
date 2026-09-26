@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/primitives/dialog/Dialog";
+import { NotifyCustomerCheckbox } from "./_components/NotifyCustomerCheckbox";
 import {
   formatSalonTime,
   salonClockParts,
@@ -102,10 +103,13 @@ export default function DashboardCalendarGrid({
     null
   );
   const [newTime, setNewTime] = useState("");
+  // SMS the customer the new time — on by default (backend contract).
+  const [notifyCustomer, setNotifyCustomer] = useState(true);
 
   const openReschedule = (item: IStaffDayBoardItem) => {
     setRescheduleTarget(item);
     setNewTime(utcToSalonTime(item.startTime).slice(0, 5));
+    setNotifyCustomer(true);
   };
 
   const confirmReschedule = async () => {
@@ -119,6 +123,7 @@ export default function DashboardCalendarGrid({
       await lifecycle.reschedule.mutateAsync({
         id: rescheduleTarget.appointmentId,
         newStartTime,
+        notifyCustomer,
       });
       onToast({ type: "success", message: "نوبت جابه‌جا شد." });
       setRescheduleTarget(null);
@@ -235,6 +240,9 @@ export default function DashboardCalendarGrid({
             value={newTime}
             onChange={(e) => setNewTime(e.target.value)}
           />
+          <div className="mt-3">
+            <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
+          </div>
           <DialogFooter className="mt-4">
             <Button
               type="button"

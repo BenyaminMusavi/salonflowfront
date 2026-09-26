@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useQueryMyAppointments } from "@/services/domains/appointments/hooks/useQueryMyAppointments";
-import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { getLoginHref } from "@/shared/utils/authRedirect";
+import { useRequireLogin } from "@/shared/hooks/useRequireLogin";
 import {
   AppointmentHistoryPanel,
   useAppointmentHistoryQuery,
 } from "@/shared/components/composites/appointment-history/AppointmentHistoryPanel";
 
 export default function ReservationView() {
-  const router = useRouter();
-  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  // Opened from SMS links too: a guest goes to login and comes back here afterwards.
+  const { ready: isLoggedIn } = useRequireLogin(RouteAddress.RESERVATION.BASE);
   const { query, setFilter, setPage } = useAppointmentHistoryQuery();
   // GET /appointments/me accepts any valid token (global or salon context),
   // so no switch-context is needed to list the user's own bookings.
@@ -24,18 +22,7 @@ export default function ReservationView() {
     return (
       <div className="flex flex-col items-center gap-4 px-safe-area pb-32 pt-10 text-center">
         <h1 className="text-lg font-bold text-foreground">نوبت‌های من</h1>
-        <p className="text-sm text-foreground-muted">
-          برای مشاهده نوبت‌ها وارد حساب کاربری شوید.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            router.push(getLoginHref(RouteAddress.RESERVATION.BASE));
-          }}
-          className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-        >
-          ورود
-        </button>
+        <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
       </div>
     );
   }

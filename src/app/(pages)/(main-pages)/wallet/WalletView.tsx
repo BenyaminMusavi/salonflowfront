@@ -1,17 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useQueryMyWallet, useQueryMyWalletTransactions } from "@/services/domains/wallets/hooks";
-import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { getLoginHref } from "@/shared/utils/authRedirect";
+import { useRequireLogin } from "@/shared/hooks/useRequireLogin";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 import { formatSalonDateTime } from "@/shared/utils/salonTime";
 
 export default function WalletView() {
-  const router = useRouter();
-  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  // Opened from SMS links too: a guest goes to login and comes back here afterwards.
+  const { ready: isLoggedIn } = useRequireLogin(RouteAddress.WALLET.BASE);
   const walletQuery = useQueryMyWallet({ enabled: isLoggedIn });
   const txQuery = useQueryMyWalletTransactions({ enabled: isLoggedIn });
   const wallet = walletQuery.data?.data;
@@ -21,18 +19,7 @@ export default function WalletView() {
     return (
       <div className="flex flex-col items-center gap-4 pb-32 pt-5 text-center">
         <BackHeader title="کیف پول من" fallbackHref={RouteAddress.PROFILE.BASE} />
-        <p className="px-safe-area text-sm text-foreground-muted">
-          برای مشاهده موجودی و تراکنش‌ها وارد حساب کاربری شوید.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            router.push(getLoginHref(RouteAddress.WALLET.BASE));
-          }}
-          className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-        >
-          ورود
-        </button>
+        <p className="px-safe-area text-sm text-foreground-muted">در حال بارگذاری…</p>
       </div>
     );
   }

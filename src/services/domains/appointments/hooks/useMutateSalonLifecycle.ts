@@ -21,19 +21,34 @@ export const useMutateSalonLifecycle = () => {
   });
 
   const noShow = useMutation({
-    mutationFn: (id: number) => appointmentsService.noShow(id),
+    mutationFn: ({ id, notifyCustomer }: { id: number; notifyCustomer: boolean }) =>
+      appointmentsService.noShow(id, { notifyCustomer }),
     onSuccess: invalidate,
   });
 
   const cancel = useMutation({
-    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
-      appointmentsService.cancel(id, { reason }),
+    mutationFn: ({
+      id,
+      reason,
+      notifyCustomer,
+    }: {
+      id: number;
+      reason: string;
+      notifyCustomer: boolean;
+    }) => appointmentsService.cancel(id, { reason, notifyCustomer }),
     onSuccess: invalidate,
   });
 
   const reschedule = useMutation({
-    mutationFn: ({ id, newStartTime }: { id: number; newStartTime: string }) =>
-      appointmentsService.reschedule(id, { newStartTime }),
+    mutationFn: ({
+      id,
+      newStartTime,
+      notifyCustomer,
+    }: {
+      id: number;
+      newStartTime: string;
+      notifyCustomer: boolean;
+    }) => appointmentsService.reschedule(id, { newStartTime, notifyCustomer }),
     onSuccess: invalidate,
   });
 
