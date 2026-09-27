@@ -21,6 +21,8 @@ export interface IAuthMeMembership {
   roleId: number;
   roleName: string;
   branchId: number | null;
+  /** Branch Guid for a branch-scoped (staff) membership; null for a salon-wide one. */
+  branchPublicId: string | null;
 }
 
 export interface IPendingStaffInvitation {
@@ -113,12 +115,6 @@ export interface IRefreshRequest {
 }
 
 export interface ILogoutRequest {
-  refreshToken: string;
-}
-
-export interface ISwitchContextRequest {
-  salonId: number | null;
-  branchId: number | null;
   refreshToken: string;
 }
 

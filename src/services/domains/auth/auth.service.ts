@@ -12,7 +12,6 @@ import {
   IForgetPasswordRequest,
   IRefreshRequest,
   ILogoutRequest,
-  ISwitchContextRequest,
   TAuthEntity,
   TAuthMeEntity,
 } from "./types/auth.type";
@@ -97,13 +96,6 @@ class AuthService {
   async updateProfile(data: IUpdateProfileRequest) {
     return await axiosInstance.patch<unknown, TAuthMeEntity>(
       API_ADDRESS.AUTH.PROFILE,
-      data
-    );
-  }
-
-  async switchContext(data: ISwitchContextRequest) {
-    return await axiosInstance.post<unknown, TAuthEntity>(
-      API_ADDRESS.AUTH.SWITCH_CONTEXT,
       data
     );
   }

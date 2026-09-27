@@ -13,8 +13,8 @@ export default function ReservationView() {
   // Opened from SMS links too: a guest goes to login and comes back here afterwards.
   const { ready: isLoggedIn } = useRequireLogin(RouteAddress.RESERVATION.BASE);
   const { query, setFilter, setPage } = useAppointmentHistoryQuery();
-  // GET /appointments/me accepts any valid token (global or salon context),
-  // so no switch-context is needed to list the user's own bookings.
+  // GET /appointments/me is a customer endpoint: customer pages never send
+  // X-Salon-Id, so it always lists the user's own bookings.
   const { data, isLoading, isFetching, error, refetch } =
     useQueryMyAppointments(query, { enabled: isLoggedIn });
 

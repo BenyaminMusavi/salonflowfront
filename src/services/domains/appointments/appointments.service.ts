@@ -36,7 +36,7 @@ class AppointmentsService {
     );
   }
 
-  /** Current salon's appointments where the caller is the staff member (salon-context JWT). */
+  /** Current salon's appointments where the caller is the staff member (panel `X-Salon-Id`). */
   async getMyStaffAppointments(query: IAppointmentHistoryQuery = {}) {
     return await axiosInstance.get<unknown, TAppointmentHistoryEntity>(
       API_ADDRESS.APPOINTMENTS.STAFF_ME,
@@ -44,7 +44,7 @@ class AppointmentsService {
     );
   }
 
-  /** One customer's appointments in the current salon (SalonOwner/Staff, salon-context JWT). */
+  /** One customer's appointments in the current salon (SalonOwner/Staff, panel `X-Salon-Id`). */
   async getCustomerAppointments(
     customerPublicId: string,
     query: IAppointmentHistoryQuery = {}
@@ -55,7 +55,7 @@ class AppointmentsService {
     );
   }
 
-  /** One staff member's appointments in the current salon (SalonOwner only, salon-context JWT). */
+  /** One staff member's appointments in the current salon (SalonOwner only, panel `X-Salon-Id`). */
   async getStaffAppointments(
     staffPublicId: string,
     query: IAppointmentHistoryQuery = {}

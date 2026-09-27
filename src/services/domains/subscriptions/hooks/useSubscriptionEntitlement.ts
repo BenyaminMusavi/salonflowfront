@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
+import { isSalonPanelPath } from "@/shared/utils/salonPanelRoute";
 import subscriptionsService from "../subscriptions.service";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
@@ -26,8 +28,10 @@ export const useSubscriptionEntitlement = () => {
   const salonId = useSalonContextStore((s) => s.salonId);
   const memberships = useSalonContextStore((s) => s.memberships);
 
+  // The tab's panel salon only applies inside the panel; customer/onboarding pages read `me`.
+  const inPanel = isSalonPanelPath(usePathname());
   const activeRoleName = memberships.find((m) => m.salonId === salonId)?.roleName;
-  const isStaff = activeRoleName === SalonRoleName.Staff;
+  const isStaff = inPanel && activeRoleName === SalonRoleName.Staff;
 
   const query = useQuery({
     queryKey: [SUBSCRIPTION_ENTITLEMENT_QUERY_KEY, isStaff ? salonId : "me"],

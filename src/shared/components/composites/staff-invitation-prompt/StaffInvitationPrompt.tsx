@@ -16,7 +16,7 @@ import {
 
 /**
  * Global prompt for GET /api/auth/me → pendingStaffInvitations. Mounted app-wide
- * (Providers.tsx) so it surfaces right after OTP login — before switch-context —
+ * (Providers.tsx) so it surfaces right after OTP login — before opening any panel —
  * regardless of which page the user lands on, per guide §1.2/§3.1.
  */
 export default function StaffInvitationPrompt() {

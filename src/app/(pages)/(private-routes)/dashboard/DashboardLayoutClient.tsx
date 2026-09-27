@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/services/salon-context-store/useSalonContextStore";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
-import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
+import { useSelectPanelSalon } from "@/services/salon-context-store/useSelectPanelSalon";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
 import { getLoginHref } from "@/shared/utils/authRedirect";
@@ -35,12 +35,10 @@ function Transferring() {
 
 function SalonSelectPanel({
   memberships,
-  isSwitching,
   onSelect,
   onBackHome,
 }: {
   memberships: ISalonMembership[];
-  isSwitching: boolean;
   onSelect: (m: ISalonMembership) => void;
   onBackHome: () => void;
 }) {
@@ -60,11 +58,10 @@ function SalonSelectPanel({
         <div className="flex flex-col gap-2">
           {memberships.map((m) => (
             <button
-              key={m.salonId}
+              key={m.salonPublicId ?? m.salonId}
               type="button"
-              disabled={isSwitching}
               onClick={() => onSelect(m)}
-              className="flex items-center gap-3 rounded-[20px] border border-border bg-surface p-4 text-right transition-colors hover:bg-surface-hover disabled:opacity-50"
+              className="flex items-center gap-3 rounded-[20px] border border-border bg-surface p-4 text-right transition-colors hover:bg-surface-hover"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-input text-[14px] font-bold text-foreground">
                 {m.name.charAt(0)}
@@ -81,9 +78,8 @@ function SalonSelectPanel({
 
         <button
           type="button"
-          disabled={isSwitching}
           onClick={onBackHome}
-          className="text-sm font-medium text-foreground-muted disabled:opacity-50"
+          className="text-sm font-medium text-foreground-muted"
         >
           بازگشت به اپ مشتری
         </button>
@@ -109,12 +105,13 @@ export default function DashboardLayoutClient({
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonName = useSalonContextStore((s) => s.salonName);
   const memberships = useSalonContextStore((s) => s.memberships);
+  const lastSalonPublicId = useSalonContextStore((s) => s.lastSalonPublicId);
+  const clearContext = useSalonContextStore((s) => s.clearContext);
 
   const { data, isSuccess, isError } = useQueryAuthMe({
     enabled: tokenReady && isLoggedIn,
   });
-  const { mutateAsync: switchContext, isPending: isSwitching } =
-    useMutateSwitchContext();
+  const selectSalon = useSelectPanelSalon();
   const { isEntitled, isLoading: entitlementLoading } =
     useSubscriptionEntitlement();
 
@@ -134,10 +131,6 @@ export default function DashboardLayoutClient({
     }
   }, [salonId, activeSalonFetched, activeApprovalStatus, router]);
 
-  const autoSwitchStarted = useRef(false);
-  const preferredCaptured = useRef(false);
-  /** Salon id from first hydrated snapshot; used if context was cleared then /dashboard is reopened. */
-  const preferredSalonIdRef = useRef<number | null>(null);
   const [needsSalonPick, setNeedsSalonPick] = useState(false);
 
   useEffect(() => {
@@ -153,29 +146,12 @@ export default function DashboardLayoutClient({
     return unsub;
   }, []);
 
-  useEffect(() => {
-    if (!hasHydrated || preferredCaptured.current) return;
-    preferredCaptured.current = true;
-    preferredSalonIdRef.current = salonId;
-  }, [hasHydrated, salonId]);
-
   const membershipList = useMemo(() => {
     const fromMe = mapAuthMeMembershipsToSalon(data?.data?.memberships);
     return fromMe.length > 0 ? fromMe : memberships;
   }, [data, memberships]);
 
-  const applySalonContext = async (target: ISalonMembership) => {
-    await switchContext({
-      salonId: target.salonId,
-      branchId: target.branchId ?? null,
-      salonName: target.name,
-      salonPublicId: target.salonPublicId,
-      roleId: target.roleId,
-      roleName: target.roleName,
-    });
-    setNeedsSalonPick(false);
-  };
-
+  // ADR-0012: picking a salon is local to this tab (no API call, no token swap).
   useEffect(() => {
     if (!hasHydrated || !tokenReady) return;
 
@@ -187,7 +163,12 @@ export default function DashboardLayoutClient({
 
     if (!isSuccess && !isError) return;
 
-    if (salonId != null) {
+    if (salonPublicId != null) {
+      // Membership revoked since this tab picked the salon → pick again.
+      if (isSuccess && !membershipList.some((m) => m.salonPublicId === salonPublicId)) {
+        clearContext();
+        return;
+      }
       setNeedsSalonPick(false);
       return;
     }
@@ -198,42 +179,30 @@ export default function DashboardLayoutClient({
       return;
     }
 
-    const preferredId = preferredSalonIdRef.current;
+    // Last salon used in any tab, or the only one → auto-pick; otherwise ask once.
     const preferred =
-      preferredId != null
-        ? membershipList.find((m) => m.salonId === preferredId)
-        : undefined;
+      membershipList.find((m) => m.salonPublicId === lastSalonPublicId) ??
+      (membershipList.length === 1 ? membershipList[0] : undefined);
 
-    // Preferred prior context or single membership → auto switch-context.
-    // Multiple memberships with no preferred → force explicit selection.
-    if (!preferred && membershipList.length > 1) {
+    if (!preferred) {
       setNeedsSalonPick(true);
       return;
     }
 
-    if (autoSwitchStarted.current || isSwitching) return;
-    autoSwitchStarted.current = true;
-
-    const target = preferred ?? membershipList[0];
-
-    void applySalonContext(target).catch(() => {
-      autoSwitchStarted.current = false;
-      if (membershipList.length > 1) {
-        setNeedsSalonPick(true);
-      } else {
-        router.replace(RouteAddress.HOME.BASE);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- switch via applySalonContext; avoid re-run loops
+    selectSalon(preferred);
+    setNeedsSalonPick(false);
   }, [
     hasHydrated,
     tokenReady,
     isLoggedIn,
     isSuccess,
     isError,
-    salonId,
+    salonPublicId,
+    lastSalonPublicId,
     membershipList,
-    isSwitching,
+    clearContext,
+    selectSalon,
+    pathname,
     router,
   ]);
 
@@ -250,11 +219,9 @@ export default function DashboardLayoutClient({
     return (
       <SalonSelectPanel
         memberships={membershipList}
-        isSwitching={isSwitching}
         onSelect={(m) => {
-          void applySalonContext(m).catch(() => {
-            /* keep picker open */
-          });
+          selectSalon(m);
+          setNeedsSalonPick(false);
         }}
         onBackHome={() => router.replace(RouteAddress.HOME.BASE)}
       />
@@ -262,12 +229,7 @@ export default function DashboardLayoutClient({
   }
 
   const readyToRender =
-    hasHydrated &&
-    tokenReady &&
-    isLoggedIn &&
-    meSettled &&
-    salonId != null &&
-    !isSwitching;
+    hasHydrated && tokenReady && isLoggedIn && meSettled && salonId != null;
 
   if (!readyToRender || !activeSalonFetched) {
     return <Transferring />;

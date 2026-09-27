@@ -9,7 +9,7 @@ export const MY_STAFF_APPOINTMENTS_QUERY_KEY = "MY_STAFF_APPOINTMENTS_QUERY_KEY"
 export const CUSTOMER_APPOINTMENTS_QUERY_KEY = "CUSTOMER_APPOINTMENTS_QUERY_KEY";
 export const STAFF_APPOINTMENTS_QUERY_KEY = "STAFF_APPOINTMENTS_QUERY_KEY";
 
-/** Salon-context JWT: appointments of the current salon served by the caller (Staff or SalonOwner). */
+/** Panel (`X-Salon-Id`): appointments of the current salon served by the caller (Staff or SalonOwner). */
 export const useQueryMyStaffAppointments = (query: IAppointmentHistoryQuery) => {
   const salonId = useSalonContextStore((s) => s.salonId);
 
@@ -21,7 +21,7 @@ export const useQueryMyStaffAppointments = (query: IAppointmentHistoryQuery) => 
   });
 };
 
-/** Salon-context JWT (SalonOwner/Staff): one customer's appointments in the current salon. */
+/** Panel `X-Salon-Id` (SalonOwner/Staff): one customer's appointments in the current salon. */
 export const useQueryCustomerAppointments = (
   customerPublicId: string | undefined,
   query: IAppointmentHistoryQuery
@@ -37,7 +37,7 @@ export const useQueryCustomerAppointments = (
   });
 };
 
-/** Salon-context JWT (SalonOwner only): one staff member's appointments in the current salon. */
+/** Panel `X-Salon-Id` (SalonOwner only): one staff member's appointments in the current salon. */
 export const useQueryStaffAppointments = (
   staffPublicId: string | undefined,
   query: IAppointmentHistoryQuery,

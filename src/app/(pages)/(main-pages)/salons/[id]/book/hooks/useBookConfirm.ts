@@ -8,8 +8,6 @@ import {
 } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { clearBookDraft } from "../utils/bookDraft";
 import { BOOK_TOTAL_STEPS } from "../components/BookProgressHeader";
@@ -51,16 +49,8 @@ export function useBookConfirm(params: UseBookConfirmParams) {
 
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const activeSalonContextId = useSalonContextStore((s) => s.salonId);
-  const { mutateAsync: switchContext } = useMutateSwitchContext();
   const { mutateAsync: createBooking, isPending: isCreating } =
     useCreateBooking();
-
-  const ensureCustomerContext = async () => {
-    if (activeSalonContextId != null) {
-      await switchContext({ salonId: null, branchId: null });
-    }
-  };
 
   const handleConfirm = async () => {
     setError("");
@@ -91,7 +81,6 @@ export function useBookConfirm(params: UseBookConfirmParams) {
     }
 
     try {
-      await ensureCustomerContext();
       const res = await createBooking({
         salonPublicId,
         branchPublicId,

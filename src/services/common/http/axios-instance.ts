@@ -8,6 +8,12 @@ import { IAuth } from "@/services/domains/auth/types/auth.type";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { setAuthLogoutReason } from "@/shared/utils/authRedirect";
 import { useFavoriteIdsStore } from "@/services/domains/favorites/store/useFavoriteIdsStore";
+import { TAuthMeEntity } from "@/services/domains/auth/types/auth.type";
+import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
+import { isSalonPanelPath } from "@/shared/utils/salonPanelRoute";
+
+export const SALON_HEADER = "X-Salon-Id";
+export const BRANCH_HEADER = "X-Branch-Id";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -22,6 +28,8 @@ declare module "axios" {
      * before failing anyway.
      */
     skipAuthRetry?: boolean;
+    /** Never attach the panel's `X-Salon-Id` / `X-Branch-Id`, even from a `/dashboard` page. */
+    skipSalonContext?: boolean;
   }
 }
 
@@ -76,15 +84,67 @@ axiosInstance.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // ADR-0012: salon context travels per request, only from panel pages. Customer
+  // endpoints reject it (403) and admin endpoints must never see it.
+  const { salonPublicId, branchPublicId } = useSalonContextStore.getState();
+  if (
+    salonPublicId &&
+    !config.skipSalonContext &&
+    typeof window !== "undefined" &&
+    isSalonPanelPath(window.location.pathname)
+  ) {
+    config.headers[SALON_HEADER] = salonPublicId;
+    if (branchPublicId) config.headers[BRANCH_HEADER] = branchPublicId;
+  }
+
   config.headers["X-Request-ID"] = uuidv4();
   return config;
 });
+
+let salonForbiddenCheck: Promise<void> | null = null;
+
+/**
+ * A 403 on a request carrying `X-Salon-Id` is either a plain role check (e.g. Staff on an
+ * owner-only endpoint) or a lost membership. Re-read `/api/auth/me` to tell them apart;
+ * only when the active salon/branch is gone, drop the panel context and leave the panel.
+ */
+function checkSalonMembershipAfterForbidden(): Promise<void> {
+  salonForbiddenCheck ??= (async () => {
+    try {
+      const me = await axiosInstance.get<unknown, TAuthMeEntity>(API_ADDRESS.AUTH.ME, {
+        skipSalonContext: true,
+      });
+      const memberships = mapAuthMeMembershipsToSalon(me.data?.memberships);
+      const store = useSalonContextStore.getState();
+      store.setMemberships(memberships);
+      const active = memberships.find((m) => m.salonPublicId === store.salonPublicId);
+      const stillValid =
+        !!active && (active.branchPublicId ?? null) === (store.branchPublicId ?? null);
+      if (!stillValid) {
+        store.clearContext();
+        if (typeof window !== "undefined") {
+          window.location.replace(RouteAddress.HOME.BASE);
+        }
+      }
+    } catch {
+      /* keep the context; the original 403 still surfaces */
+    } finally {
+      salonForbiddenCheck = null;
+    }
+  })();
+  return salonForbiddenCheck;
+}
 
 /* ---------- RESPONSE ---------- */
 axiosInstance.interceptors.response.use(
   (res) => res.data,
   async (error) => {
     const original = error.config as AxiosRequestConfig;
+
+    if (error.response?.status === 403 && original?.headers?.[SALON_HEADER]) {
+      await checkSalonMembershipAfterForbidden();
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status !== 401 ||
@@ -155,7 +215,7 @@ async function refreshTokenAcrossTabs(staleRefreshToken: string): Promise<IAuth>
     }
 
     // Bare axios — avoids interceptor recursion / circular import with authService.
-    // Context lives on the server refresh-token session; body is refreshToken only.
+    // Tokens never carry salon context (it's the X-Salon-Id header); body is refreshToken only.
     const refreshRes = await axios.post<TResponse<IAuth>>(
       API_ADDRESS.AUTH.REFRESH,
       { refreshToken: staleRefreshToken },

@@ -93,8 +93,6 @@ function branchesSignature(list: BranchEditorValues[]): string {
 export default function SalonInfoView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonId = useSalonContextStore((s) => s.salonId);
-  const branchId = useSalonContextStore((s) => s.branchId);
-  const setActiveContext = useSalonContextStore((s) => s.setActiveContext);
   const draftSalonPublicId = useOnboardingDraftStore((s) => s.salonPublicId);
   const draftSubmitted = useOnboardingDraftStore((s) => s.submitted);
   const draftStep = useOnboardingDraftStore((s) => s.step);
@@ -317,12 +315,8 @@ export default function SalonInfoView() {
       });
 
       if (salonId != null) {
-        setActiveContext({
-          salonId,
-          branchId,
-          salonPublicId,
-          salonName: name,
-        });
+        // Keep the panel header in sync with the renamed salon.
+        useSalonContextStore.setState({ salonName: name });
       }
 
       profileBaselineRef.current = { basicInfo, contactInfo };

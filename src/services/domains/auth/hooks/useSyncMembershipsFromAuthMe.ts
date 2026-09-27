@@ -7,7 +7,7 @@ import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapA
 
 /**
  * Seeds useSalonContextStore.memberships from GET /api/auth/me.
- * Does not set active salon context — that must go through switch-context.
+ * Does not pick the active panel salon — the dashboard layout does that per tab.
  */
 export const useSyncMembershipsFromAuthMe = () => {
   const { data, isSuccess } = useQueryAuthMe();

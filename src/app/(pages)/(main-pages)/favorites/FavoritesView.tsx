@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,8 +8,6 @@ import { useQueryFavorites } from "@/services/domains/favorites/hooks/useQueryFa
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { IFavoriteSalon } from "@/services/domains/favorites/types/favorites.type";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useMutateSwitchContext } from "@/services/domains/auth/hooks/useMutateSwitchContext";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
@@ -78,19 +75,9 @@ function FavoriteSalonCard({ salon }: { salon: IFavoriteSalon }) {
 export default function FavoritesView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const activeSalonId = useSalonContextStore((s) => s.salonId);
-  const { mutate: switchToCustomer, isPending: isSwitchingContext } =
-    useMutateSwitchContext();
   const { data, isLoading, isError, refetch } = useQueryFavorites();
 
   const salons = data?.data ?? [];
-  const waitingForCustomerContext =
-    activeSalonId != null || isSwitchingContext;
-
-  useEffect(() => {
-    if (!isLoggedIn || activeSalonId == null) return;
-    switchToCustomer({ salonId: null, branchId: null });
-  }, [isLoggedIn, activeSalonId, switchToCustomer]);
 
   if (!isLoggedIn) {
     return (
@@ -117,16 +104,15 @@ export default function FavoritesView() {
     <div className="flex flex-col gap-4 px-safe-area pb-32 pt-6">
       <h1 className="text-lg font-bold text-foreground">علاقه‌مندی‌های من</h1>
 
-      {(isLoading || waitingForCustomerContext) && (
+      {isLoading && (
         <p className="text-sm text-foreground-muted">در حال بارگذاری…</p>
       )}
 
-      {!waitingForCustomerContext && isError && (
+      {isError && (
         <p className="text-sm text-error">خطا در دریافت علاقه‌مندی‌ها</p>
       )}
 
       {!isLoading &&
-        !waitingForCustomerContext &&
         !isError &&
         salons.length === 0 && (
         <div className="rounded-[20px] bg-surface p-6 text-center">
@@ -142,13 +128,11 @@ export default function FavoritesView() {
         </div>
       )}
 
-      {!waitingForCustomerContext && (
-        <div className="flex flex-col gap-3">
-          {salons.map((salon) => (
-            <FavoriteSalonCard key={salon.salonPublicId} salon={salon} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-3">
+        {salons.map((salon) => (
+          <FavoriteSalonCard key={salon.salonPublicId} salon={salon} />
+        ))}
+      </div>
     </div>
     </PullToRefresh>
   );

@@ -5,7 +5,7 @@ import type { IAppointmentHistoryQuery } from "../types/appointments.type";
 
 export const MY_APPOINTMENTS_QUERY_KEY = "MY_APPOINTMENTS_QUERY_KEY";
 
-/** Works with any valid token (global or salon context) — no switch-context needed. */
+/** Customer endpoint — called from customer pages only, so it never carries `X-Salon-Id`. */
 export const useQueryMyAppointments = (
   query: IAppointmentHistoryQuery = {},
   options?: { enabled?: boolean }

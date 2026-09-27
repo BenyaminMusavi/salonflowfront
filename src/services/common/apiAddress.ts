@@ -17,7 +17,6 @@ export const API_ADDRESS = {
     LOGOUT: "/api/auth/logout",
     ME: "/api/auth/me",
     PROFILE: "/api/auth/profile",
-    SWITCH_CONTEXT: "/api/auth/switch-context",
   },
 
   SERVICE_TYPE: {
