@@ -6,6 +6,8 @@ import {
   CheckIcon,
   CrownIcon,
   EyeIcon,
+  ImagesIcon,
+  MapPinIcon,
   QrCodeIcon,
   ScissorsIcon,
   ShareNetworkIcon,
@@ -124,10 +126,12 @@ export default function SalonHubView() {
       </PanelListGroup>
 
       <PanelListGroup title="صفحه‌ی سالن">
+        <PanelListRow href={D.SALON_PROFILE} icon={StorefrontIcon} label="اطلاعات و تماس" />
+        <PanelListRow href={D.SALON_PHOTOS} icon={ImagesIcon} label="عکس‌ها" />
         <PanelListRow
-          href={D.SALON_INFO}
-          icon={StorefrontIcon}
-          label="اطلاعات، عکس‌ها و شعبه‌ها"
+          href={D.SALON_BRANCHES}
+          icon={MapPinIcon}
+          label="شعبه‌ها"
           hint={countHint(salon?.branches?.length, "شعبه")}
         />
         {isApproved && salon?.username ? (

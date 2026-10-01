@@ -10,6 +10,15 @@ import {
   useMutateDeleteSalonMedia,
 } from "@/services/domains/salons/hooks";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import { Button } from "@/shared/components/primitives/button/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/primitives/dialog/Dialog";
 import {
   IMAGE_UPLOAD_MAX_MB,
   SALON_GALLERY_LIMIT,
@@ -82,6 +91,14 @@ export default function MediaSection({
   const [deletingGalleryKey, setDeletingGalleryKey] = React.useState<
     string | null
   >(null);
+  // Every delete here is permanent on the server, so each one asks first.
+  const [confirm, setConfirm] = React.useState<{ title: string; resolve: (ok: boolean) => void } | null>(null);
+  const askConfirm = (title: string) =>
+    new Promise<boolean>((resolve) => setConfirm({ title, resolve }));
+  const closeConfirm = (ok: boolean) => {
+    confirm?.resolve(ok);
+    setConfirm(null);
+  };
   const GALLERY_LIMIT = SALON_GALLERY_LIMIT;
   const galleryFull = gallery.length >= GALLERY_LIMIT;
 
@@ -124,7 +141,8 @@ export default function MediaSection({
     }
   };
 
-  const deleteSlot = async (slot: MediaSlotState) => {
+  const deleteSlot = async (slot: MediaSlotState, label: string) => {
+    if (slot.publicId && !(await askConfirm(`حذف ${label}؟`))) return slot;
     if (slot.publicId) {
       try {
         await deleteMedia.mutateAsync({
@@ -142,6 +160,7 @@ export default function MediaSection({
   const removeGalleryItem = async (clientKey: string) => {
     const target = gallery.find((g) => g.clientKey === clientKey);
     if (!target || deletingGalleryKey) return;
+    if (target.publicId && !(await askConfirm("حذف این تصویر از گالری؟"))) return;
 
     setGalleryError(null);
     setDeletingGalleryKey(clientKey);
@@ -162,11 +181,7 @@ export default function MediaSection({
   };
 
   return (
-    <section
-      id="salon-media"
-      className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
-    >
-      <h2 className="mb-1 text-sm font-bold text-foreground">رسانه</h2>
+    <section id="salon-media" className="flex flex-col">
       <p className="mb-3 text-xs text-foreground-muted">
         فقط تصویر، حداکثر {IMAGE_UPLOAD_MAX_MB} مگابایت. کاور، بنر و لوگو با آپلود تصویر جدید جایگزین می‌شوند.
       </p>
@@ -184,7 +199,7 @@ export default function MediaSection({
               onCoverChange(await uploadSlot(cover, MediaUsageType.Cover, file));
             }}
             onDelete={async () => {
-              onCoverChange(await deleteSlot(cover));
+              onCoverChange(await deleteSlot(cover, "کاور"));
             }}
           />
           <UploadFile
@@ -199,7 +214,7 @@ export default function MediaSection({
               onBannerChange(await uploadSlot(banner, MediaUsageType.Banner, file));
             }}
             onDelete={async () => {
-              onBannerChange(await deleteSlot(banner));
+              onBannerChange(await deleteSlot(banner, "بنر"));
             }}
           />
           <UploadFile
@@ -214,7 +229,7 @@ export default function MediaSection({
               onLogoChange(await uploadSlot(logo, MediaUsageType.Profile, file));
             }}
             onDelete={async () => {
-              onLogoChange(await deleteSlot(logo));
+              onLogoChange(await deleteSlot(logo, "لوگو"));
             }}
           />
         </div>
@@ -229,7 +244,7 @@ export default function MediaSection({
                 return (
                   <div
                     key={item.clientKey}
-                    className="relative aspect-square overflow-hidden rounded-[2px] bg-foreground/5"
+                    className="relative aspect-square overflow-hidden rounded-[12px] bg-foreground/5"
                   >
                     {src ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -304,6 +319,28 @@ export default function MediaSection({
           )}
         </div>
       </div>
+
+      <Dialog open={!!confirm} onOpenChange={(open) => !open && closeConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirm?.title}</DialogTitle>
+            <DialogDescription>این تصویر از صفحه‌ی سالن برداشته می‌شود.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => closeConfirm(false)}>
+              انصراف
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-error hover:bg-error-background"
+              onClick={() => closeConfirm(true)}
+            >
+              حذف
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
