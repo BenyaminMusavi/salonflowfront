@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
@@ -575,30 +574,6 @@ export default function SalonInfoView() {
             errors={branchErrors}
           />
 
-          <p className="text-xs text-foreground-muted">
-            مدیریت خدمات، پرسنل و برنامه از{" "}
-            <Link
-              href={RouteAddress.DASHBOARD.CATALOG}
-              className="font-semibold text-primary"
-            >
-              خدمات
-            </Link>
-            ،{" "}
-            <Link
-              href={RouteAddress.DASHBOARD.STAFF_SERVICES}
-              className="font-semibold text-primary"
-            >
-              خدمات پرسنل
-            </Link>{" "}
-            و{" "}
-            <Link
-              href={RouteAddress.DASHBOARD.SCHEDULES}
-              className="font-semibold text-primary"
-            >
-              برنامه پرسنل
-            </Link>{" "}
-            انجام می‌شود.
-          </p>
         </>
       )}
 

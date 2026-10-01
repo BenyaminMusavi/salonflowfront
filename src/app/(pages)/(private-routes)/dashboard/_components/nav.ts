@@ -60,7 +60,7 @@ const OWNER_NAV: PanelNavItem[] = [
     id: "salon",
     label: "سالن",
     href: D.SALON,
-    matches: [D.SALON, D.CATALOG, D.STAFF, D.STAFF_SERVICES, D.SCHEDULES, D.SALON_INFO],
+    matches: [D.SALON, D.CATALOG, D.STAFF, D.SCHEDULES, D.SALON_INFO],
   },
 ];
 

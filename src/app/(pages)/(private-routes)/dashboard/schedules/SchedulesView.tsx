@@ -1,387 +1,89 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { FormEvent, useMemo, useState } from "react";
-import { Button } from "@/shared/components/primitives/button/Button";
-import { Input } from "@/shared/components/primitives/input/Input";
+import { cn } from "@/shared/utils/className";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/shared/components/primitives/drawer/Drawer";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
-import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks";
-import {
-  useMutateWorkingSchedules,
-  useQueryWorkingSchedules,
-} from "@/services/domains/working-schedules/hooks";
-import {
-  useMutateSpecialSchedules,
-  useQuerySpecialSchedules,
-} from "@/services/domains/special-schedules/hooks";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import {
-  DashboardCard,
-  DashboardDateField,
-  DashboardEmptyState,
   DashboardPage,
   DashboardPageHeader,
-  DashboardSelect,
+  DashboardSkeleton,
   DashboardToast,
-  type DashboardToastState,
   useIsSalonStaff,
+  type DashboardToastState,
 } from "../_components";
-import { dashboardQuietButtonClass } from "../_components/buttonClasses";
+import { WeeklyScheduleEditor } from "../_schedule/WeeklyScheduleEditor";
+import { SpecialDaysEditor } from "../_schedule/SpecialDaysEditor";
+import { useMyStaffMember } from "../_staff/useMyStaffMember";
 
-// value = dayOfWeek per commit 8e33909 (0=شنبه … 6=جمعه).
-const DAYS = [
-  { value: 0, label: "شنبه" },
-  { value: 1, label: "یکشنبه" },
-  { value: 2, label: "دوشنبه" },
-  { value: 3, label: "سه‌شنبه" },
-  { value: 4, label: "چهارشنبه" },
-  { value: 5, label: "پنجشنبه" },
-  { value: 6, label: "جمعه" },
-];
-
-/** Staff may edit only their own schedule (others answer 403); viewing colleagues is allowed. */
-function scheduleErrorMessage(err: unknown, fallback: string) {
-  const status = (err as { response?: { status?: number } })?.response?.status;
-  if (status === 403) return "فقط برنامه‌ی کاری خودتان را می‌توانید تغییر دهید.";
-  return getApiErrorMessage(err, fallback);
-}
-
-function staffLabel(member: { firstName?: string | null }) {
-  return member.firstName || "پرسنل";
-}
-
-function formatShift(start?: string | null, end?: string | null) {
-  const s = start?.slice(0, 5) ?? "";
-  const e = end?.slice(0, 5) ?? "";
-  if (!s && !e) return "تعطیل";
-  return `${s} تا ${e}`;
-}
-
-export default function SchedulesView() {
-  const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const [toast, setToast] = useState<DashboardToastState>(null);
-  const [workingOpen, setWorkingOpen] = useState(false);
-  const [specialOpen, setSpecialOpen] = useState(false);
-  const isStaff = useIsSalonStaff();
-
-  const offeringsQuery = useQueryCatalogOfferings(true);
-  const offeringIds = (offeringsQuery.data?.data ?? []).map((x) => x.publicId);
-  const staffQuery = useQueryStaffForOfferings(
-    salonPublicId || undefined,
-    offeringIds,
-    { enabled: offeringIds.length > 0 }
+const chip = (active: boolean) =>
+  cn(
+    "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+    active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
   );
-  const staff = staffQuery.data?.data ?? [];
-  const [staffMemberId, setStaffMemberId] = useState<number | "">("");
-  const selectedStaffId = Number(staffMemberId || 0) || undefined;
 
-  const workingQuery = useQueryWorkingSchedules(selectedStaffId);
-  const specialQuery = useQuerySpecialSchedules(selectedStaffId);
-  const workingMutations = useMutateWorkingSchedules();
-  const specialMutations = useMutateSpecialSchedules();
-  const workingItems = workingQuery.data?.data ?? [];
+/**
+ * Working schedule. Staff land straight on their own («برنامه‌ی من»); the owner picks a person
+ * (each person's page has the same editor under «برنامه»).
+ */
+export default function SchedulesView() {
+  const isStaff = useIsSalonStaff();
+  const { me, staff, isLoading } = useMyStaffMember();
+  const [toast, setToast] = useState<DashboardToastState>(null);
+  const [pickedId, setPickedId] = useState<number | null>(null);
 
-  const weekMap = useMemo(() => {
-    const map = new Map<number, typeof workingItems>();
-    for (const item of workingItems) {
-      const list = map.get(item.dayOfWeek) ?? [];
-      list.push(item);
-      map.set(item.dayOfWeek, list);
-    }
-    return map;
-  }, [workingItems]);
+  useEffect(() => {
+    if (pickedId != null) return;
+    if (isStaff && me) setPickedId(me.staffMemberId);
+    else if (!isStaff && staff.length > 0) setPickedId(staff[0].staffMemberId);
+  }, [isStaff, me, staff, pickedId]);
 
-  const [workingForm, setWorkingForm] = useState({
-    dayOfWeek: 0,
-    startTime: "09:00:00",
-    endTime: "18:00:00",
-    isOffDay: false,
-  });
-  const [specialForm, setSpecialForm] = useState({
-    date: "",
-    isOffDay: true,
-    startTime: "",
-    endTime: "",
-    note: "",
-  });
-
-  const onCreateWorking = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaffId) return;
-    try {
-      await workingMutations.create.mutateAsync({
-        staffMemberId: selectedStaffId,
-        dayOfWeek: Number(workingForm.dayOfWeek),
-        startTime: workingForm.isOffDay ? null : workingForm.startTime,
-        endTime: workingForm.isOffDay ? null : workingForm.endTime,
-        isOffDay: workingForm.isOffDay,
-        isManagedBySalon: true,
-      });
-      setToast({ type: "success", message: "برنامه هفتگی ذخیره شد." });
-      setWorkingOpen(false);
-    } catch (err) {
-      setToast({
-        type: "error",
-        message: scheduleErrorMessage(err, "ثبت برنامه هفتگی ناموفق بود."),
-      });
-    }
-  };
-
-  const onCreateSpecial = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaffId) return;
-    try {
-      await specialMutations.create.mutateAsync({
-        staffMemberId: selectedStaffId,
-        date: specialForm.date,
-        isOffDay: specialForm.isOffDay,
-        startTime: specialForm.isOffDay ? null : specialForm.startTime || null,
-        endTime: specialForm.isOffDay ? null : specialForm.endTime || null,
-        note: specialForm.note || null,
-      });
-      setToast({ type: "success", message: "برنامه خاص ثبت شد." });
-      setSpecialForm({ date: "", isOffDay: true, startTime: "", endTime: "", note: "" });
-      setSpecialOpen(false);
-    } catch (err) {
-      setToast({
-        type: "error",
-        message: scheduleErrorMessage(err, "ثبت برنامه خاص ناموفق بود."),
-      });
-    }
-  };
-
-  const onRemoveError = (err: unknown) =>
-    setToast({ type: "error", message: scheduleErrorMessage(err, "حذف ناموفق بود.") });
+  // Staff only switch people when we could not tell which profile is theirs.
+  const showPicker = !isStaff || !me;
 
   return (
-    <DashboardPage>
+    <DashboardPage className="gap-5">
       <DashboardPageHeader
-        title="برنامه‌ی کاری"
-        description="شیفت هفتگی و روزهای خاص هر پرسنل."
+        title={isStaff ? "برنامه‌ی کاری من" : "برنامه‌ی کاری پرسنل"}
         backHref={isStaff ? RouteAddress.DASHBOARD.ME : RouteAddress.DASHBOARD.SALON}
       />
 
-      {isStaff && (
-        <p className="text-xs text-foreground-muted">
-          برنامه‌ی همکاران را می‌توانید ببینید، ولی فقط برنامه‌ی خودتان را می‌توانید تغییر دهید.
+      {isLoading ? (
+        <DashboardSkeleton cards={1} rows={5} />
+      ) : staff.length === 0 ? (
+        <p className="rounded-[16px] bg-background-secondary p-6 text-center text-sm text-foreground-muted">
+          هنوز پرسنلی با خدمت فعال نیست.
         </p>
-      )}
-
-      <DashboardCard>
-        <DashboardSelect
-          value={staffMemberId}
-          onChange={(e) => setStaffMemberId(Number(e.target.value))}
-        >
-          <option value="">انتخاب پرسنل</option>
-          {staff.map((member) => (
-            <option key={member.staffMemberId} value={member.staffMemberId}>
-              {staffLabel(member)}
-            </option>
-          ))}
-        </DashboardSelect>
-      </DashboardCard>
-
-      {!selectedStaffId ? (
-        <DashboardEmptyState
-          title="پرسنل را انتخاب کنید"
-          description="برای دیدن هفته کاری، یک نفر از تیم را انتخاب کنید."
-        />
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-foreground">هفته کاری</h2>
-            <Button size="sm" onClick={() => setWorkingOpen(true)}>
-              افزودن شیفت
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {DAYS.map((day) => {
-              const shifts = weekMap.get(day.value) ?? [];
-              return (
-                <DashboardCard key={day.value} className="p-3">
-                  <p className="text-sm font-bold text-foreground">{day.label}</p>
-                  {shifts.length === 0 ? (
-                    <p className="mt-1 text-xs text-foreground-muted">شیفتی ثبت نشده</p>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      {shifts.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <span className="text-xs text-foreground-muted">
-                            {item.isOffDay
-                              ? "تعطیل"
-                              : formatShift(item.startTime, item.endTime)}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className={dashboardQuietButtonClass}
-                            onClick={() =>
-                              workingMutations.remove.mutate(item.id, { onError: onRemoveError })
-                            }
-                          >
-                            حذف
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </DashboardCard>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-foreground">روز خاص / مرخصی</h2>
-            <Button size="sm" onClick={() => setSpecialOpen(true)}>
-              افزودن
-            </Button>
-          </div>
-          {(specialQuery.data?.data ?? []).length === 0 ? (
-            <DashboardEmptyState
-              title="روز خاصی ثبت نشده"
-              description="مرخصی یا ساعت متفاوت یک روز مشخص را اینجا اضافه کنید."
-            />
-          ) : (
-            <div className="space-y-2">
-              {(specialQuery.data?.data ?? []).map((item) => (
-                <DashboardCard key={item.id} className="flex items-center justify-between p-3">
-                  <span className="text-xs text-foreground-muted">
-                    {item.date} ·{" "}
-                    {item.isOffDay ? "تعطیل" : formatShift(item.startTime, item.endTime)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={dashboardQuietButtonClass}
-                    onClick={() =>
-                      specialMutations.remove.mutate(item.id, { onError: onRemoveError })
-                    }
+          {showPicker ? (
+            <div className="flex flex-col gap-2">
+              {isStaff ? (
+                <p className="px-1 text-xs text-foreground-muted">
+                  خودتان را انتخاب کنید. برنامه‌ی همکاران را فقط می‌توانید ببینید.
+                </p>
+              ) : null}
+              <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                {staff.map((s) => (
+                  <button
+                    key={s.staffMemberId}
+                    type="button"
+                    className={chip(pickedId === s.staffMemberId)}
+                    onClick={() => setPickedId(s.staffMemberId)}
                   >
-                    حذف
-                  </Button>
-                </DashboardCard>
-              ))}
+                    {s.firstName || "پرسنل"}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
+          ) : null}
+          {pickedId != null ? (
+            <div key={pickedId} className="flex flex-col gap-5">
+              <WeeklyScheduleEditor staffMemberId={pickedId} onToast={setToast} />
+              <SpecialDaysEditor staffMemberId={pickedId} onToast={setToast} />
+            </div>
+          ) : null}
         </>
       )}
-
-      <Drawer open={workingOpen} onOpenChange={setWorkingOpen}>
-        <DrawerContent className="border-border bg-background">
-          <DrawerHeader className="text-right">
-            <DrawerTitle>افزودن شیفت هفتگی</DrawerTitle>
-          </DrawerHeader>
-          <form className="grid grid-cols-1 gap-2 px-4 pb-6" onSubmit={onCreateWorking}>
-            <DashboardSelect
-              value={workingForm.dayOfWeek}
-              onChange={(e) =>
-                setWorkingForm((prev) => ({ ...prev, dayOfWeek: Number(e.target.value) }))
-              }
-            >
-              {DAYS.map((day) => (
-                <option key={day.value} value={day.value}>
-                  {day.label}
-                </option>
-              ))}
-            </DashboardSelect>
-            <label className="text-xs text-foreground-muted">
-              <input
-                type="checkbox"
-                className="me-2 accent-primary"
-                checked={workingForm.isOffDay}
-                onChange={(e) =>
-                  setWorkingForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
-                }
-              />
-              روز تعطیل
-            </label>
-            {!workingForm.isOffDay ? (
-              <>
-                <Input
-                  type="time"
-                  value={workingForm.startTime.slice(0, 5)}
-                  onChange={(e) =>
-                    setWorkingForm((prev) => ({ ...prev, startTime: `${e.target.value}:00` }))
-                  }
-                />
-                <Input
-                  type="time"
-                  value={workingForm.endTime.slice(0, 5)}
-                  onChange={(e) =>
-                    setWorkingForm((prev) => ({ ...prev, endTime: `${e.target.value}:00` }))
-                  }
-                />
-              </>
-            ) : null}
-            <Button type="submit" isLoading={workingMutations.create.isPending}>
-              ثبت برنامه هفتگی
-            </Button>
-          </form>
-        </DrawerContent>
-      </Drawer>
-
-      <Drawer open={specialOpen} onOpenChange={setSpecialOpen}>
-        <DrawerContent className="border-border bg-background">
-          <DrawerHeader className="text-right">
-            <DrawerTitle>روز خاص</DrawerTitle>
-          </DrawerHeader>
-          <form className="grid grid-cols-1 gap-2 px-4 pb-6" onSubmit={onCreateSpecial}>
-            <DashboardDateField
-              name="special-date"
-              value={specialForm.date}
-              onChange={(date) => setSpecialForm((prev) => ({ ...prev, date }))}
-              label="تاریخ"
-            />
-            <label className="text-xs text-foreground-muted">
-              <input
-                type="checkbox"
-                className="me-2 accent-primary"
-                checked={specialForm.isOffDay}
-                onChange={(e) =>
-                  setSpecialForm((prev) => ({ ...prev, isOffDay: e.target.checked }))
-                }
-              />
-              مرخصی کامل
-            </label>
-            {!specialForm.isOffDay ? (
-              <>
-                <Input
-                  type="time"
-                  value={specialForm.startTime}
-                  onChange={(e) =>
-                    setSpecialForm((prev) => ({ ...prev, startTime: e.target.value }))
-                  }
-                />
-                <Input
-                  type="time"
-                  value={specialForm.endTime}
-                  onChange={(e) =>
-                    setSpecialForm((prev) => ({ ...prev, endTime: e.target.value }))
-                  }
-                />
-              </>
-            ) : null}
-            <Input
-              placeholder="یادداشت"
-              value={specialForm.note}
-              onChange={(e) => setSpecialForm((prev) => ({ ...prev, note: e.target.value }))}
-            />
-            <Button type="submit" isLoading={specialMutations.create.isPending}>
-              ثبت برنامه خاص
-            </Button>
-          </form>
-        </DrawerContent>
-      </Drawer>
 
       <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
     </DashboardPage>

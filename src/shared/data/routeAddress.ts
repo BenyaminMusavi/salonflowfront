@@ -68,7 +68,6 @@ export const RouteAddress = {
     REPORTS: "/dashboard/reports",
     CATALOG: "/dashboard/catalog",
     STAFF: "/dashboard/staff",
-    STAFF_SERVICES: "/dashboard/staff-services",
     SCHEDULES: "/dashboard/schedules",
     FINANCE: "/dashboard/finance",
     Z_REPORT: "/dashboard/z-report",
@@ -79,8 +78,8 @@ export const RouteAddress = {
     CUSTOMERS: "/dashboard/customers",
     CUSTOMER_APPOINTMENTS: (customerPublicId: string) =>
       `/dashboard/customers/${customerPublicId}`,
-    STAFF_APPOINTMENTS: (staffPublicId: string) =>
-      `/dashboard/staff/${staffPublicId}/appointments`,
+    /** One person's page: appointments, schedule, services. */
+    STAFF_DETAILS: (staffPublicId: string) => `/dashboard/staff/${staffPublicId}`,
   },
   ADMIN: {
     BASE: "/admin",

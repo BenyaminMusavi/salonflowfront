@@ -10,7 +10,6 @@ import {
   ScissorsIcon,
   ShareNetworkIcon,
   StorefrontIcon,
-  UserListIcon,
   UsersIcon,
 } from "@phosphor-icons/react";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
@@ -121,7 +120,6 @@ export default function SalonHubView() {
           label="خدمات"
           hint={countHint(offerings?.length, "خدمت")}
         />
-        <PanelListRow href={D.STAFF_SERVICES} icon={UserListIcon} label="خدمات و قیمت هر پرسنل" />
         <PanelListRow href={D.SCHEDULES} icon={CalendarDotsIcon} label="برنامه‌ی کاری پرسنل" />
       </PanelListGroup>
 

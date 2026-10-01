@@ -1,209 +1,189 @@
 "use client";
 
-import { RouteAddress } from "@/shared/data/routeAddress";
-import { useEffect, useRef, useState } from "react";
-import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
-import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
-import { useMutateSalonStaff } from "@/services/domains/salons/hooks/useMutateSalonStaff";
-import { useQueryStaffRoster } from "@/services/domains/salons/hooks/useQueryStaffRoster";
-import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
-import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
+import Link from "next/link";
+import { useState } from "react";
+import { CaretLeftIcon, UserPlusIcon } from "@phosphor-icons/react";
+import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
+import { Button } from "@/shared/components/primitives/button/Button";
+import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import { StaffInvitationStatus } from "@/services/common/enums/domain-enums";
-import type {
-  IOnboardingStaff,
-  IStaffRosterMember,
-} from "@/services/domains/salons/types/onboarding.type";
+import { RouteAddress } from "@/shared/data/routeAddress";
+import { cn } from "@/shared/utils/className";
 import {
   DashboardPage,
   DashboardPageHeader,
-  DashboardEmptyState,
   DashboardSkeleton,
   DashboardToast,
   type DashboardToastState,
 } from "../_components";
-import StaffRosterSection from "./components/StaffRosterSection";
-import {
-  createEmptyStaff,
-  type StaffEditorValues,
-} from "./components/StaffEditorItem";
-import {
-  validateStaffRoster,
-  type TStaffRosterFieldErrors,
-} from "./components/staffRosterValidation";
+import { STAFF_STATE_LABEL, useSalonStaff, type ISalonStaffMember } from "../_staff/useSalonStaff";
 
-/** Common shape shared by IOnboardingStaff (save-staff response) and IStaffRosterMember (roster GET). */
-type TStaffEditorSource = {
-  publicId: string | null;
-  isCreator: boolean;
-  branchPublicId: string;
-  phoneNumber?: string | null;
-  offeringPublicIds: string[];
-};
+const PHONE_RULE = /^09\d{9}$/;
 
-function makeClientKey(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `staff-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const chip = (active: boolean) =>
+  cn(
+    "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+    active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
+  );
+
+function StaffRow({ member, showBranch }: { member: ISalonStaffMember; showBranch: boolean }) {
+  const meta = [
+    member.isCreator ? "مالک سالن" : STAFF_STATE_LABEL[member.state],
+    showBranch ? member.branchName : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Link
+      href={RouteAddress.DASHBOARD.STAFF_DETAILS(member.publicId)}
+      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-hover"
+    >
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+          member.state === "active" || member.state === "owner"
+            ? "bg-surface-brand text-content-brand"
+            : "bg-surface-hover text-foreground-muted"
+        )}
+      >
+        {/^\d/.test(member.name) ? "؟" : member.name.charAt(0)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-bold text-foreground" dir="auto">
+          {member.name}
+        </span>
+        <span
+          className={cn(
+            "block truncate text-xs",
+            member.state === "rejected" ? "text-error" : "text-foreground-muted"
+          )}
+        >
+          {meta}
+        </span>
+      </span>
+      <CaretLeftIcon size={16} className="shrink-0 text-foreground-muted" />
+    </Link>
+  );
 }
 
-function toEditorValues(staff: TStaffEditorSource[]): StaffEditorValues[] {
-  return staff.map((s) => ({
-    publicId: s.publicId,
-    clientKey: s.publicId ?? makeClientKey(),
-    isCreator: s.isCreator,
-    branchPublicId: s.branchPublicId,
-    phoneNumber: s.phoneNumber ?? "",
-    offeringPublicIds: s.offeringPublicIds,
-  }));
-}
-
-function toOnboardingStaff(rows: StaffEditorValues[]): IOnboardingStaff[] {
-  return rows.map((r) => ({
-    publicId: r.publicId,
-    branchPublicId: r.branchPublicId,
-    isCreator: r.isCreator,
-    // Owner identity is JWT-linked server-side, not entered here.
-    phoneNumber: r.isCreator ? null : r.phoneNumber.trim() || null,
-    offeringPublicIds: r.offeringPublicIds,
-  }));
-}
-
+/** «پرسنل» — everyone in the salon; a row opens that person's page, «دعوت پرسنل» adds one. */
 export default function StaffView() {
-  const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-
-  const salonQuery = useQuerySalonById(salonPublicId || undefined);
-  const salon = salonQuery.data?.data;
-  const branches = salon?.branches ?? [];
-  const services = salon?.services ?? [];
-
-  const rosterQuery = useQueryStaffRoster(salonPublicId || undefined);
-  const roster = rosterQuery.data?.data ?? [];
-  const rosterByPublicId = new Map<string, IStaffRosterMember>(
-    roster.map((r) => [r.publicId, r])
-  );
-
-  const authMeQuery = useQueryAuthMe();
-  const ownerPhone = authMeQuery.data?.data?.phone;
-
-  const saveStaff = useMutateSalonStaff();
+  const { members, branches, services, isLoading, isError, saveRoster, isSaving } = useSalonStaff();
   const [toast, setToast] = useState<DashboardToastState>(null);
-  const [errors, setErrors] = useState<Record<string, TStaffRosterFieldErrors>>({});
-  const [rows, setRows] = useState<StaffEditorValues[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [branchPublicId, setBranchPublicId] = useState("");
+  const [offeringIds, setOfferingIds] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const multiBranch = branches.length > 1;
 
-  // Seed once from the roster GET (the server's source of truth) rather than
-  // re-seeding on every background refetch, so the owner's in-progress edits
-  // here aren't clobbered by an unrelated cache update.
-  const hydratedRef = useRef(false);
-  useEffect(() => {
-    if (hydratedRef.current || rosterQuery.isLoading) return;
-    hydratedRef.current = true;
-    setRows(
-      roster.length > 0
-        ? toEditorValues(roster)
-        : [{ ...createEmptyStaff(), isCreator: true, clientKey: makeClientKey() }]
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosterQuery.isLoading]);
-
-  // Enrichment only: once an invited phone has logged in and status is Active,
-  // this resolves their display name. Pending/Active/Rejected itself always
-  // comes from the roster's own `status`/`hasLoggedIn` fields, never guessed.
-  const allOfferingIds = services
-    .map((s) => s.offeringPublicId)
-    .filter((id): id is string => !!id);
-  const staffProfilesQuery = useQueryStaffForOfferings(
-    salonPublicId || undefined,
-    allOfferingIds,
-    { enabled: allOfferingIds.length > 0 }
-  );
-  const staffProfiles = staffProfilesQuery.data?.data ?? [];
-
-  const statusLabelFor = (row: StaffEditorValues): string | null => {
-    if (row.isCreator) return null;
-    if (!row.publicId) return "هنوز ذخیره نشده";
-
-    const rosterMatch = rosterByPublicId.get(row.publicId);
-    if (!rosterMatch) return "در انتظار ورود اولیه";
-    if (rosterMatch.status === StaffInvitationStatus.Rejected) return "دعوت رد شده";
-    if (rosterMatch.status === StaffInvitationStatus.Pending) return "در انتظار پذیرش دعوت";
-    if (!rosterMatch.hasLoggedIn) return "در انتظار ورود اولیه";
-
-    const matchedProfile = staffProfiles.find((p) => p.staffPublicId === row.publicId);
-    return matchedProfile?.firstName || "فعال";
+  const openInvite = () => {
+    setPhone("");
+    setBranchPublicId(branches[0]?.publicId ?? "");
+    setOfferingIds([]);
+    setError("");
+    setInviteOpen(true);
   };
 
-  const onSave = async () => {
-    if (!salonPublicId) {
-      setToast({
-        type: "error",
-        message: "شناسه سالن فعال پیدا نشد. دوباره وارد پنل شوید.",
-      });
-      return;
-    }
-
-    const fieldErrors = validateStaffRoster(rows);
-    if (fieldErrors) {
-      setErrors(fieldErrors);
-      setToast({ type: "error", message: "لطفاً خطاهای فرم را برطرف کنید." });
-      return;
-    }
-    setErrors({});
-
+  const invite = async () => {
+    const value = phone.trim();
+    if (!PHONE_RULE.test(value)) return setError("شماره موبایل معتبر نیست (مثال: 09123456789)");
+    if (members.some((m) => m.phone === value)) return setError("این شماره قبلاً در پرسنل هست.");
+    if (!branchPublicId) return setError("شعبه را انتخاب کنید.");
+    if (offeringIds.length === 0) return setError("حداقل یک خدمت انتخاب کنید.");
+    setError("");
     try {
-      const res = await saveStaff.mutateAsync({
-        salonPublicId,
-        staff: toOnboardingStaff(rows),
-      });
-      const saved = res.data ?? [];
-      if (saved.length > 0) {
-        setRows(toEditorValues(saved));
-      }
-      setToast({ type: "success", message: "پرسنل با موفقیت ذخیره شدند." });
+      await saveRoster((rows) => [
+        ...rows,
+        { publicId: null, isCreator: false, phoneNumber: value, branchPublicId, offeringPublicIds: offeringIds },
+      ]);
+      setInviteOpen(false);
+      setToast({ type: "success", message: "دعوت فرستاده شد. بعد از پذیرش، در فهرست فعال می‌شود." });
     } catch (err) {
-      setToast({
-        type: "error",
-        message: getApiErrorMessage(err, "ذخیره پرسنل ناموفق بود."),
-      });
+      setError(getApiErrorMessage(err, "ارسال دعوت ناموفق بود."));
     }
   };
-
-  if (!salonPublicId) {
-    return (
-      <DashboardPage>
-        <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
-        <DashboardEmptyState
-          title="سالن فعال یافت نشد"
-          description="ابتدا یک سالن را از سوییچر انتخاب کنید."
-        />
-      </DashboardPage>
-    );
-  }
-
-  if (salonQuery.isLoading || rosterQuery.isLoading) {
-    return (
-      <DashboardPage>
-        <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
-        <DashboardSkeleton cards={1} rows={4} />
-      </DashboardPage>
-    );
-  }
 
   return (
-    <DashboardPage>
-      <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
-
-      <StaffRosterSection
-        staff={rows}
-        branches={branches}
-        services={services}
-        ownerPhone={ownerPhone}
-        statusLabelFor={statusLabelFor}
-        errors={errors}
-        onChange={setRows}
-        onSave={() => void onSave()}
-        isSaving={saveStaff.isPending}
+    <DashboardPage className="gap-4">
+      <DashboardPageHeader
+        title="پرسنل"
+        backHref={RouteAddress.DASHBOARD.SALON}
+        action={
+          <Button size="sm" className="gap-1 rounded-[12px]" onClick={openInvite}>
+            <UserPlusIcon size={16} />
+            دعوت پرسنل
+          </Button>
+        }
       />
+
+      {isLoading ? (
+        <DashboardSkeleton cards={1} rows={4} />
+      ) : isError ? (
+        <p className="text-sm text-error">دریافت پرسنل ناموفق بود.</p>
+      ) : (
+        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+          {members.map((m) => (
+            <StaffRow key={m.publicId} member={m} showBranch={multiBranch} />
+          ))}
+        </div>
+      )}
+
+      <BottomSheet open={inviteOpen} onClose={() => setInviteOpen(false)}>
+        <div className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-base font-bold text-foreground">دعوت پرسنل</h2>
+            <p className="mt-1 text-xs leading-5 text-foreground-muted">
+              با همین شماره وارد صفا می‌شود و دعوت را می‌پذیرد.
+            </p>
+          </div>
+          <PhoneInput placeholder="09xxxxxxxxx" value={phone} onValueChange={setPhone} />
+          {multiBranch ? (
+            <section className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground-muted">شعبه</p>
+              <div className="flex flex-wrap gap-2">
+                {branches.map((b) => (
+                  <button key={b.publicId} type="button" className={chip(branchPublicId === b.publicId)} onClick={() => setBranchPublicId(b.publicId)}>
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          <section className="flex flex-col gap-2">
+            <p className="text-xs font-semibold text-foreground-muted">چه خدماتی انجام می‌دهد؟</p>
+            {services.length === 0 ? (
+              <p className="text-xs text-foreground-muted">ابتدا در «سالن ← خدمات» خدمت تعریف کنید.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {services.map((s) =>
+                  s.offeringPublicId ? (
+                    <button
+                      key={s.offeringPublicId}
+                      type="button"
+                      className={chip(offeringIds.includes(s.offeringPublicId))}
+                      onClick={() =>
+                        setOfferingIds((ids) =>
+                          ids.includes(s.offeringPublicId!)
+                            ? ids.filter((x) => x !== s.offeringPublicId)
+                            : [...ids, s.offeringPublicId!]
+                        )
+                      }
+                    >
+                      {s.name}
+                    </button>
+                  ) : null
+                )}
+              </div>
+            )}
+            <p className="text-[11px] text-foreground-muted">قیمت و مدت متفاوت برای این نفر را بعداً از صفحه‌ی خودش تنظیم کنید.</p>
+          </section>
+          {error ? <p className="text-xs text-error">{error}</p> : null}
+          <Button type="button" className="w-full rounded-[12px]" isLoading={isSaving} onClick={() => void invite()}>
+            ارسال دعوت
+          </Button>
+        </div>
+      </BottomSheet>
 
       <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
     </DashboardPage>
