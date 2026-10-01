@@ -3,7 +3,7 @@
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
 import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
-import { formatSalonTime } from "@/shared/utils/salonTime";
+import { formatSalonDate, formatSalonTime } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import { durationMinutes, serviceNames } from "./agendaUtils";
 
@@ -35,17 +35,20 @@ export function StatusMark({ status, className }: { status: number; className?: 
 
 /**
  * One appointment in the timeline: time · customer · service · staff · status.
- * The whole row opens the details; it carries no buttons of its own.
+ * The whole row opens the details; it carries no buttons of its own. `history` (a customer's
+ * own list) leads with the date and the service instead of the customer name.
  */
 export function AgendaRow({
   item,
   showBranch,
   namesLoading,
   onOpen,
+  variant = "day",
 }: {
   item: IAgendaItem;
   showBranch: boolean;
   namesLoading?: boolean;
+  variant?: "day" | "history";
   onOpen: (item: IAgendaItem) => void;
 }) {
   const status = Number(item.status);
@@ -53,7 +56,12 @@ export function AgendaRow({
     status === AppointmentStatus.Completed ||
     status === AppointmentStatus.Cancelled ||
     status === AppointmentStatus.NoShow;
-  const meta = [serviceNames(item) || "بدون خدمت", item.staffNames, showBranch ? item.branchName : null]
+  const history = variant === "history";
+  const meta = [
+    history ? null : serviceNames(item) || "بدون خدمت",
+    item.staffNames,
+    showBranch ? item.branchName : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -66,17 +74,20 @@ export function AgendaRow({
         status === AppointmentStatus.CheckedIn && "bg-surface-brand"
       )}
     >
-      <span className="w-12 shrink-0 pt-0.5">
+      <span className={cn("shrink-0 pt-0.5", history ? "w-[4.5rem]" : "w-12")}>
         <span
           className={cn(
-            "block text-[15px] font-bold tabular-nums text-foreground",
+            "block whitespace-nowrap font-bold tabular-nums text-foreground",
+            history ? "text-[13px]" : "text-[15px]",
             muted && "text-foreground-muted"
           )}
         >
-          {formatClock(item.startTime)}
+          {history
+            ? formatSalonDate(item.startTime, { day: "numeric", month: "short" })
+            : formatClock(item.startTime)}
         </span>
         <span className="block text-[11px] text-foreground-muted">
-          {durationMinutes(item)} دقیقه
+          {history ? formatClock(item.startTime) : `${durationMinutes(item)} دقیقه`}
         </span>
       </span>
       <span className="min-w-0 flex-1">
@@ -87,12 +98,14 @@ export function AgendaRow({
             status === AppointmentStatus.Cancelled && "line-through"
           )}
         >
-          {item.customerName ||
-            (namesLoading ? (
-              <span className="inline-block h-4 w-24 animate-pulse rounded bg-surface-hover align-middle" />
-            ) : (
-              "مشتری"
-            ))}
+          {history
+            ? serviceNames(item) || "بدون خدمت"
+            : item.customerName ||
+              (namesLoading ? (
+                <span className="inline-block h-4 w-24 animate-pulse rounded bg-surface-hover align-middle" />
+              ) : (
+                "مشتری"
+              ))}
         </span>
         <span className="mt-0.5 block truncate text-xs text-foreground-muted">{meta}</span>
       </span>

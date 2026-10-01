@@ -448,7 +448,7 @@ export default function DashboardView() {
           </p>
           <button
             type="button"
-            onClick={openQuickBook}
+            onClick={() => openQuickBook()}
             className="h-10 rounded-[12px] bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             ＋ نوبت جدید

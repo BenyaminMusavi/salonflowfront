@@ -56,7 +56,7 @@ export function PanelBottomNav({
               <div key={item.id} className="flex justify-center">
                 <button
                   type="button"
-                  onClick={openQuickBook}
+                  onClick={() => openQuickBook()}
                   aria-label={item.label}
                   className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
                 >
@@ -112,7 +112,7 @@ export function PanelSideNav({
     >
       <button
         type="button"
-        onClick={openQuickBook}
+        onClick={() => openQuickBook()}
         className="mb-3 flex h-11 items-center justify-center gap-2 rounded-[12px] bg-primary text-sm font-semibold text-primary-foreground"
       >
         <PlusIcon size={18} weight="bold" />

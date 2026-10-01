@@ -45,6 +45,8 @@ interface QuickBookDrawerProps {
   onOpenChange: (open: boolean) => void;
   /** Salon day the drawer opens on (the day the appointments page shows). */
   date: string;
+  /** Pre-picked customer (from their page); the search starts empty otherwise. */
+  initialCustomer?: { phone: string; fullName: string } | null;
   onToast: (toast: DashboardToastState) => void;
 }
 
@@ -67,7 +69,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
  * «نوبت جدید» — one short sheet: customer (search or new) → services → staff → day & time.
  * Books through quick-book (find-or-create by phone), so known and new customers share a path.
  */
-export default function QuickBookDrawer({ open, onOpenChange, date, onToast }: QuickBookDrawerProps) {
+export default function QuickBookDrawer({
+  open,
+  onOpenChange,
+  date,
+  initialCustomer,
+  onToast,
+}: QuickBookDrawerProps) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const salonId = useSalonContextStore((s) => s.salonId);
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
@@ -95,7 +103,7 @@ export default function QuickBookDrawer({ open, onOpenChange, date, onToast }: Q
     if (!open) return;
     setSearch("");
     setDebounced("");
-    setCustomer(null);
+    setCustomer(initialCustomer ? { ...initialCustomer, isNew: false } : null);
     setOfferingIds([]);
     setStaffId(null);
     setBranchId(null);
@@ -106,7 +114,7 @@ export default function QuickBookDrawer({ open, onOpenChange, date, onToast }: Q
     setNotes("");
     setNotesOpen(false);
     setError("");
-  }, [open, date]);
+  }, [open, date, initialCustomer]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 300);

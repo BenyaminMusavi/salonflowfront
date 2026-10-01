@@ -4,7 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import appointmentsService from "../appointments.service";
 import { SALON_APPOINTMENTS_QUERY_KEY } from "./useQuerySalonAppointments";
 import { BRANCH_DAY_BOARD_QUERY_KEY } from "./useQueryBranchDayBoard";
-import { MY_STAFF_APPOINTMENTS_QUERY_KEY } from "./useQueryAppointmentHistory";
+import {
+  CUSTOMER_APPOINTMENTS_QUERY_KEY,
+  MY_STAFF_APPOINTMENTS_QUERY_KEY,
+  STAFF_APPOINTMENTS_QUERY_KEY,
+} from "./useQueryAppointmentHistory";
 
 export const useMutateSalonLifecycle = () => {
   const queryClient = useQueryClient();
@@ -12,7 +16,13 @@ export const useMutateSalonLifecycle = () => {
   // Every source the appointments page (useQueryAgenda) and the staff grid read from.
   const invalidate = () =>
     Promise.all(
-      [SALON_APPOINTMENTS_QUERY_KEY, BRANCH_DAY_BOARD_QUERY_KEY, MY_STAFF_APPOINTMENTS_QUERY_KEY].map(
+      [
+        SALON_APPOINTMENTS_QUERY_KEY,
+        BRANCH_DAY_BOARD_QUERY_KEY,
+        MY_STAFF_APPOINTMENTS_QUERY_KEY,
+        CUSTOMER_APPOINTMENTS_QUERY_KEY,
+        STAFF_APPOINTMENTS_QUERY_KEY,
+      ].map(
         (key) => queryClient.invalidateQueries({ queryKey: [key] })
       )
     );

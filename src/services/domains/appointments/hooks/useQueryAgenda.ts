@@ -47,7 +47,8 @@ function fromSalonList(item: ISalonAppointmentItem, customerName: string | null)
   };
 }
 
-function fromHistory(item: IAppointmentHistoryItem): IAgendaItem {
+/** A history row (`staff/me`, `customer/{id}`, `staff/{id}`) as an agenda item. */
+export function historyToAgendaItem(item: IAppointmentHistoryItem): IAgendaItem {
   return {
     numericId: item.numericId,
     publicId: item.id,
@@ -138,7 +139,7 @@ export function useQueryAgenda(query: IAgendaQuery, options?: { enabled?: boolea
         ? branches.find((b) => b.branchId === query.branchId)?.name
         : undefined;
       return rows
-        .map(fromHistory)
+        .map(historyToAgendaItem)
         .filter((x) => !branchName || x.branchName === branchName)
         .sort(byStart);
     }

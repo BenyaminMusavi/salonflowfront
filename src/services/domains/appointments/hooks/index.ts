@@ -11,4 +11,4 @@ export { useMutateSalonLifecycle } from "./useMutateSalonLifecycle";
 export { useMutateQuickBook } from "./useMutateQuickBook";
 export { useQueryStaffDayBoard } from "./useQueryStaffDayBoard";
 export { useQueryBranchDayBoard } from "./useQueryBranchDayBoard";
-export { useQueryAgenda } from "./useQueryAgenda";
+export { useQueryAgenda, historyToAgendaItem } from "./useQueryAgenda";

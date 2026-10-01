@@ -277,12 +277,19 @@ export default function DashboardLayoutClient({
 function PanelQuickBook() {
   const open = useQuickBookStore((s) => s.open);
   const date = useQuickBookStore((s) => s.date);
+  const customer = useQuickBookStore((s) => s.customer);
   const setOpen = useQuickBookStore((s) => s.setOpen);
   const [toast, setToast] = useState<DashboardToastState>(null);
 
   return (
     <>
-      <QuickBookDrawer open={open} onOpenChange={setOpen} date={date} onToast={setToast} />
+      <QuickBookDrawer
+        open={open}
+        onOpenChange={setOpen}
+        date={date}
+        initialCustomer={customer}
+        onToast={setToast}
+      />
       <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
     </>
   );
