@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
+  IAssignOfferingStaffRequest,
   ICreateOfferingRequest,
   ICreatePricingRuleRequest,
   IStaffServicesSyncRequest,
@@ -67,6 +68,23 @@ class CatalogService {
     return await axiosInstance.put<unknown, TCatalogStaffServicesEntity>(
       API_ADDRESS.CATALOG.STAFF_SERVICES(staffMemberId),
       body
+    );
+  }
+
+  /** Who performs this offering, with their own price/duration. */
+  async getOfferingStaff(offeringId: number) {
+    return await axiosInstance.get<unknown, TCatalogStaffServicesEntity>(
+      API_ADDRESS.CATALOG.OFFERING_STAFF(offeringId)
+    );
+  }
+
+  async assignOfferingStaff(offeringId: number, body: IAssignOfferingStaffRequest) {
+    return await axiosInstance.post(API_ADDRESS.CATALOG.OFFERING_STAFF(offeringId), body);
+  }
+
+  async unassignOfferingStaff(offeringId: number, staffMemberId: number) {
+    return await axiosInstance.delete(
+      API_ADDRESS.CATALOG.OFFERING_STAFF_MEMBER(offeringId, staffMemberId)
     );
   }
 

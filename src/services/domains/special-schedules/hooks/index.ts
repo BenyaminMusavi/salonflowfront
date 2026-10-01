@@ -5,7 +5,7 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import specialSchedulesService from "../special-schedules.service";
 import { ISpecialScheduleRequest } from "../types/special-schedules.type";
 
-const SPECIAL_SCHEDULES_QUERY_KEY = "SPECIAL_SCHEDULES_QUERY_KEY";
+export const SPECIAL_SCHEDULES_QUERY_KEY = "SPECIAL_SCHEDULES_QUERY_KEY";
 
 export const useQuerySpecialSchedules = (
   staffMemberId: number | undefined,

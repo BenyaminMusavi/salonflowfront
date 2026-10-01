@@ -5,7 +5,7 @@ import workingSchedulesService from "../working-schedules.service";
 import { IWorkingScheduleRequest } from "../types/working-schedules.type";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 
-const WORKING_SCHEDULES_QUERY_KEY = "WORKING_SCHEDULES_QUERY_KEY";
+export const WORKING_SCHEDULES_QUERY_KEY = "WORKING_SCHEDULES_QUERY_KEY";
 
 export const useQueryWorkingSchedules = (staffMemberId: number | undefined) => {
   const salonId = useSalonContextStore((s) => s.salonId);

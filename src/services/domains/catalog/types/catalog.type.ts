@@ -105,3 +105,10 @@ export type TCatalogStaffServicesEntity = TResponse<IStaffService[]>;
 export type TPricingRulesEntity = TResponse<IPricingRule[]>;
 export type TPricingRuleEntity = TResponse<IPricingRule>;
 
+
+/** Body of POST /api/catalog/offerings/{id}/staff — creates or updates the assignment. */
+export interface IAssignOfferingStaffRequest {
+  staffMemberId: number;
+  customPrice?: number | null;
+  customDurationMinutes?: number | null;
+}

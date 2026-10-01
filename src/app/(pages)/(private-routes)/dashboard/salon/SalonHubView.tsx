@@ -120,7 +120,7 @@ export default function SalonHubView() {
           label="خدمات"
           hint={countHint(offerings?.length, "خدمت")}
         />
-        <PanelListRow href={D.SCHEDULES} icon={CalendarDotsIcon} label="برنامه‌ی کاری پرسنل" />
+        <PanelListRow href={D.SCHEDULES} icon={CalendarDotsIcon} label="برنامه‌ی تیم" />
       </PanelListGroup>
 
       <PanelListGroup title="صفحه‌ی سالن">

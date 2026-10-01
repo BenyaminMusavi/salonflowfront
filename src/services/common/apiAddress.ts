@@ -76,6 +76,9 @@ export const API_ADDRESS = {
     PRICING_RULE_BY_ID: (id: number) => `/api/catalog/pricing-rules/${id}`,
     STAFF_SERVICES: (staffMemberId: number) =>
       `/api/catalog/staff/${staffMemberId}/services`,
+    OFFERING_STAFF: (offeringId: number) => `/api/catalog/offerings/${offeringId}/staff`,
+    OFFERING_STAFF_MEMBER: (offeringId: number, staffMemberId: number) =>
+      `/api/catalog/offerings/${offeringId}/staff/${staffMemberId}`,
   },
 
   STAFF_PROFILE: {
