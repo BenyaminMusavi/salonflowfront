@@ -37,8 +37,7 @@ const CUSTOMERS: PanelNavItem = {
 const BOOK: PanelNavItem = { id: "book", label: "نوبت جدید", matches: [] };
 
 const MONEY_TABS: PanelNavTab[] = [
-  { href: D.Z_REPORT, label: "صندوق روز" },
-  { href: D.FINANCE, label: "فاکتور و پرداخت" },
+  { href: D.FINANCE, label: "صندوق و پرداخت" },
   { href: D.PAYOUTS, label: "تسویه پرسنل" },
   { href: D.REPORTS, label: "گزارش عملکرد" },
   { href: D.ANALYTICS, label: "شاخص‌ها" },
@@ -52,7 +51,7 @@ const OWNER_NAV: PanelNavItem[] = [
   {
     id: "money",
     label: "مالی",
-    href: D.Z_REPORT,
+    href: D.FINANCE,
     matches: MONEY_TABS.map((t) => t.href),
     tabs: MONEY_TABS,
   },

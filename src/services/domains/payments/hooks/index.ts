@@ -4,6 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import paymentsService from "../payments.service";
 import { ICreatePaymentRequest, IRefundPaymentRequest } from "../types/payments.type";
+import { INVOICES_QUERY_KEY } from "@/services/domains/invoices/hooks";
+import {
+  DASHBOARD_SUMMARY_QUERY_KEY,
+  REPORTS_QUERY_KEY,
+  Z_REPORT_QUERY_KEY,
+} from "@/services/domains/reports/hooks";
+
+/** A payment moves an invoice's balance and every money total. */
+const MONEY_KEYS = [INVOICES_QUERY_KEY, Z_REPORT_QUERY_KEY, DASHBOARD_SUMMARY_QUERY_KEY, REPORTS_QUERY_KEY];
 
 export const PAYMENTS_BY_INVOICE_QUERY_KEY = "PAYMENTS_BY_INVOICE_QUERY_KEY";
 
@@ -32,11 +41,9 @@ export const useMutatePayments = () => {
           ...body,
           idempotencyKey: generateIdempotencyKey(),
         }),
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: [PAYMENTS_BY_INVOICE_QUERY_KEY, undefined, variables.invoiceId],
-        });
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [PAYMENTS_BY_INVOICE_QUERY_KEY] });
+        for (const key of MONEY_KEYS) queryClient.invalidateQueries({ queryKey: [key] });
       },
     }),
     /** SalonOwner only (403 for Staff) — never offer it in a Staff view. */

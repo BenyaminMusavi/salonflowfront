@@ -8,16 +8,15 @@ import { ICreateInvoiceItemRequest } from "../types/invoices.type";
 export const INVOICES_QUERY_KEY = "INVOICES_QUERY_KEY";
 export const INVOICE_QUERY_KEY = "INVOICE_QUERY_KEY";
 
-export const useQueryInvoices = (params?: {
-  status?: number;
-  page?: number;
-  pageSize?: number;
-}) => {
+export const useQueryInvoices = (
+  params?: { status?: number; page?: number; pageSize?: number },
+  options?: { enabled?: boolean }
+) => {
   const salonId = useSalonContextStore((s) => s.salonId);
   return useQuery({
     queryKey: [INVOICES_QUERY_KEY, salonId, params],
     queryFn: () => invoicesService.list(params),
-    enabled: !!salonId,
+    enabled: !!salonId && (options?.enabled ?? true),
   });
 };
 

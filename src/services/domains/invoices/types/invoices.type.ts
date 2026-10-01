@@ -10,6 +10,9 @@ export interface IInvoiceItem {
 
 export interface IInvoice {
   id: number;
+  invoiceNumber?: string | null;
+  issuedAt?: string | null;
+  grandTotal?: number;
   status?: number;
   customerId?: number;
   appointmentId?: number;

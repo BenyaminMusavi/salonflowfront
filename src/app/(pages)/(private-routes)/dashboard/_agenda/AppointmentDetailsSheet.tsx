@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRightIcon, DotsThreeIcon, XIcon } from "@phosphor-icons/react";
 import {
@@ -14,7 +13,7 @@ import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
 import { useMutateSalonLifecycle } from "@/services/domains/appointments/hooks";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import { RouteAddress } from "@/shared/data/routeAddress";
+import { useQueryInvoices } from "@/services/domains/invoices/hooks";
 import { useMediaQuery } from "@/shared/hooks";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import {
@@ -31,6 +30,7 @@ import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 import { StatusMark, formatClock } from "./AgendaRow";
 import { durationMinutes } from "./agendaUtils";
 import { DayPicker, TimePicker, dayLabel, pad2, snapMinute } from "./DayTimePicker";
+import { PaymentStep } from "./PaymentStep";
 
 /** «جابه‌جایی»: pick a day and a 15-minute slot; SMS on by default (backend contract). */
 function RescheduleStep({
@@ -130,7 +130,7 @@ export function AppointmentDetailsSheet({
 }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const lifecycle = useMutateSalonLifecycle();
-  const [step, setStep] = useState<"details" | "reschedule">("details");
+  const [step, setStep] = useState<"details" | "reschedule" | "payment">("details");
   const [moreOpen, setMoreOpen] = useState(false);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [noShowId, setNoShowId] = useState<number | null>(null);
@@ -154,6 +154,12 @@ export function AppointmentDetailsSheet({
   };
 
   const status = Number(item?.status);
+  // Owner money: the appointment's invoice (if any) from the recent invoice list.
+  const invoices = useQueryInvoices({ pageSize: 100 }, { enabled: !isStaff && !!item });
+  const invoice =
+    (invoices.data?.data?.items ?? []).find((x) => x.appointmentId === item?.numericId) ?? null;
+  const paid = !!invoice && (invoice.outstandingAmount ?? 0) <= 0;
+  const due = invoice?.outstandingAmount ?? item?.totalPrice ?? 0;
   const subject = item
     ? `${item.customerName || "مشتری"} · ${dayLabel(utcToSalonYmd(item.startTime))} ${formatClock(item.startTime)}`
     : undefined;
@@ -177,7 +183,17 @@ export function AppointmentDetailsSheet({
         >
           {item ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-safe-area pb-6 pt-2 lg:px-6 lg:pt-6">
-              {step === "reschedule" ? (
+              {step === "payment" ? (
+                <PaymentStep
+                  appointmentId={item.numericId}
+                  invoice={invoice}
+                  fallbackAmount={item.totalPrice}
+                  title={item.customerName || "مشتری"}
+                  onBack={() => setStep("details")}
+                  onDone={() => setStep("details")}
+                  onToast={onToast}
+                />
+              ) : step === "reschedule" ? (
                 <RescheduleStep
                   item={item}
                   onBack={() => setStep("details")}
@@ -246,17 +262,20 @@ export function AppointmentDetailsSheet({
                   </div>
 
                   {status === AppointmentStatus.Completed && !isStaff ? (
-                    <div className="flex items-center justify-between gap-3 rounded-[16px] bg-background-secondary px-4 py-3">
-                      <p className="text-xs leading-5 text-foreground-muted">
-                        فاکتور و پرداخت این نوبت را از «مالی» ثبت کنید.
+                    paid ? (
+                      <p className="rounded-[16px] bg-success-background px-4 py-3 text-sm font-semibold text-success-foreground">
+                        پرداخت شد · {formatToman(invoice?.grandTotal ?? item.totalPrice)} تومان
                       </p>
-                      <Link
-                        href={RouteAddress.DASHBOARD.FINANCE}
-                        className="shrink-0 text-xs font-semibold text-primary"
+                    ) : (
+                      <Button
+                        type="button"
+                        className="w-full rounded-[12px]"
+                        disabled={invoices.isLoading}
+                        onClick={() => setStep("payment")}
                       >
-                        ثبت پرداخت
-                      </Link>
-                    </div>
+                        دریافت {formatToman(due)} تومان
+                      </Button>
+                    )
                   ) : null}
 
                   {moreOpen ? (
@@ -308,7 +327,11 @@ export function AppointmentDetailsSheet({
                           isLoading={lifecycle.complete.isPending}
                           onClick={() =>
                             void run(
-                              () => lifecycle.complete.mutateAsync(item.numericId),
+                              async () => {
+                                await lifecycle.complete.mutateAsync(item.numericId);
+                                // Done → straight to collecting the payment (owner).
+                                if (!isStaff) setStep("payment");
+                              },
                               "نوبت انجام شد.",
                               "ثبت انجام نوبت ناموفق بود."
                             )
