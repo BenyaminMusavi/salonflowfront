@@ -10,6 +10,17 @@ import {
   useMutateDeleteSalonMedia,
 } from "@/services/domains/salons/hooks";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  IMAGE_UPLOAD_MAX_MB,
+  SALON_GALLERY_LIMIT,
+  validateImageUpload,
+} from "@/shared/utils/imageUpload";
+
+/** Throws the Persian message so UploadFile shows it under the slot. */
+function assertImageUpload(file: File) {
+  const invalid = validateImageUpload(file);
+  if (invalid) throw new Error(invalid);
+}
 
 export type MediaSlotState = {
   publicId: string | null;
@@ -71,7 +82,7 @@ export default function MediaSection({
   const [deletingGalleryKey, setDeletingGalleryKey] = React.useState<
     string | null
   >(null);
-  const GALLERY_LIMIT = 5;
+  const GALLERY_LIMIT = SALON_GALLERY_LIMIT;
   const galleryFull = gallery.length >= GALLERY_LIMIT;
 
   /** Every persisted media Guid this section currently knows about, except the one
@@ -90,6 +101,7 @@ export default function MediaSection({
     usageType: MediaUsageType,
     file: File
   ) => {
+    assertImageUpload(file);
     try {
       const res = await uploadMedia.mutateAsync({
         salonPublicId,
@@ -154,7 +166,10 @@ export default function MediaSection({
       id="salon-media"
       className="scroll-mt-24 rounded-[20px] border border-border bg-surface p-4"
     >
-      <h2 className="mb-3 text-sm font-bold text-foreground">رسانه</h2>
+      <h2 className="mb-1 text-sm font-bold text-foreground">رسانه</h2>
+      <p className="mb-3 text-xs text-foreground-muted">
+        فقط تصویر، حداکثر {IMAGE_UPLOAD_MAX_MB} مگابایت. کاور، بنر و لوگو با آپلود تصویر جدید جایگزین می‌شوند.
+      </p>
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <UploadFile
@@ -254,6 +269,7 @@ export default function MediaSection({
               accept="image/*"
               hint={`حداکثر ${GALLERY_LIMIT} تصویر، به ترتیب افزودن نمایش داده می‌شوند.`}
               onUpload={async (file) => {
+                assertImageUpload(file);
                 try {
                   const res = await uploadMedia.mutateAsync({
                     salonPublicId,

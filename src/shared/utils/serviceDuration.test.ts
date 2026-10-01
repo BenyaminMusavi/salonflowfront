@@ -7,12 +7,12 @@ import {
 } from "./serviceDuration";
 
 describe("service duration (15-minute steps)", () => {
-  it("accepts only multiples of 15 between 15 minutes and 8 hours", () => {
+  it("accepts only multiples of 15 between 15 minutes and 12 hours", () => {
     expect(isValidServiceDuration(45)).toBe(true);
-    expect(isValidServiceDuration(480)).toBe(true);
+    expect(isValidServiceDuration(720)).toBe(true);
     expect(isValidServiceDuration(20)).toBe(false);
     expect(isValidServiceDuration(0)).toBe(false);
-    expect(isValidServiceDuration(495)).toBe(false);
+    expect(isValidServiceDuration(735)).toBe(false);
     expect(isValidServiceDuration(null)).toBe(false);
   });
 
@@ -30,6 +30,6 @@ describe("service duration (15-minute steps)", () => {
     expect(stepDuration(20, 1)).toBe(30);
     expect(stepDuration(20, -1)).toBe(15);
     expect(stepDuration(15, -1)).toBe(15);
-    expect(stepDuration(480, 1)).toBe(480);
+    expect(stepDuration(720, 1)).toBe(720);
   });
 });

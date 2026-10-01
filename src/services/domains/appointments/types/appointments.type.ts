@@ -106,7 +106,8 @@ export interface IQuickBookRequest {
 }
 
 export interface ICreateSalonAppointmentRequest {
-  customerId: number;
+  /** CustomerDto.customerCode (Guid) — valid only inside the salon that owns the customer. Replaces the deprecated numeric customerId. */
+  customerCode: string;
   branchId: number;
   startTime: string;
   notes?: string | null;
@@ -117,6 +118,8 @@ export interface ICreateSalonAppointmentRequest {
 export interface IQuickBookResult {
   appointmentId: number;
   customerId: number;
+  /** Per-salon customer code (Guid) — what POST /api/appointments expects as customerCode. */
+  customerCode: string;
   isNewCustomer: boolean;
 }
 

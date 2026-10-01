@@ -13,20 +13,26 @@ interface SalonInfoJumpNavProps {
   onJump: (id: string) => void;
   /** Section ids with unsaved local changes — shown as a small dot on the pill. */
   dirtyIds?: string[];
+  /** Section ids not rendered for this user (e.g. media for Staff). */
+  hiddenIds?: string[];
 }
 
 export default function SalonInfoJumpNav({
   activeId,
   onJump,
   dirtyIds,
+  hiddenIds,
 }: SalonInfoJumpNavProps) {
+  const sections = SALON_INFO_SECTIONS.filter(
+    (section) => !hiddenIds?.includes(section.id)
+  );
   return (
     <nav
       aria-label="بخش‌های اطلاعات سالن"
       className="sticky top-[3.25rem] z-10 -mx-safe-area border-b border-border bg-background/95 px-safe-area py-2 backdrop-blur"
     >
       <div className="flex gap-2 overflow-x-auto">
-        {SALON_INFO_SECTIONS.map((section) => {
+        {sections.map((section) => {
           const isActive = activeId === section.id;
           const isDirty = dirtyIds?.includes(section.id);
           return (

@@ -23,7 +23,7 @@ interface DurationPickerProps {
 }
 
 /**
- * Service-duration input in 15-minute steps (15 min – 8 h): −/+ stepper with a readable label
+ * Service-duration input in 15-minute steps (15 min – 12 h): −/+ stepper with a readable label
  * («1 ساعت و 15 دقیقه») and one-tap presets. No keyboard, so an off-grid value can't be typed;
  * an existing off-grid value (e.g. 20) is shown with a warning and snaps on the first change.
  */

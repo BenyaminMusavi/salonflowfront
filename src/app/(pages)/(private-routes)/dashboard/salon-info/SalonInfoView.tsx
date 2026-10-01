@@ -21,6 +21,7 @@ import {
   DashboardPageHeader,
   DashboardToast,
   type DashboardToastState,
+  useIsSalonStaff,
 } from "../_components";
 import SalonInfoJumpNav, {
   SALON_INFO_SECTIONS,
@@ -113,6 +114,8 @@ export default function SalonInfoView() {
     draftStep < 7;
 
   const hydratedForIdRef = useRef<string | null>(null);
+  // Salon media (cover, banner, logo, gallery) is owner-only on the backend.
+  const isStaff = useIsSalonStaff();
 
   const [activeSectionId, setActiveSectionId] = useState<string>(
     SALON_INFO_SECTIONS[0].id
@@ -445,6 +448,7 @@ export default function SalonInfoView() {
         activeId={activeSectionId}
         onJump={onJump}
         dirtyIds={dirtySectionIds}
+        hiddenIds={isStaff ? ["salon-media"] : undefined}
       />
 
       <DashboardPageHeader
@@ -548,17 +552,19 @@ export default function SalonInfoView() {
             </Button>
           </section>
 
-          <MediaSection
-            salonPublicId={salonPublicId as string}
-            cover={cover}
-            banner={banner}
-            logo={logo}
-            gallery={gallery}
-            onCoverChange={setCover}
-            onBannerChange={setBanner}
-            onLogoChange={setLogo}
-            onGalleryChange={setGallery}
-          />
+          {!isStaff && (
+            <MediaSection
+              salonPublicId={salonPublicId as string}
+              cover={cover}
+              banner={banner}
+              logo={logo}
+              gallery={gallery}
+              onCoverChange={setCover}
+              onBannerChange={setBanner}
+              onLogoChange={setLogo}
+              onGalleryChange={setGallery}
+            />
+          )}
           <BranchesSection
             branches={branches}
             onChange={setBranches}

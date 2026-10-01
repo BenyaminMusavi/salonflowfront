@@ -30,6 +30,7 @@ import {
   DashboardSelect,
   DashboardToast,
   type DashboardToastState,
+  useIsSalonStaff,
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
@@ -43,6 +44,13 @@ const DAYS = [
   { value: 5, label: "پنجشنبه" },
   { value: 6, label: "جمعه" },
 ];
+
+/** Staff may edit only their own schedule (others answer 403); viewing colleagues is allowed. */
+function scheduleErrorMessage(err: unknown, fallback: string) {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  if (status === 403) return "فقط برنامه‌ی کاری خودتان را می‌توانید تغییر دهید.";
+  return getApiErrorMessage(err, fallback);
+}
 
 function staffLabel(member: { firstName?: string | null }) {
   return member.firstName || "پرسنل";
@@ -60,6 +68,7 @@ export default function SchedulesView() {
   const [toast, setToast] = useState<DashboardToastState>(null);
   const [workingOpen, setWorkingOpen] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
+  const isStaff = useIsSalonStaff();
 
   const offeringsQuery = useQueryCatalogOfferings(true);
   const offeringIds = (offeringsQuery.data?.data ?? []).map((x) => x.publicId);
@@ -119,7 +128,7 @@ export default function SchedulesView() {
     } catch (err) {
       setToast({
         type: "error",
-        message: getApiErrorMessage(err, "ثبت برنامه هفتگی ناموفق بود."),
+        message: scheduleErrorMessage(err, "ثبت برنامه هفتگی ناموفق بود."),
       });
     }
   };
@@ -142,10 +151,13 @@ export default function SchedulesView() {
     } catch (err) {
       setToast({
         type: "error",
-        message: getApiErrorMessage(err, "ثبت برنامه خاص ناموفق بود."),
+        message: scheduleErrorMessage(err, "ثبت برنامه خاص ناموفق بود."),
       });
     }
   };
+
+  const onRemoveError = (err: unknown) =>
+    setToast({ type: "error", message: scheduleErrorMessage(err, "حذف ناموفق بود.") });
 
   return (
     <DashboardPage>
@@ -153,6 +165,12 @@ export default function SchedulesView() {
         title="برنامه پرسنل"
         description="شیفت هفتگی و روزهای خاص هر پرسنل."
       />
+
+      {isStaff && (
+        <p className="text-xs text-foreground-muted">
+          برنامه‌ی همکاران را می‌توانید ببینید، ولی فقط برنامه‌ی خودتان را می‌توانید تغییر دهید.
+        </p>
+      )}
 
       <DashboardCard>
         <DashboardSelect
@@ -205,7 +223,9 @@ export default function SchedulesView() {
                             size="sm"
                             variant="outline"
                             className={dashboardQuietButtonClass}
-                            onClick={() => workingMutations.remove.mutate(item.id)}
+                            onClick={() =>
+                              workingMutations.remove.mutate(item.id, { onError: onRemoveError })
+                            }
                           >
                             حذف
                           </Button>
@@ -241,7 +261,9 @@ export default function SchedulesView() {
                     size="sm"
                     variant="outline"
                     className={dashboardQuietButtonClass}
-                    onClick={() => specialMutations.remove.mutate(item.id)}
+                    onClick={() =>
+                      specialMutations.remove.mutate(item.id, { onError: onRemoveError })
+                    }
                   >
                     حذف
                   </Button>

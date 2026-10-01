@@ -8,8 +8,10 @@ import { CameraIcon } from "@phosphor-icons/react";
 import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useMutateUploadAvatar } from "@/services/domains/auth/hooks/useMutateUploadAvatar";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
+import { validateImageUpload } from "@/shared/utils/imageUpload";
 
 export default function ProfileAvatar() {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
@@ -35,8 +37,9 @@ export default function ProfileAvatar() {
     e.target.value = "";
     if (!file || !me?.publicId) return;
 
-    if (!file.type.startsWith("image/")) {
-      setUploadError("فقط فایل تصویری مجاز است.");
+    const invalid = validateImageUpload(file);
+    if (invalid) {
+      setUploadError(invalid);
       return;
     }
 
@@ -44,7 +47,8 @@ export default function ProfileAvatar() {
     uploadAvatar(
       { file, customerPublicId: me.publicId },
       {
-        onError: () => setUploadError("آپلود عکس ناموفق بود."),
+        onError: (err) =>
+          setUploadError(getApiErrorMessage(err, "آپلود عکس ناموفق بود.")),
       }
     );
   };

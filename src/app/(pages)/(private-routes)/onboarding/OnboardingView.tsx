@@ -36,6 +36,11 @@ import { cn } from "@/shared/utils/className";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { GenderType, SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
 import { getLoginHref } from "@/shared/utils/authRedirect";
+import {
+  IMAGE_UPLOAD_MAX_MB,
+  SALON_GALLERY_LIMIT,
+  validateImageUpload,
+} from "@/shared/utils/imageUpload";
 
 const STEPS = [
   { id: 1, label: "اطلاعات" },
@@ -143,6 +148,7 @@ export default function OnboardingView() {
   const [usernameError, setUsernameError] = useState("");
   const [saving, setSaving] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaError, setMediaError] = useState("");
   const [gateBlocked, setGateBlocked] = useState(false);
   /**
    * Set when creating a new salon 400s because this user already has a Draft,
@@ -313,7 +319,7 @@ export default function OnboardingView() {
           throw new Error("حداقل یک خدمت اضافه کنید.");
         }
         if (draft.services.some((s) => !isValidServiceDuration(s.durationMinutes))) {
-          throw new Error("مدت هر خدمت باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 8 ساعت).");
+          throw new Error("مدت هر خدمت باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 12 ساعت).");
         }
         const payload = draft.services.map((s) => ({
           ...s,
@@ -1029,7 +1035,7 @@ export default function OnboardingView() {
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold">رسانه (اختیاری)</h2>
             <p className="text-xs text-foreground-muted">
-              حداکثر 10 مگابایت برای هر فایل در این مرحله. می‌توانید رد شوید.
+              فقط تصویر، حداکثر {SALON_GALLERY_LIMIT} عکس و هر کدام حداکثر {IMAGE_UPLOAD_MAX_MB} مگابایت. می‌توانید رد شوید.
             </p>
             <div className={cardClass}>
               <input
@@ -1037,9 +1043,21 @@ export default function OnboardingView() {
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={(e) =>
-                  setMediaFiles(Array.from(e.target.files ?? []))
-                }
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  const firstInvalid = picked
+                    .map(validateImageUpload)
+                    .find((msg): msg is string => !!msg);
+                  const valid = picked.filter((f) => !validateImageUpload(f));
+                  setMediaError(
+                    firstInvalid ??
+                      (valid.length > SALON_GALLERY_LIMIT
+                        ? `فقط ${SALON_GALLERY_LIMIT} عکس اول نگه داشته شد.`
+                        : "")
+                  );
+                  setMediaFiles(valid.slice(0, SALON_GALLERY_LIMIT));
+                }}
                 className="sr-only"
               />
               <label
@@ -1048,6 +1066,7 @@ export default function OnboardingView() {
               >
                 انتخاب تصویر
               </label>
+              {mediaError && <p className="text-xs text-error">{mediaError}</p>}
               {mediaFiles.length > 0 && (
                 <ul className="text-xs text-foreground-muted">
                   {mediaFiles.map((f) => (

@@ -9,6 +9,10 @@ export interface IReviewReply {
   moderationStatus?: ReviewModerationStatus | number | null;
 }
 
+/**
+ * In the public salon list, customerName is only a first name or «کاربر صفا», and
+ * appointmentId / customerId / responderUserId come back 0 or empty — never rely on them there.
+ */
 export interface IReview {
   id: number;
   appointmentId?: number | null;

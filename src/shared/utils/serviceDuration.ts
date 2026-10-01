@@ -4,7 +4,7 @@
  */
 export const DURATION_STEP = 15;
 export const DURATION_MIN = 15;
-export const DURATION_MAX = 8 * 60;
+export const DURATION_MAX = 12 * 60;
 
 export function isValidServiceDuration(minutes: number | null | undefined): boolean {
   return (

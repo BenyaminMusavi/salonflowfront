@@ -148,7 +148,7 @@ export default function CatalogView() {
         throw new Error("نوع سرویس را انتخاب کنید.");
       }
       if (!isValidServiceDuration(Number(durationMinutes))) {
-        throw new Error("مدت سرویس باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 8 ساعت).");
+        throw new Error("مدت سرویس باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 12 ساعت).");
       }
 
       const commonBody = {

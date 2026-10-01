@@ -32,9 +32,12 @@ class AuthService {
   }
 
   async loginWithPassword(data: ILoginRequest) {
+    // A 401 here means wrong credentials; also used right after a password change,
+    // when the old tokens are already revoked — never refresh-and-retry.
     return await axiosInstance.post<unknown, TAuthEntity>(
       API_ADDRESS.AUTH.LOGIN_PASSWORD,
-      data
+      data,
+      { skipAuthRetry: true }
     );
   }
 
