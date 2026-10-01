@@ -1,6 +1,11 @@
+import { OwnerOnly } from "../_components/OwnerOnly";
 import StaffServicesView from "./StaffServicesView";
 
 export default function DashboardStaffServicesPage() {
-  return <StaffServicesView />;
+  return (
+    <OwnerOnly>
+      <StaffServicesView />
+    </OwnerOnly>
+  );
 }
 

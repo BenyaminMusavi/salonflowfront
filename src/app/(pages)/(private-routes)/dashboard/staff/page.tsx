@@ -1,5 +1,10 @@
+import { OwnerOnly } from "../_components/OwnerOnly";
 import StaffView from "@/app/(pages)/(private-routes)/dashboard/staff/StaffView";
 
 export default function StaffPage() {
-  return <StaffView />;
+  return (
+    <OwnerOnly>
+      <StaffView />
+    </OwnerOnly>
+  );
 }

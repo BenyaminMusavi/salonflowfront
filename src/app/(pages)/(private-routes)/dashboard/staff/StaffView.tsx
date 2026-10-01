@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { useEffect, useRef, useState } from "react";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
@@ -170,7 +171,7 @@ export default function StaffView() {
   if (!salonPublicId) {
     return (
       <DashboardPage>
-        <DashboardPageHeader title="پرسنل" />
+        <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
         <DashboardEmptyState
           title="سالن فعال یافت نشد"
           description="ابتدا یک سالن را از سوییچر انتخاب کنید."
@@ -182,7 +183,7 @@ export default function StaffView() {
   if (salonQuery.isLoading || rosterQuery.isLoading) {
     return (
       <DashboardPage>
-        <DashboardPageHeader title="پرسنل" />
+        <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
         <DashboardSkeleton cards={1} rows={4} />
       </DashboardPage>
     );
@@ -190,7 +191,7 @@ export default function StaffView() {
 
   return (
     <DashboardPage>
-      <DashboardPageHeader title="پرسنل" />
+      <DashboardPageHeader title="پرسنل" backHref={RouteAddress.DASHBOARD.SALON} />
 
       <StaffRosterSection
         staff={rows}

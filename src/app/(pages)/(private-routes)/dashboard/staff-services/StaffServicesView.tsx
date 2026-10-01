@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
@@ -129,8 +130,9 @@ export default function StaffServicesView() {
   return (
     <DashboardPage>
       <DashboardPageHeader
-        title="خدمات پرسنل"
-        description="برای هر پرسنل مشخص کنید کدام سرویس‌ها را ارائه می‌دهد."
+        title="خدمات و قیمت هر پرسنل"
+        description="برای هر پرسنل مشخص کنید کدام خدمت‌ها را با چه قیمت و مدتی انجام می‌دهد."
+        backHref={RouteAddress.DASHBOARD.SALON}
       />
 
       <DashboardCard>
@@ -150,7 +152,7 @@ export default function StaffServicesView() {
       {!selectedStaffId ? (
         <DashboardEmptyState
           title="پرسنل را انتخاب کنید"
-          description="ابتدا خدمات کاتالوگ را بسازید، سپس پرسنل را انتخاب کنید."
+          description="ابتدا خدمات را بسازید، سپس پرسنل را انتخاب کنید."
         />
       ) : (
         <div className="space-y-2">

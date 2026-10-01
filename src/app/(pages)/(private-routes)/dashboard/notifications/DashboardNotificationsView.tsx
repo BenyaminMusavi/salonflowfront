@@ -24,7 +24,7 @@ export default function DashboardNotificationsView() {
     <DashboardPage>
       <DashboardPageHeader
         title="اعلان‌ها"
-        description="پیام‌های پنل سالن‌دار"
+        description="پیام‌های پنل سالن"
         action={
           <Button
             size="sm"

@@ -1,71 +1,84 @@
 import { RouteAddress } from "@/shared/data/routeAddress";
 
-export type OwnerNavTab = {
+export type PanelNavId = "appointments" | "customers" | "book" | "money" | "salon" | "me";
+
+export type PanelNavTab = {
   href: string;
   label: string;
-  /** Requires the SalonOwner role — hidden from the dashboard for Staff (SF-QA-009). */
-  ownerOnly?: boolean;
 };
 
-export type OwnerNavGroup = {
-  id: "today" | "insight" | "ops" | "money";
-  href: string;
+export type PanelNavItem = {
+  id: PanelNavId;
   label: string;
-  tabs: OwnerNavTab[];
-  /** Requires the SalonOwner role — hidden from the dashboard for Staff (SF-QA-009). */
-  ownerOnly?: boolean;
+  /** Missing for `book`, which opens the quick-book drawer instead of navigating. */
+  href?: string;
+  /** Routes (and their sub-routes) that light this item up. `/dashboard` itself only matches exactly. */
+  matches: string[];
+  /** In-section tabs shown under the header (only «مالی» has them for now). */
+  tabs?: PanelNavTab[];
 };
 
-export const OWNER_NAV_GROUPS: OwnerNavGroup[] = [
-  {
-    id: "today",
-    href: RouteAddress.DASHBOARD.BASE,
-    label: "امروز",
-    tabs: [],
-  },
-  {
-    id: "insight",
-    href: RouteAddress.DASHBOARD.ANALYTICS,
-    label: "بینش",
-    tabs: [
-      { href: RouteAddress.DASHBOARD.ANALYTICS, label: "تحلیل" },
-      { href: RouteAddress.DASHBOARD.REPORTS, label: "گزارش‌ها" },
-    ],
-  },
-  {
-    id: "ops",
-    href: RouteAddress.DASHBOARD.CATALOG,
-    label: "عملیات",
-    tabs: [
-      { href: RouteAddress.DASHBOARD.MY_APPOINTMENTS, label: "نوبت‌های من" },
-      { href: RouteAddress.DASHBOARD.CUSTOMERS, label: "مشتریان" },
-      { href: RouteAddress.DASHBOARD.CATALOG, label: "کاتالوگ" },
-      { href: RouteAddress.DASHBOARD.STAFF, label: "پرسنل", ownerOnly: true },
-      { href: RouteAddress.DASHBOARD.STAFF_SERVICES, label: "خدمات پرسنل" },
-      { href: RouteAddress.DASHBOARD.SCHEDULES, label: "برنامه" },
-      { href: RouteAddress.DASHBOARD.SALON_INFO, label: "اطلاعات سالن" },
-    ],
-  },
+const D = RouteAddress.DASHBOARD;
+
+const APPOINTMENTS: PanelNavItem = {
+  id: "appointments",
+  label: "نوبت‌ها",
+  href: D.BASE,
+  matches: [D.BASE],
+};
+
+const CUSTOMERS: PanelNavItem = {
+  id: "customers",
+  label: "مشتریان",
+  href: D.CUSTOMERS,
+  matches: [D.CUSTOMERS],
+};
+
+const BOOK: PanelNavItem = { id: "book", label: "نوبت جدید", matches: [] };
+
+const MONEY_TABS: PanelNavTab[] = [
+  { href: D.Z_REPORT, label: "صندوق روز" },
+  { href: D.FINANCE, label: "فاکتور و پرداخت" },
+  { href: D.PAYOUTS, label: "تسویه پرسنل" },
+  { href: D.REPORTS, label: "گزارش عملکرد" },
+  { href: D.ANALYTICS, label: "شاخص‌ها" },
+];
+
+/** Owner panel: daily work up front, everything salon-setup behind «سالن». */
+const OWNER_NAV: PanelNavItem[] = [
+  { ...APPOINTMENTS, matches: [D.BASE, D.MY_APPOINTMENTS] },
+  CUSTOMERS,
+  BOOK,
   {
     id: "money",
-    href: RouteAddress.DASHBOARD.FINANCE,
     label: "مالی",
-    ownerOnly: true,
-    tabs: [
-      { href: RouteAddress.DASHBOARD.FINANCE, label: "مالی" },
-      { href: RouteAddress.DASHBOARD.Z_REPORT, label: "Z-Report" },
-      { href: RouteAddress.DASHBOARD.PAYOUTS, label: "تسویه" },
-    ],
+    href: D.Z_REPORT,
+    matches: MONEY_TABS.map((t) => t.href),
+    tabs: MONEY_TABS,
+  },
+  {
+    id: "salon",
+    label: "سالن",
+    href: D.SALON,
+    matches: [D.SALON, D.CATALOG, D.STAFF, D.STAFF_SERVICES, D.SCHEDULES, D.SALON_INFO],
   },
 ];
 
-/** Dashboard nav filtered for the current role — drops owner-only groups/tabs for Staff (SF-QA-009). */
-export function getVisibleNavGroups(isStaff: boolean): OwnerNavGroup[] {
-  if (!isStaff) return OWNER_NAV_GROUPS;
-  return OWNER_NAV_GROUPS.filter((group) => !group.ownerOnly).map((group) => ({
-    ...group,
-    tabs: group.tabs.filter((tab) => !tab.ownerOnly),
-  }));
+/** Staff panel: only what the backend lets Staff do — own work, customers, own schedule. */
+const STAFF_NAV: PanelNavItem[] = [
+  APPOINTMENTS,
+  CUSTOMERS,
+  BOOK,
+  {
+    id: "me",
+    label: "من",
+    href: D.ME,
+    matches: [D.ME, D.MY_APPOINTMENTS, D.SCHEDULES],
+  },
+];
+
+export function getPanelNav(isStaff: boolean): PanelNavItem[] {
+  return isStaff ? STAFF_NAV : OWNER_NAV;
 }
 
 function normalizePath(pathname: string): string {
@@ -73,33 +86,20 @@ function normalizePath(pathname: string): string {
   return clean || "/";
 }
 
-/** A tab is active on its own path and on its sub-routes (e.g. `/dashboard/customers/{id}`). */
-export function isOwnerNavTabActive(tabHref: string, pathname: string): boolean {
+/** A route is active on its own path and on its sub-routes (e.g. `/dashboard/customers/{id}`). */
+export function isPanelPathActive(href: string, pathname: string): boolean {
   const path = normalizePath(pathname);
-  return path === tabHref || path.startsWith(`${tabHref}/`);
+  if (href === D.BASE) return path === D.BASE;
+  return path === href || path.startsWith(`${href}/`);
 }
 
-export function getOwnerNavGroup(pathname: string): OwnerNavGroup | null {
-  const path = normalizePath(pathname);
-
-  if (path === RouteAddress.DASHBOARD.BASE) {
-    return OWNER_NAV_GROUPS[0];
-  }
-
-  return (
-    OWNER_NAV_GROUPS.find((group) =>
-      group.tabs.some((tab) => isOwnerNavTabActive(tab.href, path))
-    ) ?? null
-  );
+export function isPanelNavItemActive(item: PanelNavItem, pathname: string): boolean {
+  return item.matches.some((href) => isPanelPathActive(href, pathname));
 }
 
-export function isOwnerNavGroupActive(
-  group: OwnerNavGroup,
+export function getActivePanelNavItem(
+  items: PanelNavItem[],
   pathname: string
-): boolean {
-  const path = normalizePath(pathname);
-  if (group.id === "today") {
-    return path === RouteAddress.DASHBOARD.BASE;
-  }
-  return group.tabs.some((tab) => isOwnerNavTabActive(tab.href, path));
+): PanelNavItem | null {
+  return items.find((item) => isPanelNavItemActive(item, pathname)) ?? null;
 }

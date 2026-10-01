@@ -1,6 +1,11 @@
+import { OwnerOnly } from "../_components/OwnerOnly";
 import FinanceView from "./FinanceView";
 
 export default function DashboardFinancePage() {
-  return <FinanceView />;
+  return (
+    <OwnerOnly>
+      <FinanceView />
+    </OwnerOnly>
+  );
 }
 

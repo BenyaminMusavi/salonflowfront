@@ -453,7 +453,8 @@ export default function SalonInfoView() {
 
       <DashboardPageHeader
         title="اطلاعات سالن"
-        description="ویرایش اطلاعات پایه، تماس، رسانه و شعبه‌ها برای سالن فعال."
+        description="اطلاعات پایه، تماس، عکس‌ها و شعبه‌ها."
+        backHref={RouteAddress.DASHBOARD.SALON}
       />
 
       {showMissingContext && (
@@ -580,7 +581,7 @@ export default function SalonInfoView() {
               href={RouteAddress.DASHBOARD.CATALOG}
               className="font-semibold text-primary"
             >
-              کاتالوگ
+              خدمات
             </Link>
             ،{" "}
             <Link

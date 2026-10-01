@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   CaretLeftIcon,
   CaretRightIcon,
   ListIcon,
-  PlusIcon,
   SquaresFourIcon,
 } from "@phosphor-icons/react";
+import { RouteAddress } from "@/shared/data/routeAddress";
 import DashboardCalendarGrid from "./DashboardCalendarGrid";
-import QuickBookDrawer from "./QuickBookDrawer";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
 import NoShowDialog from "./NoShowDialog";
 import { Button } from "@/shared/components/primitives/button/Button";
@@ -43,6 +43,8 @@ import {
   formatJalaliDayLabel,
   shiftGregorianDate,
   todayGregorian,
+  useIsSalonStaff,
+  useQuickBookStore,
   type DashboardToastState,
 } from "./_components";
 import { dashboardQuietButtonClass } from "./_components/buttonClasses";
@@ -76,7 +78,14 @@ export default function DashboardView() {
   const [toast, setToast] = useState<DashboardToastState>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>("all");
   const [viewMode, setViewMode] = useState<"agenda" | "grid">("agenda");
-  const [bookOpen, setBookOpen] = useState(false);
+  const isStaff = useIsSalonStaff();
+
+  // The nav «＋» books into the day this board shows (falls back to today elsewhere).
+  const setBoardDate = useQuickBookStore((s) => s.setBoardDate);
+  useEffect(() => {
+    setBoardDate(date);
+  }, [date, setBoardDate]);
+  useEffect(() => () => setBoardDate(null), [setBoardDate]);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [noShowId, setNoShowId] = useState<number | null>(null);
 
@@ -122,7 +131,10 @@ export default function DashboardView() {
   });
   const lifecycle = useMutateSalonLifecycle();
 
-  const summaryQuery = useQueryDashboardSummary({ from: date, to: date });
+  // Reports are SalonOwnerOnly on the backend — Staff would only get 403s here.
+  const summaryQuery = useQueryDashboardSummary(
+    isStaff ? undefined : { from: date, to: date }
+  );
   const summary = summaryQuery.data?.data;
   const collected =
     asNumber(summary?.collected) ??
@@ -236,14 +248,27 @@ export default function DashboardView() {
         </div>
       </DashboardCard>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className={isStaff ? "grid grid-cols-1 gap-2" : "grid grid-cols-3 gap-2"}>
         <DashboardKpi
           title="نوبت"
           value={String(appointmentsQuery.data?.data?.items?.length ?? 0)}
         />
-        <DashboardKpi title="دریافت" value={formatMoneyOrDash(collected)} />
-        <DashboardKpi title="عدم حضور" value={formatRate(noShowRate)} />
+        {!isStaff && (
+          <>
+            <DashboardKpi title="دریافت" value={formatMoneyOrDash(collected)} />
+            <DashboardKpi title="عدم حضور" value={formatRate(noShowRate)} />
+          </>
+        )}
       </div>
+
+      {!isStaff && (
+        <Link
+          href={RouteAddress.DASHBOARD.MY_APPOINTMENTS}
+          className="self-start text-xs font-semibold text-primary"
+        >
+          نوبت‌هایی که خودم انجام می‌دهم ›
+        </Link>
+      )}
 
       <div className="flex justify-end gap-1 rounded-full bg-surface p-1">
         <button
@@ -460,26 +485,6 @@ export default function DashboardView() {
       )}
       </>
       )}
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50">
-        <div className="relative mx-auto max-w-[720px] px-safe-area">
-          <button
-            type="button"
-            onClick={() => setBookOpen(true)}
-            className="pointer-events-auto absolute start-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
-            aria-label="رزرو سریع"
-          >
-            <PlusIcon size={24} weight="bold" />
-          </button>
-        </div>
-      </div>
-
-      <QuickBookDrawer
-        open={bookOpen}
-        onOpenChange={setBookOpen}
-        date={date}
-        onToast={setToast}
-      />
 
       <CancelAppointmentDialog
         appointmentId={cancelId}

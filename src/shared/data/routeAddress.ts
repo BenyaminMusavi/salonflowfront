@@ -60,6 +60,10 @@ export const RouteAddress = {
   },
   DASHBOARD: {
     BASE: "/dashboard",
+    /** Owner hub: staff, services, schedules, salon profile, link, subscription. */
+    SALON: "/dashboard/salon",
+    /** Staff hub: own appointments, own schedule. */
+    ME: "/dashboard/me",
     ANALYTICS: "/dashboard/analytics",
     REPORTS: "/dashboard/reports",
     CATALOG: "/dashboard/catalog",

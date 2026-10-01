@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
@@ -236,8 +237,9 @@ export default function CatalogView() {
   return (
     <DashboardPage>
       <DashboardPageHeader
-        title="کاتالوگ"
-        description="سرویس‌های قابل رزرو سالن را مدیریت کنید."
+        title="خدمات"
+        description="خدماتی که مشتری می‌تواند رزرو کند."
+        backHref={RouteAddress.DASHBOARD.SALON}
         action={
           <Button size="sm" onClick={openCreate}>
             سرویس جدید
@@ -250,7 +252,7 @@ export default function CatalogView() {
       ) : offerings.length === 0 ? (
         <DashboardEmptyState
           title="هنوز سرویسی ثبت نشده"
-          description="اولین سرویس کاتالوگ را اضافه کنید تا رزرو آنلاین فعال شود."
+          description="اولین خدمت را اضافه کنید تا رزرو آنلاین فعال شود."
           action={
             <Button size="sm" onClick={openCreate}>
               افزودن سرویس

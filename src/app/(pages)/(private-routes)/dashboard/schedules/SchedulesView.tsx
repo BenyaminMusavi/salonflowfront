@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
@@ -162,8 +163,9 @@ export default function SchedulesView() {
   return (
     <DashboardPage>
       <DashboardPageHeader
-        title="برنامه پرسنل"
+        title="برنامه‌ی کاری"
         description="شیفت هفتگی و روزهای خاص هر پرسنل."
+        backHref={isStaff ? RouteAddress.DASHBOARD.ME : RouteAddress.DASHBOARD.SALON}
       />
 
       {isStaff && (

@@ -1,14 +1,16 @@
 "use client";
 
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { useQueryMyStaffAppointments } from "@/services/domains/appointments/hooks";
 import {
   AppointmentHistoryPanel,
   useAppointmentHistoryQuery,
 } from "@/shared/components/composites/appointment-history/AppointmentHistoryPanel";
-import { DashboardPage, DashboardPageHeader } from "../_components";
+import { DashboardPage, DashboardPageHeader, useIsSalonStaff } from "../_components";
 
 /** «نوبت‌های من» inside the salon — appointments of the current salon served by the caller (Staff or SalonOwner). */
 export default function MyStaffAppointmentsView() {
+  const isStaff = useIsSalonStaff();
   const { query, setFilter, setPage } = useAppointmentHistoryQuery();
   const { data, isLoading, isFetching, error } = useQueryMyStaffAppointments(query);
 
@@ -17,6 +19,7 @@ export default function MyStaffAppointmentsView() {
       <DashboardPageHeader
         title="نوبت‌های من"
         description="نوبت‌هایی از این سالن که حداقل یک خدمتش با شماست."
+        backHref={isStaff ? RouteAddress.DASHBOARD.ME : RouteAddress.DASHBOARD.BASE}
       />
       <AppointmentHistoryPanel
         idPrefix="staff-me"

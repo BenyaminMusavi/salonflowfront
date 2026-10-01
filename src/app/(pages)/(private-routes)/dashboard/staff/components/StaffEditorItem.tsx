@@ -141,7 +141,7 @@ export default function StaffEditorItem({
           <div className="flex flex-col gap-2 rounded-[12px] border border-border bg-surface p-2">
             {services.length === 0 ? (
               <p className="text-xs text-foreground-muted">
-                ابتدا خدمات سالن را در «کاتالوگ» ذخیره کنید.
+                ابتدا خدمات سالن را در «سالن ← خدمات» ثبت کنید.
               </p>
             ) : (
               services.map((service) => {

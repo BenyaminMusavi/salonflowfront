@@ -16,7 +16,8 @@ export default function PrivateRoutesLayout({
       <div
         className={cn(
           "w-full min-h-screen",
-          isDashboard ? "max-w-[720px]" : "max-w-[600px]"
+          // Dashboard: one 720px column on mobile/tablet, sidebar + content on desktop.
+          isDashboard ? "max-w-[720px] lg:max-w-[1040px]" : "max-w-[600px]"
         )}
       >
         {children}

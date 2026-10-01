@@ -23,8 +23,8 @@ export default function ZReportView() {
   return (
     <DashboardPage>
       <DashboardPageHeader
-        title="Z-Report"
-        description="جمع صندوق و کمیسیون همان روز."
+        title="صندوق روز"
+        description="دریافتی‌های یک روز به تفکیک روش پرداخت."
       />
 
       <DashboardCard>

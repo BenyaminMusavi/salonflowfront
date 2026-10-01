@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -14,14 +13,21 @@ import { useSelectPanelSalon } from "@/services/salon-context-store/useSelectPan
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { mapAuthMeMembershipsToSalon } from "@/services/salon-context-store/mapAuthMeMembership";
 import { getLoginHref } from "@/shared/utils/authRedirect";
-import { ArrowLeftIcon, BellIcon } from "@phosphor-icons/react";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { SalonRoleName, SalonApprovalStatus } from "@/services/common/enums/domain-enums";
 import SubscriptionLockBanner from "@/shared/components/composites/subscription-lock-banner/SubscriptionLockBanner";
+import { salonRoleLabel } from "@/shared/utils/salonRoleLabel";
+import QuickBookDrawer from "./QuickBookDrawer";
 import {
-  OwnerBottomNav,
-  OwnerSubnav,
-  getOwnerNavGroup,
+  DashboardToast,
+  PanelBottomNav,
+  PanelHeader,
+  PanelSideNav,
+  PanelSubnav,
+  getActivePanelNavItem,
+  getPanelNav,
+  useQuickBookStore,
+  type DashboardToastState,
 } from "./_components";
 
 function Transferring() {
@@ -46,7 +52,7 @@ function SalonSelectPanel({
     <div className="flex min-h-screen flex-col bg-background px-safe-area py-8">
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <div>
-          <p className="text-xs text-foreground-muted">پنل سالن‌دار</p>
+          <p className="text-xs text-foreground-muted">پنل سالن</p>
           <h1 className="mt-1 text-lg font-bold text-foreground">
             انتخاب سالن
           </h1>
@@ -69,7 +75,9 @@ function SalonSelectPanel({
               <div className="flex-1">
                 <p className="text-[14px] font-bold text-foreground">{m.name}</p>
                 {m.roleName ? (
-                  <p className="text-[12px] text-foreground-muted">{m.roleName}</p>
+                  <p className="text-[12px] text-foreground-muted">
+                    {salonRoleLabel(m.roleName)}
+                  </p>
                 ) : null}
               </div>
             </button>
@@ -103,7 +111,6 @@ export default function DashboardLayoutClient({
   const hasHydrated = useSalonContextStore((s) => s._hasHydrated);
   const salonId = useSalonContextStore((s) => s.salonId);
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const salonName = useSalonContextStore((s) => s.salonName);
   const memberships = useSalonContextStore((s) => s.memberships);
   const lastSalonPublicId = useSalonContextStore((s) => s.lastSalonPublicId);
   const clearContext = useSalonContextStore((s) => s.clearContext);
@@ -243,44 +250,40 @@ export default function DashboardLayoutClient({
     return <Transferring />;
   }
 
-  const activeGroup = getOwnerNavGroup(pathname);
   const activeRoleName = memberships.find((m) => m.salonId === salonId)?.roleName;
   const isStaff = activeRoleName === SalonRoleName.Staff;
+  const activeItem = getActivePanelNavItem(getPanelNav(isStaff), pathname);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 px-safe-area py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-foreground-muted">پنل سالن‌دار</p>
-            <p className="truncate text-sm font-bold text-foreground">
-              {salonName || `سالن #${salonId}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={RouteAddress.HOME.BASE}
-              className="flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-foreground-muted"
-            >
-              <ArrowLeftIcon size={14} />
-              اپ مشتری
-            </Link>
-            <Link
-              href={RouteAddress.DASHBOARD.NOTIFICATIONS}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
-              aria-label="اعلان‌ها"
-            >
-              <BellIcon size={18} className="text-foreground" />
-            </Link>
-          </div>
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <PanelHeader />
+      <div className="flex w-full flex-1">
+        <PanelSideNav pathname={pathname} isStaff={isStaff} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <PanelSubnav item={activeItem} pathname={pathname} />
+          {!isStaff && !entitlementLoading && !isEntitled ? (
+            <SubscriptionLockBanner />
+          ) : null}
+          <div className="w-full flex-1">{children}</div>
         </div>
-      </header>
-      <OwnerSubnav group={activeGroup} pathname={pathname} isStaff={isStaff} />
-      {!isStaff && !entitlementLoading && !isEntitled ? (
-        <SubscriptionLockBanner />
-      ) : null}
-      <div className="w-full flex-1">{children}</div>
-      <OwnerBottomNav pathname={pathname} isStaff={isStaff} />
+      </div>
+      <PanelBottomNav pathname={pathname} isStaff={isStaff} />
+      <PanelQuickBook />
     </div>
+  );
+}
+
+/** The one quick-book drawer of the panel, opened by «＋» in the nav (any page). */
+function PanelQuickBook() {
+  const open = useQuickBookStore((s) => s.open);
+  const date = useQuickBookStore((s) => s.date);
+  const setOpen = useQuickBookStore((s) => s.setOpen);
+  const [toast, setToast] = useState<DashboardToastState>(null);
+
+  return (
+    <>
+      <QuickBookDrawer open={open} onOpenChange={setOpen} date={date} onToast={setToast} />
+      <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
+    </>
   );
 }
