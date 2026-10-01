@@ -15,9 +15,6 @@ export {
   DashboardStatusChip,
   AppointmentStatusChip,
 } from "./DashboardStatusChip";
-export { DashboardAccordion } from "./DashboardAccordion";
-export { DashboardKpi } from "./DashboardKpi";
-export { DashboardAdvanced } from "./DashboardAdvanced";
 export { PanelBottomNav, PanelSideNav, PanelSubnav } from "./PanelNav";
 export { getPanelNav, getActivePanelNavItem } from "./nav";
 export { PanelHeader } from "./PanelHeader";

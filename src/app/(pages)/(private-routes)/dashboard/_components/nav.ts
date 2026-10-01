@@ -40,7 +40,6 @@ const MONEY_TABS: PanelNavTab[] = [
   { href: D.FINANCE, label: "صندوق و پرداخت" },
   { href: D.PAYOUTS, label: "تسویه پرسنل" },
   { href: D.REPORTS, label: "گزارش عملکرد" },
-  { href: D.ANALYTICS, label: "شاخص‌ها" },
 ];
 
 /** Owner panel: daily work up front, everything salon-setup behind «سالن». */
