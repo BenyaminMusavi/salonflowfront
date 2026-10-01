@@ -18,41 +18,19 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { useMediaQuery } from "@/shared/hooks";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import {
-  addDaysYmd,
-  formatSalonDate,
-  salonTodayYmd,
   salonWallClockToUtcIso,
   utcToSalonTime,
   utcToSalonYmd,
-  ymdToDate,
 } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import CancelAppointmentDialog from "../CancelAppointmentDialog";
 import NoShowDialog from "../NoShowDialog";
-import { DashboardDateField } from "../_components/DashboardDateField";
 import { NotifyCustomerCheckbox } from "../_components/NotifyCustomerCheckbox";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 import { StatusMark, formatClock } from "./AgendaRow";
 import { durationMinutes } from "./agendaUtils";
-
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 07–22
-const MINUTES = [0, 15, 30, 45];
-const pad = (n: number) => String(n).padStart(2, "0");
-
-function dayLabel(ymd: string): string {
-  try {
-    return formatSalonDate(ymdToDate(ymd), { weekday: "long", day: "numeric", month: "long" });
-  } catch {
-    return ymd;
-  }
-}
-
-const chip = (active: boolean) =>
-  cn(
-    "shrink-0 rounded-full px-2 py-1.5 text-xs font-semibold tabular-nums transition-colors",
-    active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
-  );
+import { DayPicker, TimePicker, dayLabel, pad2, snapMinute } from "./DayTimePicker";
 
 /** «جابه‌جایی»: pick a day and a 15-minute slot; SMS on by default (backend contract). */
 function RescheduleStep({
@@ -67,13 +45,12 @@ function RescheduleStep({
   onToast: (t: DashboardToastState) => void;
 }) {
   const lifecycle = useMutateSalonLifecycle();
-  const today = salonTodayYmd();
   const [day, setDay] = useState(utcToSalonYmd(item.startTime));
   const [initialH, initialM] = utcToSalonTime(item.startTime).split(":").map(Number);
   const [hour, setHour] = useState(initialH);
-  const [minute, setMinute] = useState(MINUTES.includes(initialM) ? initialM : 0);
+  const [minute, setMinute] = useState(snapMinute(initialM));
   const [notifyCustomer, setNotifyCustomer] = useState(true);
-  const time = `${pad(hour)}:${pad(minute)}`;
+  const time = `${pad2(hour)}:${pad2(minute)}`;
   const unchanged = day === utcToSalonYmd(item.startTime) && time === formatClock(item.startTime);
 
   const submit = async () => {
@@ -108,48 +85,15 @@ function RescheduleStep({
         {formatClock(item.startTime)}
       </DrawerDescription>
 
-      <section className="flex flex-col gap-2">
-        <p className="text-xs font-semibold text-foreground-muted">روز</p>
-        <div className="flex gap-2">
-          <button type="button" className={chip(day === today)} onClick={() => setDay(today)}>
-            امروز
-          </button>
-          <button
-            type="button"
-            className={chip(day === addDaysYmd(today, 1))}
-            onClick={() => setDay(addDaysYmd(today, 1))}
-          >
-            فردا
-          </button>
-        </div>
-        <DashboardDateField name="reschedule-day" value={day} onChange={(d) => d && setDay(d)} />
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <p className="text-xs font-semibold text-foreground-muted">ساعت</p>
-        <div className="grid grid-cols-8 gap-1.5">
-          {HOURS.map((h) => (
-            <button key={h} type="button" className={chip(h === hour)} onClick={() => setHour(h)}>
-              {pad(h)}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-1 rounded-full bg-surface-hover p-1">
-          {MINUTES.map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMinute(m)}
-              className={cn(
-                "rounded-full py-1.5 text-xs font-semibold tabular-nums",
-                m === minute ? "bg-primary text-primary-foreground" : "text-foreground-muted"
-              )}
-            >
-              {pad(m)}
-            </button>
-          ))}
-        </div>
-      </section>
+      <DayPicker name="reschedule-day" value={day} onChange={setDay} />
+      <TimePicker
+        hour={hour}
+        minute={minute}
+        onChange={(h, m) => {
+          setHour(h);
+          setMinute(m);
+        }}
+      />
 
       <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
 
