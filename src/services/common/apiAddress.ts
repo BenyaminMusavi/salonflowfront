@@ -188,11 +188,6 @@ export const API_ADDRESS = {
     BASE: "/api/wallets",
     ME: "/api/wallets/me",
     ME_TRANSACTIONS: "/api/wallets/me/transactions",
-    BY_CUSTOMER: (customerId: number) => `/api/wallets/${customerId}`,
-    TRANSACTIONS: (customerId: number) =>
-      `/api/wallets/${customerId}/transactions`,
-    CHARGE: "/api/wallets/charge",
-    DEBIT: "/api/wallets/debit",
   },
 
   TIPS: {

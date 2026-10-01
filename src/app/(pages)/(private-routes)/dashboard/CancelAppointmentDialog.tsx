@@ -69,7 +69,7 @@ export default function CancelAppointmentDialog({
           placeholder="دلیل لغو"
         />
         <p className="mt-2 text-xs text-foreground-muted">
-          با لغو از طرف سالن، بیعانه‌ی مشتری کامل به کیف پولش برمی‌گردد.
+          با لغو از طرف سالن، بیعانه‌ای که از کیف پول پرداخت شده به کیف پول مشتری برمی‌گردد؛ بیعانه‌ی نقدی یا کارتی را خود سالن پس می‌دهد.
         </p>
         <div className="mt-3">
           <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />

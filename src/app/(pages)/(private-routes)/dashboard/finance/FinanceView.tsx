@@ -1,16 +1,13 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Button } from "@/shared/components/primitives/button/Button";
-import { Input } from "@/shared/components/primitives/input/Input";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
 import { useQuerySalonAppointments } from "@/services/domains/appointments/hooks";
 import { AppointmentStatus, PaymentMethod, PaymentType } from "@/services/common/enums/domain-enums";
 import { useMutateInvoices, useQueryInvoices } from "@/services/domains/invoices/hooks";
 import { useMutatePayments, useQueryPaymentsByInvoice } from "@/services/domains/payments/hooks";
-import { useMutateWallet, useQueryWalletByCustomer, useQueryWalletTransactions } from "@/services/domains/wallets/hooks";
 import { useMutateTips } from "@/services/domains/tips/hooks";
-import { useQueryCustomers } from "@/services/domains/customers/hooks";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
@@ -22,10 +19,6 @@ import {
   type TPaymentFieldErrors,
 } from "@/services/domains/payments/utils/paymentValidation";
 import {
-  validateWalletOperation,
-  type TWalletFieldErrors,
-} from "@/services/domains/wallets/utils/walletValidation";
-import {
   DashboardCard,
   DashboardDateField,
   DashboardPage,
@@ -35,7 +28,6 @@ import {
   todayGregorian,
   type DashboardToastState,
 } from "../_components";
-import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 
 function staffLabel(member: { staffMemberId: number; firstName?: string | null }) {
   return member.firstName || `پرسنل #${member.staffMemberId}`;
@@ -65,28 +57,6 @@ export default function FinanceView() {
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<number>(PaymentMethod.Cash);
   const [paymentErrors, setPaymentErrors] = useState<TPaymentFieldErrors>({});
-
-  const [customerSearch, setCustomerSearch] = useState("");
-  const customersQuery = useQueryCustomers(customerSearch);
-  const customerListRaw = customersQuery.data?.data;
-  const customers = useMemo(() => {
-    if (Array.isArray(customerListRaw)) return customerListRaw;
-    if (customerListRaw && typeof customerListRaw === "object" && "items" in customerListRaw) {
-      return ((customerListRaw as { items?: unknown[] }).items ?? []) as Array<{
-        id: number;
-        fullName: string;
-        phone: string;
-      }>;
-    }
-    return [];
-  }, [customerListRaw]);
-
-  const [customerId, setCustomerId] = useState<number | "">("");
-  const walletQuery = useQueryWalletByCustomer(customerId ? Number(customerId) : undefined);
-  const walletTxQuery = useQueryWalletTransactions(customerId ? Number(customerId) : undefined);
-  const walletMutations = useMutateWallet();
-  const [walletAmount, setWalletAmount] = useState("");
-  const [walletErrors, setWalletErrors] = useState<TWalletFieldErrors>({});
 
   const offerings = useQueryCatalogOfferings(true).data?.data ?? [];
   const staff =
@@ -153,39 +123,6 @@ export default function FinanceView() {
     }
   };
 
-  const walletOp = async (type: "charge" | "debit") => {
-    const fieldErrors = validateWalletOperation({
-      customerId: Number(customerId) || 0,
-      amount: Number(walletAmount) || 0,
-    });
-    if (fieldErrors) {
-      setWalletErrors(fieldErrors);
-      return;
-    }
-    setWalletErrors({});
-
-    try {
-      const body = {
-        customerId: Number(customerId),
-        amount: Number(walletAmount),
-        description: type === "charge" ? "شارژ توسط سالن" : "برداشت توسط سالن",
-      };
-      if (type === "charge") {
-        await walletMutations.charge.mutateAsync(body);
-        setToast({ type: "success", message: "کیف پول مشتری شارژ شد." });
-      } else {
-        await walletMutations.debit.mutateAsync(body);
-        setToast({ type: "success", message: "از کیف پول مشتری برداشت شد." });
-      }
-      setWalletAmount("");
-    } catch (err) {
-      setToast({
-        type: "error",
-        message: getApiErrorMessage(err, "عملیات کیف پول ناموفق بود."),
-      });
-    }
-  };
-
   const submitTip = async (e: FormEvent) => {
     e.preventDefault();
     if (!tipStaffId || !tipAmount) {
@@ -213,7 +150,7 @@ export default function FinanceView() {
     <DashboardPage>
       <DashboardPageHeader
         title="مالی"
-        description="صدور فاکتور، پرداخت، کیف پول و انعام."
+        description="صدور فاکتور، پرداخت و انعام."
       />
 
       <DashboardCard>
@@ -287,7 +224,7 @@ export default function FinanceView() {
             <option value={PaymentMethod.Card}>کارت</option>
             <option value={PaymentMethod.Online}>آنلاین</option>
             <option value={PaymentMethod.Transfer}>انتقال</option>
-            <option value={PaymentMethod.Wallet}>کیف پول</option>
+            {/* Wallet is platform credit and disabled for now — salons never take payment from it. */}
           </DashboardSelect>
           <Button type="submit" isLoading={paymentMutations.create.isPending}>
             ثبت پرداخت
@@ -298,65 +235,6 @@ export default function FinanceView() {
             <p key={`${p.id}-${i}`} className="text-xs text-foreground-muted">
               پرداخت #{p.id} · {formatToman(p.amount)} تومان ·{" "}
               {paymentMethodLabel(p.paymentMethod)}
-            </p>
-          ))}
-        </div>
-      </DashboardCard>
-
-      <DashboardCard>
-        <h2 className="mb-3 text-sm font-bold text-foreground">کیف پول مشتری</h2>
-        <Input
-          placeholder="جستجوی مشتری"
-          value={customerSearch}
-          onChange={(e) => setCustomerSearch(e.target.value)}
-        />
-        <DashboardSelect
-          className="mt-2"
-          value={customerId}
-          onChange={(e) => setCustomerId(Number(e.target.value))}
-        >
-          <option value="">انتخاب مشتری</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.fullName} - {c.phone}
-            </option>
-          ))}
-        </DashboardSelect>
-        {walletErrors.customerId && (
-          <p className="mt-1 text-xs font-medium text-error">
-            {walletErrors.customerId}
-          </p>
-        )}
-        <p className="mt-3 text-lg font-bold text-foreground">
-          {formatToman(walletQuery.data?.data?.balance)} تومان
-        </p>
-        <p className="text-[11px] text-foreground-muted">موجودی کیف پول</p>
-        <div className="mt-3 flex gap-2">
-          <MoneyInput
-            placeholder="مبلغ"
-            value={walletAmount}
-            onValueChange={(v) => setWalletAmount(v == null ? "" : String(v))}
-            hasError={!!walletErrors.amount}
-          />
-          <Button size="sm" onClick={() => walletOp("charge")}>
-            شارژ
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className={dashboardQuietButtonClass}
-            onClick={() => walletOp("debit")}
-          >
-            برداشت
-          </Button>
-        </div>
-        {walletErrors.amount && (
-          <p className="mt-1 text-xs font-medium text-error">{walletErrors.amount}</p>
-        )}
-        <div className="mt-3 space-y-1">
-          {(walletTxQuery.data?.data ?? []).slice(0, 5).map((t) => (
-            <p key={t.id} className="text-xs text-foreground-muted">
-              {formatToman(t.amount)} · {t.description || "بدون توضیح"}
             </p>
           ))}
         </div>

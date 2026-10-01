@@ -200,8 +200,8 @@ export default function ReservationDetailView() {
           )}
           {freeCancel && (
             <p className="text-xs text-foreground-muted">
-              لغو در پنجره رایگان (≥ 24 ساعت) معمولاً بیعانه را به کیف پول
-              برمی‌گرداند.
+              لغو در پنجره رایگان (≥ 24 ساعت) بیعانه‌ی پرداخت‌شده از کیف پول را
+              به کیف پول برمی‌گرداند؛ بیعانه‌ی پرداخت‌شده در سالن را خود سالن پس می‌دهد.
             </p>
           )}
           <button

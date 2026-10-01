@@ -41,6 +41,7 @@ export const useMutateInvoices = () => {
         invoicesService.createFromAppointment(appointmentId),
       onSuccess: invalidate,
     }),
+    // addItem / deleteItem / cancel are SalonOwner only (403 for Staff) — never offer them in a Staff view.
     addItem: useMutation({
       mutationFn: ({ id, body }: { id: number; body: ICreateInvoiceItemRequest }) =>
         invoicesService.addItem(id, body),

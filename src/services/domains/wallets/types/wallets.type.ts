@@ -14,12 +14,6 @@ export interface IWalletTransaction {
   createdAt?: string | null;
 }
 
-export interface IWalletOperationRequest {
-  customerId: number;
-  amount: number;
-  description?: string | null;
-}
-
 export type TWalletEntity = TResponse<IWallet>;
 export type TWalletTransactionsEntity = TResponse<IWalletTransaction[]>;
 

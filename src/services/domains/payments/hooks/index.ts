@@ -39,6 +39,7 @@ export const useMutatePayments = () => {
         queryClient.invalidateQueries({ queryKey: [PAYMENTS_BY_INVOICE_QUERY_KEY] });
       },
     }),
+    /** SalonOwner only (403 for Staff) — never offer it in a Staff view. */
     refund: useMutation({
       mutationFn: (body: IRefundPaymentRequest) => paymentsService.refund(body),
       onSuccess: () =>

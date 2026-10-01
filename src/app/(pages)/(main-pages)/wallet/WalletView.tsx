@@ -35,6 +35,11 @@ export default function WalletView() {
         </p>
       </div>
 
+      {/* Wallet is platform credit, off until top-up through Saffa exists (backend Wallet:Enabled=false). */}
+      <p className="mx-safe-area rounded-lg bg-surface-secondary p-3 text-xs leading-5 text-foreground-muted">
+        شارژ کیف پول و پرداخت با آن هنوز فعال نیست. فعلاً بیعانه‌ی رزرو در خود سالن پرداخت می‌شود.
+      </p>
+
       <div className="mx-safe-area rounded-lg bg-surface-secondary p-3">
         <h2 className="mb-2 text-sm font-bold text-foreground">تراکنش‌ها</h2>
         {txQuery.isLoading ? (

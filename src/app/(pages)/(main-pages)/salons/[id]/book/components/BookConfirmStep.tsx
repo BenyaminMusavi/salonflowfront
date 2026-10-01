@@ -113,16 +113,22 @@ export default function BookConfirmStep({
               {formatToman(price.totalPrice)} تومان
             </span>
           </div>
-          <div className="mt-3 rounded-2xl bg-primary/10 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-foreground">
-                بیعانه الان
-              </span>
-              <span className="text-base font-bold text-primary">
-                {formatToman(price.amountDueNow)} تومان
-              </span>
+          {price.amountDueNow > 0 ? (
+            <div className="mt-3 rounded-2xl bg-primary/10 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-foreground">
+                  بیعانه الان
+                </span>
+                <span className="text-base font-bold text-primary">
+                  {formatToman(price.amountDueNow)} تومان
+                </span>
+              </div>
             </div>
-          </div>
+          ) : price.totalDepositAmount > 0 ? (
+            <p className="mt-3 text-xs text-foreground-muted">
+              بیعانه‌ی {formatToman(price.totalDepositAmount)} تومان در سالن پرداخت می‌شود.
+            </p>
+          ) : null}
           <div className="mt-3 flex items-center justify-between text-sm">
             <span className="text-foreground-muted">باقی‌مانده در سالن</span>
             <span className="font-bold text-foreground">
