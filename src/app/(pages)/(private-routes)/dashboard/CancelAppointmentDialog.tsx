@@ -11,13 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/primitives/dialog/Dialog";
+import { cn } from "@/shared/utils/className";
 import { dashboardQuietButtonClass } from "./_components/buttonClasses";
 import { NotifyCustomerCheckbox } from "./_components/NotifyCustomerCheckbox";
 
-const DEFAULT_CANCEL_REASON = "لغو توسط سالن";
+const REASONS = ["درخواست مشتری", "لغو توسط سالن"] as const;
+const OTHER = "سایر";
 
 interface CancelAppointmentDialogProps {
   appointmentId: number | null;
+  /** e.g. «علی رضایی · پنج‌شنبه 18:30» — what is being cancelled. */
+  subject?: string;
   onClose: () => void;
   onConfirm: (reason: string, notifyCustomer: boolean) => Promise<void>;
   isPending: boolean;
@@ -25,29 +29,26 @@ interface CancelAppointmentDialogProps {
 
 export default function CancelAppointmentDialog({
   appointmentId,
+  subject,
   onClose,
   onConfirm,
   isPending,
 }: CancelAppointmentDialogProps) {
-  const [reason, setReason] = useState(DEFAULT_CANCEL_REASON);
+  const [choice, setChoice] = useState<string>(REASONS[0]);
+  const [otherText, setOtherText] = useState("");
   // SMS on by default for a salon-side cancel (backend contract).
   const [notifyCustomer, setNotifyCustomer] = useState(true);
 
-  // Mirrors the old inline `setCancelId(item.id); setCancelReason(DEFAULT)` pairing
-  // from before this dialog owned its own reason state: every time a new appointment
-  // is targeted, the reason field starts fresh.
+  // Every newly targeted appointment starts fresh.
   useEffect(() => {
     if (appointmentId != null) {
-      setReason(DEFAULT_CANCEL_REASON);
+      setChoice(REASONS[0]);
+      setOtherText("");
       setNotifyCustomer(true);
     }
   }, [appointmentId]);
 
-  const handleConfirm = async () => {
-    const trimmed = reason.trim();
-    if (!trimmed) return;
-    await onConfirm(trimmed, notifyCustomer);
-  };
+  const reason = choice === OTHER ? otherText.trim() : choice;
 
   return (
     <Dialog
@@ -59,22 +60,38 @@ export default function CancelAppointmentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>لغو نوبت</DialogTitle>
-          <DialogDescription>
-            دلیل لغو را وارد کنید. این متن برای مشتری ثبت می‌شود.
-          </DialogDescription>
+          <DialogDescription>{subject || "این نوبت لغو می‌شود."}</DialogDescription>
         </DialogHeader>
-        <Input
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="دلیل لغو"
-        />
-        <p className="mt-2 text-xs text-foreground-muted">
-          با لغو از طرف سالن، بیعانه‌ای که از کیف پول پرداخت شده به کیف پول مشتری برمی‌گردد؛ بیعانه‌ی نقدی یا کارتی را خود سالن پس می‌دهد.
-        </p>
-        <div className="mt-3">
-          <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
+        <div className="flex flex-wrap gap-2">
+          {[...REASONS, OTHER].map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setChoice(r)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                choice === r
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface-hover text-foreground-muted"
+              )}
+            >
+              {r}
+            </button>
+          ))}
         </div>
-        <DialogFooter className="mt-4">
+        {choice === OTHER ? (
+          <Input
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+            placeholder="دلیل لغو"
+            autoFocus
+          />
+        ) : null}
+        <p className="text-xs leading-5 text-foreground-muted">
+          بیعانه‌ای که با کیف پول پرداخت شده به کیف پول مشتری برمی‌گردد؛ بیعانه‌ی نقدی یا کارتی را خود سالن پس می‌دهد.
+        </p>
+        <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
+        <DialogFooter className="mt-2">
           <Button
             type="button"
             variant="outline"
@@ -85,11 +102,13 @@ export default function CancelAppointmentDialog({
           </Button>
           <Button
             type="button"
-            onClick={() => void handleConfirm()}
+            variant="ghost"
+            className="text-error hover:bg-error-background"
+            onClick={() => void onConfirm(reason, notifyCustomer)}
             isLoading={isPending}
-            disabled={!reason.trim()}
+            disabled={!reason}
           >
-            تأیید لغو
+            لغو نوبت
           </Button>
         </DialogFooter>
       </DialogContent>

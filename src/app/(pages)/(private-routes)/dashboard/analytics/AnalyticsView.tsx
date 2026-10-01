@@ -135,7 +135,7 @@ export default function AnalyticsView() {
       group: "عملیاتی",
       items: [
         { title: "نرخ لغو", value: formatRate(cancelRate.value), change: cancelRate.percentChange },
-        { title: "نرخ عدم حضور", value: formatRate(noShowRate.value), change: noShowRate.percentChange },
+        { title: "نرخ مراجعه‌نکردن", value: formatRate(noShowRate.value), change: noShowRate.percentChange },
       ],
     },
     {

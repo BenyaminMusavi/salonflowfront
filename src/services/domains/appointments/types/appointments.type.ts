@@ -161,3 +161,31 @@ export type TQuickBookEntity = TResponse<IQuickBookResult>;
 export type TCreateSalonAppointmentEntity = TResponse<number>;
 export type TStaffDayBoardEntity = TResponse<IStaffDayBoardItem[]>;
 export type TBranchDayBoardEntity = TResponse<IBranchDayBoardGroup[]>;
+
+/**
+ * One appointment as the panel's appointments page shows it. Today it is stitched together
+ * from the day list (`GET /api/appointments`), the branch day-board (customer name) or
+ * `staff/me` history; a single agenda endpoint can replace that without touching the UI.
+ */
+export interface IAgendaItem {
+  numericId: number;
+  publicId?: string | null;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus | number;
+  customerName: string | null;
+  services: { name: string; staffName?: string | null; durationMinutes: number; price: number }[];
+  staffNames: string | null;
+  branchName: string | null;
+  totalPrice: number;
+}
+
+export interface IAgendaQuery {
+  /** Inclusive Tehran days, `yyyy-MM-dd`. */
+  from: string;
+  to: string;
+  /** Only appointments served by the caller (`staff/me`). */
+  mine?: boolean;
+  staffMemberId?: number;
+  branchId?: number;
+}

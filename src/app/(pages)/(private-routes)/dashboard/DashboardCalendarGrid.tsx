@@ -1,33 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CaretLeftIcon } from "@phosphor-icons/react";
-import {
-  useMutateSalonLifecycle,
-  useQueryBranchDayBoard,
-} from "@/services/domains/appointments/hooks";
+import { useMemo } from "react";
+import { useQueryBranchDayBoard } from "@/services/domains/appointments/hooks";
 import type { IStaffDayBoardItem } from "@/services/domains/appointments/types/appointments.type";
 import type { IStaffProfile } from "@/services/domains/staff-profile/types/staff-profile.type";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import { Button } from "@/shared/components/primitives/button/Button";
-import { Input } from "@/shared/components/primitives/input/Input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/primitives/dialog/Dialog";
-import { NotifyCustomerCheckbox } from "./_components/NotifyCustomerCheckbox";
-import {
-  formatSalonTime,
-  salonClockParts,
-  salonWallClockToUtcIso,
-  utcToSalonTime,
-  utcToSalonYmd,
-} from "@/shared/utils/salonTime";
+import { formatSalonTime, salonClockParts } from "@/shared/utils/salonTime";
 
 // Fixed business-hours window rather than deriving from working-schedules — a
 // reasonable default for a first version; can be made schedule-aware later.
@@ -79,14 +57,15 @@ interface DashboardCalendarGridProps {
   date: string;
   branchPublicId: string | undefined;
   staff: IStaffProfile[];
-  onToast: (toast: { type: "success" | "error"; message: string }) => void;
+  /** Opens the appointment details (reschedule/cancel live there). */
+  onSelect: (appointmentId: number) => void;
 }
 
 export default function DashboardCalendarGrid({
   date,
   branchPublicId,
   staff,
-  onToast,
+  onSelect,
 }: DashboardCalendarGridProps) {
   // Single request for the whole branch, replacing the old one-request-per-staff-member fan-out.
   const dayBoardQuery = useQueryBranchDayBoard(branchPublicId, date);
@@ -97,43 +76,6 @@ export default function DashboardCalendarGrid({
     }
     return map;
   }, [dayBoardQuery.data]);
-
-  const lifecycle = useMutateSalonLifecycle();
-  const [rescheduleTarget, setRescheduleTarget] = useState<IStaffDayBoardItem | null>(
-    null
-  );
-  const [newTime, setNewTime] = useState("");
-  // SMS the customer the new time — on by default (backend contract).
-  const [notifyCustomer, setNotifyCustomer] = useState(true);
-
-  const openReschedule = (item: IStaffDayBoardItem) => {
-    setRescheduleTarget(item);
-    setNewTime(utcToSalonTime(item.startTime).slice(0, 5));
-    setNotifyCustomer(true);
-  };
-
-  const confirmReschedule = async () => {
-    if (!rescheduleTarget || !newTime) return;
-    // Same salon day as the original appointment, new salon-clock time → UTC.
-    const newStartTime = salonWallClockToUtcIso(
-      utcToSalonYmd(rescheduleTarget.startTime),
-      newTime
-    );
-    try {
-      await lifecycle.reschedule.mutateAsync({
-        id: rescheduleTarget.appointmentId,
-        newStartTime,
-        notifyCustomer,
-      });
-      onToast({ type: "success", message: "نوبت جابه‌جا شد." });
-      setRescheduleTarget(null);
-    } catch (err) {
-      onToast({
-        type: "error",
-        message: getApiErrorMessage(err, "جابه‌جایی نوبت ناموفق بود."),
-      });
-    }
-  };
 
   const isLoading = dayBoardQuery.isLoading;
 
@@ -199,7 +141,7 @@ export default function DashboardCalendarGrid({
                       <button
                         key={item.appointmentId}
                         type="button"
-                        onClick={() => openReschedule(item)}
+                        onClick={() => onSelect(item.appointmentId)}
                         className={`absolute inset-x-0.5 overflow-hidden rounded-[6px] border px-1.5 py-1 text-start text-[10px] leading-tight ${statusBlockClass(
                           Number(item.status)
                         )}`}
@@ -222,47 +164,6 @@ export default function DashboardCalendarGrid({
         <p className="p-3 text-center text-xs text-foreground-muted">در حال بارگذاری…</p>
       )}
 
-      <Dialog
-        open={!!rescheduleTarget}
-        onOpenChange={(open) => {
-          if (!open) setRescheduleTarget(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>جابه‌جایی نوبت</DialogTitle>
-            <DialogDescription>
-              {rescheduleTarget?.customerName} · {rescheduleTarget?.serviceName}
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            type="time"
-            value={newTime}
-            onChange={(e) => setNewTime(e.target.value)}
-          />
-          <div className="mt-3">
-            <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
-          </div>
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setRescheduleTarget(null)}
-            >
-              انصراف
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void confirmReschedule()}
-              isLoading={lifecycle.reschedule.isPending}
-              disabled={!newTime}
-            >
-              <span>ثبت زمان جدید</span>
-              <CaretLeftIcon size={16} weight="bold" />
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

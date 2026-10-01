@@ -8,13 +8,13 @@ export function appointmentStatusLabel(status: number): string {
     case AppointmentStatus.Scheduled:
       return "رزرو شده";
     case AppointmentStatus.Completed:
-      return "انجام‌شده";
+      return "انجام شد";
     case AppointmentStatus.Cancelled:
-      return "لغو شده";
+      return "لغو شد";
     case AppointmentStatus.NoShow:
-      return "عدم حضور";
+      return "مراجعه نکرد";
     case AppointmentStatus.CheckedIn:
-      return "حضور ثبت‌شده";
+      return "در سالن";
     default:
       return "نامشخص";
   }

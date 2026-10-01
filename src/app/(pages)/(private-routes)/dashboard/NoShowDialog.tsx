@@ -15,14 +15,16 @@ import { NotifyCustomerCheckbox } from "./_components/NotifyCustomerCheckbox";
 
 interface NoShowDialogProps {
   appointmentId: number | null;
+  subject?: string;
   onClose: () => void;
   onConfirm: (notifyCustomer: boolean) => Promise<void>;
   isPending: boolean;
 }
 
-/** Confirms «عدم حضور»; the SMS to the customer is opt-in (off by default, backend contract). */
+/** Confirms «مراجعه نکرد»; the SMS to the customer is opt-in (off by default, backend contract). */
 export default function NoShowDialog({
   appointmentId,
+  subject,
   onClose,
   onConfirm,
   isPending,
@@ -37,8 +39,8 @@ export default function NoShowDialog({
     <Dialog open={appointmentId != null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>ثبت عدم حضور</DialogTitle>
-          <DialogDescription>مشتری در زمان نوبت مراجعه نکرده است.</DialogDescription>
+          <DialogTitle>مشتری مراجعه نکرد؟</DialogTitle>
+          <DialogDescription>{subject || "این نوبت به‌عنوان «مراجعه نکرد» ثبت می‌شود."}</DialogDescription>
         </DialogHeader>
         <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
         <DialogFooter className="mt-4">
@@ -51,7 +53,7 @@ export default function NoShowDialog({
             انصراف
           </Button>
           <Button type="button" onClick={() => void onConfirm(notifyCustomer)} isLoading={isPending}>
-            ثبت عدم حضور
+            ثبت «مراجعه نکرد»
           </Button>
         </DialogFooter>
       </DialogContent>

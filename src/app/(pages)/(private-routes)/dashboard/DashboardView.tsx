@@ -1,504 +1,580 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
+  CalendarBlankIcon,
+  CaretDownIcon,
   CaretLeftIcon,
-  CaretRightIcon,
-  ListIcon,
-  SquaresFourIcon,
+  CheckIcon,
+  FunnelSimpleIcon,
+  XIcon,
 } from "@phosphor-icons/react";
-import { RouteAddress } from "@/shared/data/routeAddress";
-import DashboardCalendarGrid from "./DashboardCalendarGrid";
-import CancelAppointmentDialog from "./CancelAppointmentDialog";
-import NoShowDialog from "./NoShowDialog";
-import { Button } from "@/shared/components/primitives/button/Button";
+import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
+import { Switch } from "@/shared/components/primitives/switch/Switch";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
-import { formatAppointmentDateTime } from "@/services/domains/appointments/utils/appointment-display";
 import {
   useMutateSalonLifecycle,
-  useQuerySalonAppointments,
+  useQueryAgenda,
 } from "@/services/domains/appointments/hooks";
+import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
+import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
-import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import { useQueryDashboardSummary } from "@/services/domains/reports/hooks";
 import {
-  formatMoneyOrDash,
-  formatRate,
-} from "@/services/domains/reports/utils/report-display";
-import { asNumber, metricFromUnknown } from "@/services/domains/reports/utils/report-mappers";
+  formatSalonDate,
+  salonTodayYmd,
+  utcToSalonYmd,
+  ymdToDate,
+} from "@/shared/utils/salonTime";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { cn } from "@/shared/utils/className";
+import DashboardCalendarGrid from "./DashboardCalendarGrid";
+import NoShowDialog from "./NoShowDialog";
 import {
-  AppointmentStatusChip,
-  DashboardCard,
   DashboardDateField,
-  DashboardEmptyState,
-  DashboardKpi,
   DashboardPage,
-  DashboardSelect,
   DashboardSkeleton,
   DashboardToast,
-  formatJalaliDayLabel,
-  shiftGregorianDate,
-  todayGregorian,
   useIsSalonStaff,
   useQuickBookStore,
   type DashboardToastState,
 } from "./_components";
-import { dashboardQuietButtonClass } from "./_components/buttonClasses";
-import { formatSalonTime } from "@/shared/utils/salonTime";
+import { AgendaRow, formatClock } from "./_agenda/AgendaRow";
+import { NowStrip } from "./_agenda/NowStrip";
+import { AppointmentDetailsSheet } from "./_agenda/AppointmentDetailsSheet";
+import {
+  DAY_PART_LABEL,
+  agendaRange,
+  dayPart,
+  getNowState,
+  isInactiveStatus,
+  summarizeAgenda,
+  type AgendaView,
+  type DayPart,
+} from "./_agenda/agendaUtils";
 
-const STATUS_FILTERS: Array<{ value: "all" | AppointmentStatus; label: string }> = [
-  { value: "all", label: "همه" },
-  { value: AppointmentStatus.Scheduled, label: "رزرو" },
-  { value: AppointmentStatus.CheckedIn, label: "حضور" },
-  { value: AppointmentStatus.Completed, label: "انجام" },
-  { value: AppointmentStatus.Cancelled, label: "لغو" },
-  { value: AppointmentStatus.NoShow, label: "عدم حضور" },
+type Scope = "all" | "mine" | number;
+
+const STATUS_OPTIONS = [
+  AppointmentStatus.Scheduled,
+  AppointmentStatus.CheckedIn,
+  AppointmentStatus.Completed,
+  AppointmentStatus.Cancelled,
+  AppointmentStatus.NoShow,
 ];
 
-function formatClock(iso: string): string {
+const n = (value: number) => value.toLocaleString(APP_LOCALE);
+
+function dayTitle(ymd: string): string {
   try {
-    return formatSalonTime(iso, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatSalonDate(ymdToDate(ymd), { weekday: "long", day: "numeric", month: "long" });
   } catch {
-    return iso;
+    return ymd;
   }
 }
 
+const segment = (active: boolean) =>
+  cn(
+    "flex h-9 min-w-0 flex-1 items-center justify-center gap-1 truncate rounded-full px-2 text-[13px] font-semibold transition-colors",
+    active ? "bg-primary text-primary-foreground" : "text-foreground-muted"
+  );
+
+const chip = (active: boolean) =>
+  cn(
+    "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+    active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
+  );
+
+const sheetRow =
+  "flex min-h-12 w-full items-center justify-between gap-3 rounded-[12px] px-3 text-right text-sm font-semibold text-foreground hover:bg-surface-hover";
+
+/** Rows of one list block (borderless group on one surface). */
+function AgendaGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+      {children}
+    </div>
+  );
+}
+
+/** «نوبت‌ها» — the panel's home: today by default, scan-first list, details on tap. */
 export default function DashboardView() {
-  const salonId = useSalonContextStore((s) => s.salonId);
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const today = todayGregorian();
-  const [date, setDate] = useState(today);
-  const [toast, setToast] = useState<DashboardToastState>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>("all");
-  const [viewMode, setViewMode] = useState<"agenda" | "grid">("agenda");
+  const salonId = useSalonContextStore((s) => s.salonId);
   const isStaff = useIsSalonStaff();
+  const today = salonTodayYmd();
 
-  // The nav «＋» books into the day this board shows (falls back to today elsewhere).
-  const setBoardDate = useQuickBookStore((s) => s.setBoardDate);
+  const [view, setView] = useState<AgendaView>("today");
+  const [pickedDay, setPickedDay] = useState(today);
+  const [weekOffset, setWeekOffset] = useState(0);
+  // Staff start on their own appointments; the owner sees the whole salon.
+  const [scope, setScope] = useState<Scope>(isStaff ? "mine" : "all");
+  const [branchId, setBranchId] = useState<number | undefined>();
+  const [statusFilter, setStatusFilter] = useState<number | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+  const [mode, setMode] = useState<"list" | "staff">("list");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [noShowItem, setNoShowItem] = useState<IAgendaItem | null>(null);
+  const [toast, setToast] = useState<DashboardToastState>(null);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [dayPickerOpen, setDayPickerOpen] = useState(false);
+
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    setBoardDate(date);
-  }, [date, setBoardDate]);
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const range = agendaRange(view, today, pickedDay, weekOffset);
+  const singleDay = range.from === range.to;
+  const isToday = singleDay && range.from === today;
+
+  // The nav «＋» books into the day on screen (today when a week is shown).
+  const setBoardDate = useQuickBookStore((s) => s.setBoardDate);
+  const openQuickBook = useQuickBookStore((s) => s.openQuickBook);
+  useEffect(() => {
+    setBoardDate(singleDay ? range.from : null);
+  }, [singleDay, range.from, setBoardDate]);
   useEffect(() => () => setBoardDate(null), [setBoardDate]);
-  const [cancelId, setCancelId] = useState<number | null>(null);
-  const [noShowId, setNoShowId] = useState<number | null>(null);
 
-  const salonDetail = useQuerySalonById(salonPublicId || undefined);
-  const branches = salonDetail.data?.data?.branches ?? [];
+  const branches = useQuerySalonById(salonPublicId || undefined).data?.data?.branches ?? [];
+  const multiBranch = branches.length > 1;
 
-  const offeringsQuery = useQueryCatalogOfferings(true);
-  const offerings = offeringsQuery.data?.data ?? [];
-  // staff-for-offerings expects Guid offeringPublicIds, not the numeric catalog id.
-  const allOfferingIds = useMemo(
+  // No "all staff of a salon" endpoint yet: the bookable staff of every active service.
+  const offerings = useQueryCatalogOfferings(true).data?.data ?? [];
+  const offeringIds = useMemo(
     () => offerings.map((o) => o.publicId).filter(Boolean),
     [offerings]
   );
+  const staff =
+    useQueryStaffForOfferings(salonPublicId || salonId || undefined, offeringIds, {
+      enabled: offeringIds.length > 0,
+    }).data?.data ?? [];
 
-  // Board filters are independent of the quick-book drawer's own branch picker below:
-  // leaving them unset must mean "show every branch/staff", not silently fall back to
-  // the first branch the way the drawer's own picker (below) intentionally does.
-  const [boardBranchId, setBoardBranchId] = useState<number | "">("");
-  const [boardStaffId, setBoardStaffId] = useState<number | "">("");
-  const hasBoardFilters = !!boardBranchId || !!boardStaffId;
-
-  // No "all staff for a salon" endpoint exists, so this reuses the same
-  // staff-for-offerings lookup the quick-book picker relies on, scoped to every
-  // currently active offering, as the closest available proxy for "everyone
-  // bookable right now".
-  const boardStaffQuery = useQueryStaffForOfferings(
-    salonPublicId || salonId || undefined,
-    allOfferingIds,
-    { enabled: allOfferingIds.length > 0 }
-  );
-  const boardStaff = boardStaffQuery.data?.data ?? [];
-
-  // Unlike the agenda list (where an unset filter means "every branch"), the batch
-  // day-board endpoint is always scoped to exactly one branch, so grid mode needs a
-  // concrete choice — reuse the same filter when set, else default to the first branch.
-  const boardBranchPublicId =
-    branches.find((b) => b.branchId === boardBranchId)?.publicId ?? branches[0]?.publicId;
-
-  const appointmentsQuery = useQuerySalonAppointments(date, {
-    pageSize: 100,
-    branchId: Number(boardBranchId) || undefined,
-    staffMemberId: Number(boardStaffId) || undefined,
+  const agenda = useQueryAgenda({
+    from: range.from,
+    to: range.to,
+    mine: scope === "mine",
+    staffMemberId: typeof scope === "number" ? scope : undefined,
+    branchId,
   });
+
   const lifecycle = useMutateSalonLifecycle();
+  const selected = agenda.items.find((x) => x.numericId === selectedId) ?? null;
 
-  // Reports are SalonOwnerOnly on the backend — Staff would only get 403s here.
-  const summaryQuery = useQueryDashboardSummary(
-    isStaff ? undefined : { from: date, to: date }
+  const filtered = useMemo(
+    () =>
+      statusFilter == null
+        ? agenda.items
+        : agenda.items.filter((x) => Number(x.status) === statusFilter),
+    [agenda.items, statusFilter]
   );
-  const summary = summaryQuery.data?.data;
-  const collected =
-    asNumber(summary?.collected) ??
-    metricFromUnknown(summary?.financial?.collected).value;
-  const noShowRate =
-    asNumber(summary?.noShowRate) ??
-    metricFromUnknown(summary?.operational?.noShowRate).value;
+  const active = filtered.filter((x) => !isInactiveStatus(Number(x.status)));
+  const inactive = filtered.filter((x) => isInactiveStatus(Number(x.status)));
+  const summary = summarizeAgenda(agenda.items);
+  const nowState = isToday ? getNowState(agenda.items, now) : null;
 
-  const items = useMemo(() => {
-    const list = [...(appointmentsQuery.data?.data?.items ?? [])];
-    list.sort(
-      (a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-    );
-    if (statusFilter === "all") return list;
-    return list.filter((x) => Number(x.status) === statusFilter);
-  }, [appointmentsQuery.data, statusFilter]);
+  const scopeLabel =
+    scope === "all"
+      ? "همه پرسنل"
+      : scope === "mine"
+        ? "فقط من"
+        : staff.find((s) => s.staffMemberId === scope)?.firstName || "پرسنل";
+  const filtersActive =
+    statusFilter != null || branchId != null || showInactive || mode === "staff";
 
-  const lifecycleBusy =
-    lifecycle.checkIn.isPending ||
-    lifecycle.complete.isPending ||
-    lifecycle.noShow.isPending ||
-    lifecycle.cancel.isPending;
-
-  const doLifecycle = async (
-    action: "checkin" | "complete" | "noshow" | "cancel",
-    appointmentId: number,
-    options?: { reason?: string; notifyCustomer?: boolean }
-  ) => {
+  const checkIn = async (item: IAgendaItem) => {
     try {
-      if (action === "checkin") await lifecycle.checkIn.mutateAsync(appointmentId);
-      if (action === "complete") await lifecycle.complete.mutateAsync(appointmentId);
-      if (action === "noshow") {
-        await lifecycle.noShow.mutateAsync({
-          id: appointmentId,
-          notifyCustomer: options?.notifyCustomer ?? false,
-        });
-      }
-      if (action === "cancel") {
-        await lifecycle.cancel.mutateAsync({
-          id: appointmentId,
-          reason: options?.reason || "لغو توسط سالن",
-          notifyCustomer: options?.notifyCustomer ?? true,
-        });
-      }
-      setToast({ type: "success", message: "وضعیت نوبت به‌روزرسانی شد." });
+      await lifecycle.checkIn.mutateAsync(item.numericId);
+      setToast({ type: "success", message: `ورود ${item.customerName || "مشتری"} ثبت شد.` });
     } catch (err) {
-      setToast({
-        type: "error",
-        message: getApiErrorMessage(err, "به‌روزرسانی وضعیت نوبت ناموفق بود."),
-      });
+      setToast({ type: "error", message: getApiErrorMessage(err, "ثبت ورود ناموفق بود.") });
     }
   };
 
-  const handleConfirmCancel = async (reason: string, notifyCustomer: boolean) => {
-    if (cancelId == null) return;
-    await doLifecycle("cancel", cancelId, { reason, notifyCustomer });
-    setCancelId(null);
+  const confirmNoShow = async (notifyCustomer: boolean) => {
+    if (!noShowItem) return;
+    try {
+      await lifecycle.noShow.mutateAsync({ id: noShowItem.numericId, notifyCustomer });
+      setToast({ type: "success", message: "«مراجعه نکرد» ثبت شد." });
+    } catch (err) {
+      setToast({ type: "error", message: getApiErrorMessage(err, "ثبت ناموفق بود.") });
+    }
+    setNoShowItem(null);
   };
 
-  const handleConfirmNoShow = async (notifyCustomer: boolean) => {
-    if (noShowId == null) return;
-    await doLifecycle("noshow", noShowId, { notifyCustomer });
-    setNoShowId(null);
-  };
+  const open = (item: IAgendaItem) => setSelectedId(item.numericId);
+  const row = (item: IAgendaItem) => (
+    <AgendaRow
+      key={item.numericId}
+      item={item}
+      showBranch={multiBranch && branchId == null}
+      namesLoading={agenda.namesLoading}
+      onOpen={open}
+    />
+  );
 
-  return (
-    <DashboardPage>
-      <DashboardCard>
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-background-elevated text-foreground"
-            onClick={() => setDate((d) => shiftGregorianDate(d, -1))}
-            aria-label="روز قبل"
-          >
-            <CaretRightIcon size={18} />
-          </button>
-          <div className="min-w-0 text-center">
-            <p className="text-sm font-bold text-foreground">
-              {formatJalaliDayLabel(date)}
-            </p>
-            <p className="text-[11px] text-foreground-muted">تخته روزانه</p>
-          </div>
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-background-elevated text-foreground"
-            onClick={() => setDate((d) => shiftGregorianDate(d, 1))}
-            aria-label="روز بعد"
-          >
-            <CaretLeftIcon size={18} />
-          </button>
-        </div>
-        <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2">
-          <DashboardDateField
-            name="dashboard-day"
-            value={date}
-            onChange={setDate}
-          />
-          {date !== today ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className={dashboardQuietButtonClass}
-              onClick={() => setDate(today)}
-            >
-              امروز
-            </Button>
-          ) : null}
-        </div>
-      </DashboardCard>
+  /** One day: «صبح / بعدازظهر / عصر» blocks, the «الان» line, cancelled rows folded. */
+  const renderDay = (items: IAgendaItem[], folded: IAgendaItem[], withNowLine: boolean) => {
+    const parts: { part: DayPart; items: IAgendaItem[] }[] = [];
+    for (const item of items) {
+      const part = dayPart(item.startTime);
+      const last = parts[parts.length - 1];
+      if (last?.part === part) last.items.push(item);
+      else parts.push({ part, items: [item] });
+    }
+    const nowIndex = withNowLine
+      ? items.findIndex((x) => new Date(x.startTime).getTime() >= now)
+      : -1;
+    const nowItem = nowIndex > 0 ? items[nowIndex] : null;
 
-      <div className={isStaff ? "grid grid-cols-1 gap-2" : "grid grid-cols-3 gap-2"}>
-        <DashboardKpi
-          title="نوبت"
-          value={String(appointmentsQuery.data?.data?.items?.length ?? 0)}
-        />
-        {!isStaff && (
-          <>
-            <DashboardKpi title="دریافت" value={formatMoneyOrDash(collected)} />
-            <DashboardKpi title="عدم حضور" value={formatRate(noShowRate)} />
-          </>
-        )}
-      </div>
-
-      {!isStaff && (
-        <Link
-          href={RouteAddress.DASHBOARD.MY_APPOINTMENTS}
-          className="self-start text-xs font-semibold text-primary"
-        >
-          نوبت‌هایی که خودم انجام می‌دهم ›
-        </Link>
-      )}
-
-      <div className="flex justify-end gap-1 rounded-full bg-surface p-1">
-        <button
-          type="button"
-          onClick={() => setViewMode("agenda")}
-          aria-label="نمای فهرست"
-          className={`flex h-8 w-8 items-center justify-center rounded-full ${
-            viewMode === "agenda"
-              ? "bg-primary text-primary-foreground"
-              : "text-foreground-muted"
-          }`}
-        >
-          <ListIcon size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("grid")}
-          aria-label="نمای جدول پرسنل"
-          className={`flex h-8 w-8 items-center justify-center rounded-full ${
-            viewMode === "grid"
-              ? "bg-primary text-primary-foreground"
-              : "text-foreground-muted"
-          }`}
-        >
-          <SquaresFourIcon size={16} />
-        </button>
-      </div>
-
-      {viewMode === "grid" && (
-        <DashboardCalendarGrid
-          date={date}
-          branchPublicId={boardBranchPublicId}
-          staff={boardStaff}
-          onToast={setToast}
-        />
-      )}
-
-      {branches.length > 1 && (
-        <DashboardSelect
-          value={boardBranchId}
-          onChange={(e) => setBoardBranchId(Number(e.target.value) || "")}
-        >
-          {/* Grid mode's batch day-board is always scoped to one branch, so "all
-              branches" only makes sense as a filter for the agenda list. */}
-          {viewMode === "agenda" && <option value="">همه شعبه‌ها</option>}
-          {branches.map((branch) => (
-            <option key={branch.publicId} value={branch.branchId}>
-              {branch.name}
-            </option>
-          ))}
-        </DashboardSelect>
-      )}
-
-      {viewMode === "agenda" && boardStaff.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setBoardStaffId("")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
-              boardStaffId === ""
-                ? "bg-primary text-primary-foreground"
-                : "bg-surface text-foreground-muted"
-            }`}
-          >
-            همه پرسنل
-          </button>
-          {boardStaff.map((member) => {
-            const label = member.firstName || "پرسنل";
-            const active = Number(boardStaffId) === member.staffMemberId;
-            return (
-              <button
-                key={member.staffMemberId}
-                type="button"
-                onClick={() =>
-                  setBoardStaffId(active ? "" : member.staffMemberId)
-                }
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-surface text-foreground-muted"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {viewMode === "agenda" && (
-      <>
-      <div className="flex gap-2 overflow-x-auto">
-        {STATUS_FILTERS.map((filter) => {
-          const active = statusFilter === filter.value;
-          return (
+    return (
+      <div className="flex flex-col gap-4">
+        {parts.map(({ part, items: block }, i) => (
+          <section key={`${part}-${i}`} className="flex flex-col gap-2">
+            <h2 className="px-1 text-xs font-semibold text-foreground-muted">
+              {DAY_PART_LABEL[part]}
+            </h2>
+            <AgendaGroup>
+              {block.map((item) => (
+                <Fragment key={item.numericId}>
+                  {item === nowItem ? (
+                    <div className="flex items-center gap-2 px-4 py-1" aria-label="الان">
+                      <span className="text-[11px] font-bold tabular-nums text-primary">
+                        الان {formatClock(new Date(now).toISOString())}
+                      </span>
+                      <span className="h-px flex-1 bg-primary" />
+                    </div>
+                  ) : null}
+                  {row(item)}
+                </Fragment>
+              ))}
+            </AgendaGroup>
+          </section>
+        ))}
+        {folded.length > 0 ? (
+          showInactive || statusFilter != null ? (
+            <section className="flex flex-col gap-2">
+              <h2 className="px-1 text-xs font-semibold text-foreground-muted">
+                لغو شده و مراجعه‌نکرده
+              </h2>
+              <AgendaGroup>{folded.map(row)}</AgendaGroup>
+            </section>
+          ) : (
             <button
-              key={String(filter.value)}
               type="button"
-              onClick={() => setStatusFilter(filter.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-surface text-foreground-muted"
-              }`}
+              onClick={() => setShowInactive(true)}
+              className="flex items-center justify-between rounded-[16px] bg-background-secondary px-4 py-3 text-sm text-foreground-muted"
             >
-              {filter.label}
+              {n(folded.length)} نوبت لغو شد یا مشتری مراجعه نکرد
+              <CaretLeftIcon size={16} />
             </button>
+          )
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderWeek = () => {
+    const byDay = new Map<string, IAgendaItem[]>();
+    for (const item of filtered) {
+      const d = utcToSalonYmd(item.startTime);
+      byDay.set(d, [...(byDay.get(d) ?? []), item]);
+    }
+    return (
+      <div className="flex flex-col gap-5">
+        {agenda.days.map((d) => {
+          const all = byDay.get(d) ?? [];
+          const dayActive = all.filter((x) => !isInactiveStatus(Number(x.status)));
+          const dayInactive = all.filter((x) => isInactiveStatus(Number(x.status)));
+          const shown = showInactive || statusFilter != null ? all : dayActive;
+          return (
+            <section key={d} className="flex flex-col gap-2">
+              <h2 className="sticky top-16 z-10 -mx-1 bg-background/95 px-2 py-1 text-sm font-bold text-foreground backdrop-blur">
+                {dayTitle(d)}
+                <span className="ms-2 text-xs font-normal text-foreground-muted">
+                  {dayActive.length ? `${n(dayActive.length)} نوبت` : "بدون نوبت"}
+                  {dayInactive.length && !showInactive ? ` · ${n(dayInactive.length)} لغو` : ""}
+                </span>
+              </h2>
+              {shown.length ? <AgendaGroup>{shown.map(row)}</AgendaGroup> : null}
+            </section>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setWeekOffset((w) => (w === 0 ? 1 : 0))}
+          className="flex items-center justify-center gap-1 py-2 text-sm font-semibold text-primary"
+        >
+          {weekOffset === 0 ? "هفته‌ی بعد" : "برگشت به این هفته"}
+          <CaretLeftIcon size={14} />
+        </button>
+      </div>
+    );
+  };
+
+  const summaryParts: { label: string; status: number | null; count: number }[] = [
+    { label: "نوبت", status: null, count: summary.total },
+    { label: "مانده", status: AppointmentStatus.Scheduled, count: summary.remaining },
+    { label: "در سالن", status: AppointmentStatus.CheckedIn, count: summary.inSalon },
+    { label: "انجام شد", status: AppointmentStatus.Completed, count: summary.done },
+  ];
+
+  return (
+    <DashboardPage className="gap-3">
+      {nowState ? (
+        <NowStrip
+          state={nowState}
+          busy={lifecycle.checkIn.isPending || lifecycle.noShow.isPending}
+          onOpen={open}
+          onCheckIn={(item) => void checkIn(item)}
+          onNoShow={setNoShowItem}
+        />
+      ) : null}
+
+      <div className="flex gap-1 rounded-full bg-background-secondary p-1">
+        <button type="button" className={segment(view === "today")} onClick={() => setView("today")}>
+          امروز
+        </button>
+        <button type="button" className={segment(view === "tomorrow")} onClick={() => setView("tomorrow")}>
+          فردا
+        </button>
+        <button
+          type="button"
+          className={segment(view === "week")}
+          onClick={() => {
+            setView("week");
+            setWeekOffset(0);
+            setMode("list");
+          }}
+        >
+          این هفته
+        </button>
+        <button
+          type="button"
+          className={segment(view === "day")}
+          onClick={() => setDayPickerOpen(true)}
+          aria-label="انتخاب تاریخ"
+        >
+          <CalendarBlankIcon size={16} className="shrink-0" />
+          {view === "day" ? (
+            <span className="truncate">
+              {formatSalonDate(ymdToDate(pickedDay), { day: "numeric", month: "short" })}
+            </span>
+          ) : null}
+        </button>
       </div>
 
-      {appointmentsQuery.isLoading ? (
-        <DashboardSkeleton cards={1} rows={4} />
-      ) : appointmentsQuery.isError ? (
-        <DashboardEmptyState
-          title="بارگذاری نوبت‌ها ناموفق بود"
-          description="اتصال را بررسی کنید و دوباره تلاش کنید."
-        />
-      ) : items.length === 0 ? (
-        <DashboardEmptyState
-          title={
-            hasBoardFilters ? "نوبتی با این فیلترها نیست" : "نوبتی برای این روز نیست"
-          }
-          description={
-            hasBoardFilters
-              ? "فیلتر شعبه یا پرسنل را پاک کنید یا تاریخ دیگری را ببینید."
-              : "رزرو سریع را از دکمه پایین ثبت کنید یا تاریخ دیگری را ببینید."
-          }
-        />
-      ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <DashboardCard key={item.numericId} className="p-3">
-              <div className="flex items-start gap-3">
-                <div className="min-w-[4.5rem] text-right">
-                  <p className="text-base font-bold text-foreground">
-                    {formatClock(item.startTime)}
-                  </p>
-                  <p className="text-[11px] text-foreground-muted">
-                    تا {formatClock(item.endTime)}
-                  </p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-start justify-between gap-2">
-                    <p className="text-sm font-bold text-foreground">
-                      {item.services?.map((s) => s.serviceName).join("، ") ||
-                        "بدون سرویس"}
-                    </p>
-                    <AppointmentStatusChip status={Number(item.status)} />
-                  </div>
-                  <p className="text-xs text-foreground-muted">
-                    {item.staffNames || "بدون پرسنل"}
-                    {item.branchName ? ` · ${item.branchName}` : ""}
-                  </p>
-                  <p className="mt-1 text-[11px] text-foreground-muted">
-                    {formatAppointmentDateTime(item.startTime)}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {Number(item.status) === AppointmentStatus.Scheduled && (
-                      <>
-                        <Button
-                          size="sm"
-                          disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("checkin", item.numericId)}
-                        >
-                          ورود
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={dashboardQuietButtonClass}
-                          disabled={lifecycleBusy}
-                          onClick={() => setNoShowId(item.numericId)}
-                        >
-                          عدم حضور
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={dashboardQuietButtonClass}
-                          disabled={lifecycleBusy}
-                          onClick={() => setCancelId(item.numericId)}
-                        >
-                          لغو
-                        </Button>
-                      </>
-                    )}
-                    {Number(item.status) === AppointmentStatus.CheckedIn && (
-                      <>
-                        <Button
-                          size="sm"
-                          disabled={lifecycleBusy}
-                          onClick={() => void doLifecycle("complete", item.numericId)}
-                        >
-                          انجام شد
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={dashboardQuietButtonClass}
-                          disabled={lifecycleBusy}
-                          onClick={() => setNoShowId(item.numericId)}
-                        >
-                          عدم حضور
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </DashboardCard>
-          ))}
-        </div>
-      )}
-      </>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setScopeOpen(true)}
+          className="flex h-9 items-center gap-1 rounded-full bg-surface-hover px-3 text-xs font-semibold text-foreground"
+        >
+          {scopeLabel}
+          <CaretDownIcon size={12} />
+        </button>
+        <p className="min-w-0 flex-1 truncate text-center text-xs text-foreground-muted">
+          {view === "week" ? (
+            `${n(summary.total)} نوبت در این بازه`
+          ) : (
+            summaryParts
+              .filter((p) => p.status == null || p.count > 0)
+              .map((p, i) => (
+                <Fragment key={p.label}>
+                  {i > 0 ? " · " : ""}
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(p.status === statusFilter ? null : p.status)}
+                    className={cn(p.status != null && p.status === statusFilter && "font-bold text-primary")}
+                  >
+                    {n(p.count)} {p.label}
+                  </button>
+                </Fragment>
+              ))
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          aria-label="فیلتر"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface-hover text-foreground"
+        >
+          <FunnelSimpleIcon size={16} />
+          {filtersActive ? (
+            <span className="absolute end-1 top-1 h-2 w-2 rounded-full bg-primary" />
+          ) : null}
+        </button>
+      </div>
+
+      {statusFilter != null ? (
+        <button
+          type="button"
+          onClick={() => setStatusFilter(null)}
+          className="flex items-center gap-1 self-start rounded-full bg-surface-brand px-3 py-1 text-xs font-semibold text-content-brand"
+        >
+          فقط «{appointmentStatusLabel(statusFilter)}»
+          <XIcon size={12} />
+        </button>
+      ) : null}
+
+      {view === "week" ? null : (
+        <p className="px-1 text-sm font-bold text-foreground">{dayTitle(range.from)}</p>
       )}
 
-      <CancelAppointmentDialog
-        appointmentId={cancelId}
-        onClose={() => setCancelId(null)}
-        onConfirm={handleConfirmCancel}
-        isPending={lifecycle.cancel.isPending}
+      {mode === "staff" && singleDay ? (
+        <DashboardCalendarGrid
+          date={range.from}
+          branchPublicId={
+            branches.find((b) => b.branchId === branchId)?.publicId ?? branches[0]?.publicId
+          }
+          staff={staff}
+          onSelect={setSelectedId}
+        />
+      ) : agenda.isLoading ? (
+        <DashboardSkeleton cards={1} rows={5} />
+      ) : agenda.isError ? (
+        <div className="rounded-[16px] bg-background-secondary p-6 text-center text-sm text-foreground-muted">
+          دریافت نوبت‌ها ناموفق بود. اتصال را بررسی کنید.
+        </div>
+      ) : agenda.items.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-[16px] bg-background-secondary p-8 text-center">
+          <p className="text-sm font-bold text-foreground">
+            {view === "week" ? "در این بازه نوبتی نیست" : "برای این روز نوبتی نیست"}
+          </p>
+          <button
+            type="button"
+            onClick={openQuickBook}
+            className="h-10 rounded-[12px] bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            ＋ نوبت جدید
+          </button>
+        </div>
+      ) : view === "week" ? (
+        renderWeek()
+      ) : (
+        renderDay(
+          statusFilter != null && isInactiveStatus(statusFilter) ? [] : active,
+          inactive,
+          isToday
+        )
+      )}
+
+      <AppointmentDetailsSheet
+        item={selected}
+        isStaff={isStaff}
+        showBranch={multiBranch}
+        onClose={() => setSelectedId(null)}
+        onToast={setToast}
       />
 
       <NoShowDialog
-        appointmentId={noShowId}
-        onClose={() => setNoShowId(null)}
-        onConfirm={handleConfirmNoShow}
+        appointmentId={noShowItem?.numericId ?? null}
+        subject={noShowItem ? `${noShowItem.customerName || "مشتری"} · ${formatClock(noShowItem.startTime)}` : undefined}
+        onClose={() => setNoShowItem(null)}
+        onConfirm={confirmNoShow}
         isPending={lifecycle.noShow.isPending}
       />
+
+      <BottomSheet open={scopeOpen} onClose={() => setScopeOpen(false)}>
+        <h2 className="mb-3 text-base font-bold text-foreground">نوبت‌های چه کسی؟</h2>
+        <div className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
+          {(
+            [
+              ["all", "همه پرسنل"],
+              ["mine", "فقط من"],
+              ...staff.map((s) => [s.staffMemberId, s.firstName || "پرسنل"] as const),
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={String(value)}
+              type="button"
+              className={sheetRow}
+              onClick={() => {
+                setScope(value as Scope);
+                setScopeOpen(false);
+              }}
+            >
+              {label}
+              {scope === value ? <CheckIcon size={18} className="text-primary" /> : null}
+            </button>
+          ))}
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)}>
+        <div className="flex flex-col gap-5">
+          <h2 className="text-base font-bold text-foreground">فیلتر</h2>
+          <section className="flex flex-col gap-2">
+            <p className="text-xs font-semibold text-foreground-muted">وضعیت</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className={chip(statusFilter == null)} onClick={() => setStatusFilter(null)}>
+                همه
+              </button>
+              {STATUS_OPTIONS.map((s) => (
+                <button key={s} type="button" className={chip(statusFilter === s)} onClick={() => setStatusFilter(s)}>
+                  {appointmentStatusLabel(s)}
+                </button>
+              ))}
+            </div>
+          </section>
+          {multiBranch ? (
+            <section className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground-muted">شعبه</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className={chip(branchId == null)} onClick={() => setBranchId(undefined)}>
+                  همه شعبه‌ها
+                </button>
+                {branches.map((b) => (
+                  <button
+                    key={b.publicId}
+                    type="button"
+                    className={chip(branchId === b.branchId)}
+                    onClick={() => setBranchId(b.branchId)}
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {singleDay ? (
+            <section className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground-muted">نمایش</p>
+              <div className="flex gap-2">
+                <button type="button" className={chip(mode === "list")} onClick={() => setMode("list")}>
+                  فهرست
+                </button>
+                <button type="button" className={chip(mode === "staff")} onClick={() => setMode("staff")}>
+                  ستون پرسنل
+                </button>
+              </div>
+            </section>
+          ) : null}
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold text-foreground">
+            نمایش نوبت‌های لغوشده و مراجعه‌نکرده
+            <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+          </label>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={dayPickerOpen} onClose={() => setDayPickerOpen(false)}>
+        <h2 className="mb-3 text-base font-bold text-foreground">انتخاب روز</h2>
+        <DashboardDateField
+          name="agenda-day"
+          value={view === "day" ? pickedDay : ""}
+          onChange={(d) => {
+            if (!d) return;
+            setPickedDay(d);
+            setView(d === today ? "today" : "day");
+            setDayPickerOpen(false);
+          }}
+        />
+      </BottomSheet>
 
       <DashboardToast toast={toast} onDismiss={() => setToast(null)} />
     </DashboardPage>
