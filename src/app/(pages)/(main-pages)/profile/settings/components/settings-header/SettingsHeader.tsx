@@ -1,43 +1,24 @@
 "use client";
 
-import { ArrowRight, SignOut } from "@phosphor-icons/react";
-import { useRouter } from "next/navigation";
-import { useMutateLogout } from "@/services/domains/auth/hooks/useMutateLogout";
+import { ArrowRight } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSmartBack } from "@/shared/hooks";
 
+/** «حساب من» header — back only; logout is a labelled row with a confirm, not an icon here. */
 export default function SettingsHeader() {
-  const router = useRouter();
   const goBack = useSmartBack(RouteAddress.PROFILE.BASE);
-  const { mutateAsync: logout, isPending: isLoggingOut } = useMutateLogout();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      router.push(RouteAddress.AUTH.LOGIN.BASE);
-    }
-  };
 
   return (
-    <div className="flex items-center justify-between px-safe-area">
+    <div className="flex items-center gap-3 px-safe-area">
       <button
         type="button"
         onClick={goBack}
+        aria-label="بازگشت"
         className="flex h-10 w-10 items-center justify-center rounded-full bg-surface"
       >
         <ArrowRight size={20} className="text-foreground" />
       </button>
-      <h1 className="text-[18px] font-bold text-foreground">تنظیمات</h1>
-      <button
-        type="button"
-        disabled={isLoggingOut}
-        onClick={handleLogout}
-        aria-label="خروج از حساب"
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-surface disabled:opacity-50"
-      >
-        <SignOut size={20} className="text-foreground" />
-      </button>
+      <h1 className="text-[18px] font-bold text-foreground">حساب من</h1>
     </div>
   );
 }

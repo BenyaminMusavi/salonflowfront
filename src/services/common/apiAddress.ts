@@ -16,6 +16,8 @@ export const API_ADDRESS = {
     REFRESH: "/api/auth/refresh",
     LOGOUT: "/api/auth/logout",
     ME: "/api/auth/me",
+    /** What the caller may do in the active panel salon (needs X-Salon-Id). */
+    CAPABILITIES: "/api/auth/me/capabilities",
     PROFILE: "/api/auth/profile",
   },
 
@@ -114,6 +116,14 @@ export const API_ADDRESS = {
       `/api/appointments/customer/${customerPublicId}`,
     BY_STAFF: (staffPublicId: string) =>
       `/api/appointments/staff/${staffPublicId}`,
+    /** Day-by-day salon agenda with customer, services and payment status (one request). */
+    AGENDA: "/api/appointments/agenda",
+    SALON_DETAILS: (publicId: string) => `/api/appointments/${publicId}/salon-details`,
+    SALON_AVAILABILITY: "/api/appointments/salon-availability",
+    /** Guid lifecycle routes (salon side). */
+    ACTION: (publicId: string, action: "check-in" | "complete" | "no-show" | "cancel" | "reschedule" | "undo-status" | "checkout") =>
+      `/api/appointments/${publicId}/${action}`,
+    INTERNAL_NOTE: (publicId: string) => `/api/appointments/${publicId}/internal-note`,
   },
 
   REVIEWS: {

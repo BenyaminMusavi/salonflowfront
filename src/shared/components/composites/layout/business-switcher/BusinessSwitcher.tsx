@@ -12,10 +12,21 @@ import {
   ISalonMembership,
 } from "@/services/salon-context-store/useSalonContextStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { salonRoleLabel } from "@/shared/utils/salonRoleLabel";
+import { Button } from "@/shared/components/primitives/button/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/primitives/dialog/Dialog";
 
 export default function BusinessSwitcher() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const memberships = useSalonContextStore((s) => s.memberships);
 
@@ -36,6 +47,7 @@ export default function BusinessSwitcher() {
     try {
       await logout();
     } finally {
+      setLogoutOpen(false);
       setOpen(false);
       router.push(RouteAddress.AUTH.LOGIN.BASE);
     }
@@ -96,7 +108,7 @@ export default function BusinessSwitcher() {
                       </p>
                       {m.roleName ? (
                         <p className="text-[12px] text-foreground-muted">
-                          {m.roleName}
+                          {salonRoleLabel(m.roleName)}
                         </p>
                       ) : null}
                     </div>
@@ -146,7 +158,10 @@ export default function BusinessSwitcher() {
           <button
             type="button"
             disabled={isLoggingOut}
-            onClick={handleLogout}
+            onClick={() => {
+              setOpen(false);
+              setLogoutOpen(true);
+            }}
             className="mt-2 flex items-center gap-3 rounded-[16px] bg-background-secondary p-4 text-right disabled:opacity-50"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background-tertiary">
@@ -158,6 +173,23 @@ export default function BusinessSwitcher() {
           </button>
         </div>
       </BottomSheet>
+
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>خروج از حساب</DialogTitle>
+            <DialogDescription>برای ورود دوباره به شماره موبایل و رمز یا کد پیامکی نیاز دارید.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => setLogoutOpen(false)}>
+              انصراف
+            </Button>
+            <Button type="button" isLoading={isLoggingOut} onClick={() => void handleLogout()}>
+              خروج
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

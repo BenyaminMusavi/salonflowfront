@@ -162,11 +162,7 @@ export type TCreateSalonAppointmentEntity = TResponse<number>;
 export type TStaffDayBoardEntity = TResponse<IStaffDayBoardItem[]>;
 export type TBranchDayBoardEntity = TResponse<IBranchDayBoardGroup[]>;
 
-/**
- * One appointment as the panel's appointments page shows it. Today it is stitched together
- * from the day list (`GET /api/appointments`), the branch day-board (customer name) or
- * `staff/me` history; a single agenda endpoint can replace that without touching the UI.
- */
+/** One appointment as every panel list shows it (agenda, customer and staff history). */
 export interface IAgendaItem {
   numericId: number;
   publicId?: string | null;
@@ -174,10 +170,16 @@ export interface IAgendaItem {
   endTime: string;
   status: AppointmentStatus | number;
   customerName: string | null;
-  services: { name: string; staffName?: string | null; durationMinutes: number; price: number }[];
+  customerPublicId?: string | null;
+  customerPhone?: string | null;
+  isNewCustomer?: boolean;
+  services: { name: string; staffName?: string | null; staffPublicId?: string | null; durationMinutes: number; price: number }[];
   staffNames: string | null;
   branchName: string | null;
   totalPrice: number;
+  paymentStatus?: TPaymentStatus | string | null;
+  outstanding?: number;
+  hasNote?: boolean;
 }
 
 export interface IAgendaQuery {
@@ -187,5 +189,145 @@ export interface IAgendaQuery {
   /** Only appointments served by the caller (`staff/me`). */
   mine?: boolean;
   staffMemberId?: number;
+  /** Guid filters of the agenda endpoint. */
+  staffPublicId?: string;
   branchId?: number;
+  branchPublicId?: string;
 }
+
+/* ---------- Salon panel endpoints (agenda, details, availability, checkout) ---------- */
+
+export type TPaymentStatus = "none" | "partial" | "paid";
+
+/** Server `AppointmentActions` — what the caller may do to this appointment right now. */
+export type TAppointmentAction =
+  | "checkIn"
+  | "complete"
+  | "noShow"
+  | "cancel"
+  | "reschedule"
+  | "collectPayment"
+  | "refund";
+
+export interface IAppointmentServiceLine {
+  offeringPublicId: string;
+  name: string | null;
+  staffPublicId: string;
+  staffName: string | null;
+  durationMinutes: number;
+  price: number;
+}
+
+export interface IAgendaItemDto {
+  publicId: string;
+  numericId: number;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus | number;
+  paymentStatus: TPaymentStatus | string | null;
+  customer: { publicId: string; customerCode?: string | null; fullName: string | null; phone: string | null; isNew: boolean } | null;
+  services: IAppointmentServiceLine[];
+  branch: { publicId: string; name: string | null } | null;
+  source?: number;
+  hasNote: boolean;
+  totalPrice: number;
+  outstanding: number;
+}
+
+export interface IAgendaDayDto {
+  date: string;
+  counts: { total: number; scheduled: number; checkedIn: number; completed: number; cancelled: number; noShow: number; unpaid: number };
+  items: IAgendaItemDto[];
+}
+
+export interface IAgendaParams {
+  from: string;
+  to: string;
+  staffPublicId?: string;
+  mine?: boolean;
+  branchPublicId?: string;
+}
+
+export interface ISalonAppointmentDetails {
+  publicId: string;
+  numericId: number;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus | number;
+  source?: number;
+  customer: {
+    publicId: string;
+    customerCode?: string | null;
+    fullName: string | null;
+    phone: string | null;
+    visitsCount: number;
+    noShowCount: number;
+    lastVisitAt?: string | null;
+    note?: string | null;
+  } | null;
+  services: IAppointmentServiceLine[];
+  branch: { publicId: string; name: string | null; address?: string | null } | null;
+  customerNote?: string | null;
+  internalNote?: string | null;
+  money: {
+    total: number;
+    discount: number;
+    deposit: number;
+    paid: number;
+    outstanding: number;
+    paymentStatus: TPaymentStatus | string | null;
+    invoiceId?: number | null;
+    invoicePublicId?: string | null;
+    invoiceTotal?: number | null;
+  };
+  statusHistory: { status: number; at: string; byName?: string | null; reason?: string | null }[];
+  allowedActions: (TAppointmentAction | string)[];
+}
+
+export interface ISalonAvailabilityParams {
+  from: string;
+  to: string;
+  offeringPublicIds: string[];
+  staffPublicId?: string;
+  branchPublicId?: string;
+  excludeAppointmentPublicId?: string;
+  includeOutsideHours?: boolean;
+}
+
+export interface ISalonAvailabilitySlot {
+  startTime: string;
+  outsideHours: boolean;
+  kind?: number;
+  staff: { publicId: string; name: string | null; endTime: string }[];
+}
+
+export interface ISalonAvailabilityDay {
+  date: string;
+  slots: ISalonAvailabilitySlot[];
+}
+
+export interface ICheckoutRequest {
+  completeFirst: boolean;
+  payments: { method: number; amount: number }[];
+  tip?: { staffPublicId: string; amount: number } | null;
+  discount?: number | null;
+  idempotencyKey: string;
+}
+
+export interface ICheckoutResult {
+  appointment: ISalonAppointmentDetails;
+  invoice: { id: number; publicId: string; total: number; outstanding: number } | null;
+  paymentStatus: TPaymentStatus | string | null;
+}
+
+export interface IGuidRescheduleRequest {
+  newStartTime: string;
+  newStaffPublicId?: string | null;
+  notifyCustomer: boolean;
+  allowOutsideWorkingHours?: boolean;
+}
+
+export type TAgendaEntity = TResponse<{ days: IAgendaDayDto[] }>;
+export type TSalonAppointmentDetailsEntity = TResponse<ISalonAppointmentDetails>;
+export type TSalonAvailabilityEntity = TResponse<{ days: ISalonAvailabilityDay[] }>;
+export type TCheckoutEntity = TResponse<ICheckoutResult>;

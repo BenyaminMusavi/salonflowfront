@@ -121,3 +121,18 @@ export interface ILogoutRequest {
 export type TAuthEntity = TResponse<IAuth>;
 export type TVerifyResetCodeEntity = TResponse<IVerifyResetCode>;
 export type TAuthMeEntity = TResponse<IAuthMe>;
+
+/** `GET /api/auth/me/capabilities` — what the caller may do in the active panel salon. */
+export interface ISalonCapabilities {
+  role: string;
+  canManageServices: boolean;
+  canManageStaff: boolean;
+  canEditSalon: boolean;
+  canViewFinance: boolean;
+  canCollectPayment: boolean;
+  canRefund: boolean;
+  canViewReports: boolean;
+  canEditOthersSchedule: boolean;
+  canSeeCustomerPhone: boolean;
+  canDeleteCustomer: boolean;
+}

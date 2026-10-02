@@ -15,6 +15,14 @@ import {
   IAppointmentHistoryQuery,
   TStaffDayBoardEntity,
   TBranchDayBoardEntity,
+  IAgendaParams,
+  ISalonAvailabilityParams,
+  ICheckoutRequest,
+  IGuidRescheduleRequest,
+  TAgendaEntity,
+  TSalonAppointmentDetailsEntity,
+  TSalonAvailabilityEntity,
+  TCheckoutEntity,
 } from "./types/appointments.type";
 
 function historyParams(query: IAppointmentHistoryQuery) {
@@ -152,6 +160,82 @@ class AppointmentsService {
       API_ADDRESS.APPOINTMENTS.BRANCH_DAY_BOARD(branchPublicId),
       { params: { date } }
     );
+  }
+  /* ---------- Salon panel (Guid routes) ---------- */
+
+  async getAgenda(params: IAgendaParams) {
+    return await axiosInstance.get<unknown, TAgendaEntity>(API_ADDRESS.APPOINTMENTS.AGENDA, {
+      params: {
+        from: params.from,
+        to: params.to,
+        staffPublicId: params.staffPublicId,
+        mine: params.mine || undefined,
+        branchPublicId: params.branchPublicId,
+      },
+    });
+  }
+
+  async getSalonDetails(publicId: string) {
+    return await axiosInstance.get<unknown, TSalonAppointmentDetailsEntity>(
+      API_ADDRESS.APPOINTMENTS.SALON_DETAILS(publicId)
+    );
+  }
+
+  async getSalonAvailability(params: ISalonAvailabilityParams) {
+    return await axiosInstance.get<unknown, TSalonAvailabilityEntity>(
+      API_ADDRESS.APPOINTMENTS.SALON_AVAILABILITY,
+      {
+        params: {
+          from: params.from,
+          to: params.to,
+          offeringPublicIds: params.offeringPublicIds,
+          staffPublicId: params.staffPublicId,
+          branchPublicId: params.branchPublicId,
+          excludeAppointmentPublicId: params.excludeAppointmentPublicId,
+          includeOutsideHours: params.includeOutsideHours || undefined,
+        },
+        paramsSerializer: { indexes: null },
+      }
+    );
+  }
+
+  async checkInByPublicId(publicId: string) {
+    return await axiosInstance.post(API_ADDRESS.APPOINTMENTS.ACTION(publicId, "check-in"));
+  }
+
+  async completeByPublicId(publicId: string) {
+    return await axiosInstance.post(API_ADDRESS.APPOINTMENTS.ACTION(publicId, "complete"));
+  }
+
+  async noShowByPublicId(publicId: string, notifyCustomer: boolean) {
+    return await axiosInstance.post(API_ADDRESS.APPOINTMENTS.ACTION(publicId, "no-show"), { notifyCustomer });
+  }
+
+  async cancelByPublicId(publicId: string, body: { reason: string; notifyCustomer: boolean }) {
+    return await axiosInstance.post(API_ADDRESS.APPOINTMENTS.ACTION(publicId, "cancel"), body);
+  }
+
+  async rescheduleByPublicId(publicId: string, body: IGuidRescheduleRequest) {
+    return await axiosInstance.post(API_ADDRESS.APPOINTMENTS.ACTION(publicId, "reschedule"), body);
+  }
+
+  /** Reverts a check-in / complete within 5 minutes; returns fresh details. */
+  async undoStatus(publicId: string) {
+    return await axiosInstance.post<unknown, TSalonAppointmentDetailsEntity>(
+      API_ADDRESS.APPOINTMENTS.ACTION(publicId, "undo-status")
+    );
+  }
+
+  /** Complete (optional) + final invoice + payments + tip in one idempotent request. */
+  async checkout(publicId: string, body: ICheckoutRequest) {
+    return await axiosInstance.post<unknown, TCheckoutEntity>(
+      API_ADDRESS.APPOINTMENTS.ACTION(publicId, "checkout"),
+      body
+    );
+  }
+
+  async setInternalNote(publicId: string, note: string | null) {
+    return await axiosInstance.patch(API_ADDRESS.APPOINTMENTS.INTERNAL_NOTE(publicId), { note });
   }
 }
 

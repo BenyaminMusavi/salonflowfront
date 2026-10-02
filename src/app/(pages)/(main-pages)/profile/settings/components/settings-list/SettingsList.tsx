@@ -1,106 +1,141 @@
 "use client";
 
 import Link from "next/link";
-import { CaretLeft, MoonIcon, ShieldCheck, SunIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  CaretLeft,
+  DeviceMobileIcon,
+  MoonIcon,
+  ShieldCheck,
+  SignOutIcon,
+  SunIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { Switch } from "@/shared/components/primitives/switch/Switch";
+import { Button } from "@/shared/components/primitives/button/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/primitives/dialog/Dialog";
 import { useThemeStore } from "@/services/theme-store/useThemeStore";
+import { useTokenStore } from "@/services/authentication-store/useTokenStore";
+import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
+import { useMutateLogout } from "@/services/domains/auth/hooks/useMutateLogout";
 
-interface SettingsItem {
-  label: string;
-  icon: React.ElementType;
-  href?: string;
-}
+const rowClassName = "flex min-h-14 items-center gap-3 px-4 py-3 text-right";
 
-// SF-QA-019: "افزودن خانه/محل کار"، "میانبرها"، "حریم خصوصی" و "ارتباطات" حذف شدند —
-// هیچ صفحه‌ی مقصدی برایشان پیاده نشده بود، پس هر ردیف بی‌واکنش می‌ماند. وقتی صفحه‌ی
-// مقصد هرکدام آماده شد، با href واقعی به این لیست برگردانده شوند.
-const popular: SettingsItem[] = [
-  {
-    label: "تنظیمات امنیتی",
-    icon: ShieldCheck,
-    href: RouteAddress.PROFILE.CHANGE_PASSWORD,
-  },
-];
-
-function SettingsRow({ label, icon: Icon, href }: SettingsItem) {
-  const rowClassName =
-    "flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right";
-  const content = (
-    <>
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
-        <Icon size={20} className="text-primary" />
-      </div>
-      <span className="flex-1 text-[14px] font-bold text-foreground">
-        {label}
-      </span>
-      <CaretLeft size={18} className="text-foreground-muted" />
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className={rowClassName}>
-        {content}
-      </Link>
-    );
-  }
-
+function RowIcon({ icon: Icon }: { icon: React.ElementType }) {
   return (
-    <button type="button" className={rowClassName}>
-      {content}
-    </button>
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background-tertiary">
+      <Icon size={19} className="text-primary" />
+    </span>
   );
 }
 
-function ThemeToggleRow() {
-  const theme = useThemeStore((state) => state.theme);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
-  const isLight = theme === "light";
-
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
-        {isLight ? (
-          <SunIcon size={20} className="text-primary" />
-        ) : (
-          <MoonIcon size={20} className="text-primary" />
-        )}
+    <section className="flex flex-col gap-2">
+      <h2 className="px-1 text-[13px] font-semibold text-foreground-muted">{title}</h2>
+      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-surface">
+        {children}
       </div>
-      <span className="flex-1 text-[14px] font-bold text-foreground">
-        حالت روشن
-      </span>
-      <Switch
-        checked={isLight}
-        onCheckedChange={toggleTheme}
-        aria-label="تغییر تم روشن و تاریک"
-      />
-    </div>
+    </section>
   );
 }
 
+/**
+ * «حساب من» — only what belongs to the person: name, phone, password, appearance, logout.
+ * Salon settings live in the salon panel, never here.
+ */
 export default function SettingsList() {
+  const router = useRouter();
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const me = useQueryAuthMe({ enabled: isLoggedIn }).data?.data;
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const { mutateAsync: logout, isPending } = useMutateLogout();
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const isLight = theme === "light";
+  const fullName = `${me?.firstName ?? ""} ${me?.lastName ?? ""}`.trim();
+
+  const onLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setLogoutOpen(false);
+      router.push(RouteAddress.AUTH.LOGIN.BASE);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-safe-area">
-      <section>
-        <h2 className="mb-3 text-[13px] font-semibold text-foreground-muted">
-          محبوب
-        </h2>
-        <div className="flex flex-col gap-2">
-          {popular.map((item) => (
-            <SettingsRow key={item.label} {...item} />
-          ))}
-        </div>
-      </section>
+      {isLoggedIn ? (
+        <Group title="اطلاعات حساب">
+          <Link href={RouteAddress.PROFILE.EDIT_NAME} className={rowClassName}>
+            <RowIcon icon={UserIcon} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-foreground">نام</span>
+              <span className="block truncate text-xs text-foreground-muted">{fullName || "هنوز وارد نشده"}</span>
+            </span>
+            <CaretLeft size={18} className="text-foreground-muted" />
+          </Link>
+          <div className={rowClassName}>
+            <RowIcon icon={DeviceMobileIcon} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-foreground">موبایل</span>
+              <span className="block text-xs text-foreground-muted" dir="ltr">
+                {me?.phone ?? "—"}
+              </span>
+            </span>
+            <span className="shrink-0 text-[11px] text-foreground-muted">برای تغییر با پشتیبانی تماس بگیرید</span>
+          </div>
+          <Link href={RouteAddress.PROFILE.CHANGE_PASSWORD} className={rowClassName}>
+            <RowIcon icon={ShieldCheck} />
+            <span className="flex-1 text-[14px] font-bold text-foreground">امنیت و رمز عبور</span>
+            <CaretLeft size={18} className="text-foreground-muted" />
+          </Link>
+        </Group>
+      ) : null}
 
-      <section>
-        <h2 className="mb-3 text-[13px] font-semibold text-foreground-muted">
-          ظاهر
-        </h2>
-        <div className="flex flex-col gap-2">
-          <ThemeToggleRow />
+      <Group title="ظاهر">
+        <div className={rowClassName}>
+          <RowIcon icon={isLight ? SunIcon : MoonIcon} />
+          <span className="flex-1 text-[14px] font-bold text-foreground">حالت روشن</span>
+          <Switch checked={isLight} onCheckedChange={toggleTheme} aria-label="تغییر تم روشن و تاریک" />
         </div>
-      </section>
+      </Group>
+
+      {isLoggedIn ? (
+        <div className="overflow-hidden rounded-[16px] bg-surface">
+          <button type="button" onClick={() => setLogoutOpen(true)} className={`${rowClassName} w-full`}>
+            <RowIcon icon={SignOutIcon} />
+            <span className="flex-1 text-[14px] font-bold text-foreground">خروج از حساب</span>
+          </button>
+        </div>
+      ) : null}
+
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>خروج از حساب</DialogTitle>
+            <DialogDescription>برای ورود دوباره به شماره موبایل و رمز یا کد پیامکی نیاز دارید.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => setLogoutOpen(false)}>
+              انصراف
+            </Button>
+            <Button type="button" isLoading={isPending} onClick={() => void onLogout()}>
+              خروج
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -56,7 +56,8 @@ import {
   type DayPart,
 } from "./_agenda/agendaUtils";
 
-type Scope = "all" | "mine" | number;
+/** «همه پرسنل», «فقط من», or one person's staffPublicId. */
+type Scope = "all" | "mine" | string;
 
 const STATUS_OPTIONS = [
   AppointmentStatus.Scheduled,
@@ -159,7 +160,7 @@ export default function DashboardView() {
     from: range.from,
     to: range.to,
     mine: scope === "mine",
-    staffMemberId: typeof scope === "number" ? scope : undefined,
+    staffPublicId: scope !== "all" && scope !== "mine" ? scope : undefined,
     branchId,
   });
 
@@ -183,7 +184,7 @@ export default function DashboardView() {
       ? "همه پرسنل"
       : scope === "mine"
         ? "فقط من"
-        : staff.find((s) => s.staffMemberId === scope)?.firstName || "پرسنل";
+        : staff.find((s) => s.staffPublicId === scope)?.firstName || "پرسنل";
   const filtersActive =
     statusFilter != null || branchId != null || showInactive || mode === "staff";
 
@@ -487,7 +488,9 @@ export default function DashboardView() {
             [
               ["all", "همه پرسنل"],
               ["mine", "فقط من"],
-              ...staff.map((s) => [s.staffMemberId, s.firstName || "پرسنل"] as const),
+              ...staff
+                .filter((s) => !!s.staffPublicId)
+                .map((s) => [s.staffPublicId as string, s.firstName || "پرسنل"] as const),
             ] as const
           ).map(([value, label]) => (
             <button

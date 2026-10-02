@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import appointmentsService from "../appointments.service";
 import { SALON_APPOINTMENTS_QUERY_KEY } from "./useQuerySalonAppointments";
 import { BRANCH_DAY_BOARD_QUERY_KEY } from "./useQueryBranchDayBoard";
+import { AGENDA_QUERY_KEY } from "./useQueryAgenda";
 import {
   CUSTOMER_APPOINTMENTS_QUERY_KEY,
   MY_STAFF_APPOINTMENTS_QUERY_KEY,
@@ -39,6 +40,7 @@ export const useMutateQuickBook = () => {
     onSuccess: () => {
       for (const key of [
         SALON_APPOINTMENTS_QUERY_KEY,
+        AGENDA_QUERY_KEY,
         BRANCH_DAY_BOARD_QUERY_KEY,
         MY_STAFF_APPOINTMENTS_QUERY_KEY,
         CUSTOMER_APPOINTMENTS_QUERY_KEY,

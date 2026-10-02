@@ -1,7 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRightIcon, DotsThreeIcon, XIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  ChatCircleTextIcon,
+  DotsThreeIcon,
+  PhoneIcon,
+  WarningCircleIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import {
   Drawer,
   DrawerContent,
@@ -10,192 +18,268 @@ import {
 } from "@/shared/components/primitives/drawer/Drawer";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
-import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
-import { useMutateSalonLifecycle } from "@/services/domains/appointments/hooks";
+import type { IAgendaItem, ISalonAppointmentDetails } from "@/services/domains/appointments/types/appointments.type";
+import {
+  useMutateSalonAppointment,
+  useQuerySalonAppointmentDetails,
+} from "@/services/domains/appointments/hooks";
+import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
+import { useQueryCapabilities } from "@/services/domains/auth/hooks/useQueryCapabilities";
+import { useCustomerPreviewStore } from "@/services/domains/customers/store/useCustomerPreviewStore";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
-import { useQueryInvoices } from "@/services/domains/invoices/hooks";
+import { RouteAddress } from "@/shared/data/routeAddress";
 import { useMediaQuery } from "@/shared/hooks";
 import { formatToman } from "@/shared/utils/salonDisplay";
-import {
-  salonWallClockToUtcIso,
-  utcToSalonTime,
-  utcToSalonYmd,
-} from "@/shared/utils/salonTime";
+import { formatSalonDate, formatSalonDateTime, utcToSalonYmd } from "@/shared/utils/salonTime";
+import { APP_LOCALE } from "@/shared/utils/locale";
 import { cn } from "@/shared/utils/className";
 import CancelAppointmentDialog from "../CancelAppointmentDialog";
 import NoShowDialog from "../NoShowDialog";
-import { NotifyCustomerCheckbox } from "../_components/NotifyCustomerCheckbox";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 import { StatusMark, formatClock } from "./AgendaRow";
 import { durationMinutes } from "./agendaUtils";
-import { DayPicker, TimePicker, dayLabel, pad2, snapMinute } from "./DayTimePicker";
-import { PaymentStep } from "./PaymentStep";
+import { dayLabel } from "./DayTimePicker";
+import { CheckoutStep } from "./CheckoutStep";
+import { RescheduleStep } from "./RescheduleStep";
 
-/** «جابه‌جایی»: pick a day and a 15-minute slot; SMS on by default (backend contract). */
-function RescheduleStep({
+type Step = "details" | "reschedule" | "checkout" | "complete-checkout";
+
+const roundAction =
+  "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-surface-hover text-sm font-semibold text-foreground";
+
+/** Customer line, contact buttons and visit history. */
+function CustomerBlock({
+  details,
   item,
-  onBack,
-  onDone,
-  onToast,
+  canSeePhone,
 }: {
+  details: ISalonAppointmentDetails | null;
   item: IAgendaItem;
-  onBack: () => void;
-  onDone: () => void;
-  onToast: (t: DashboardToastState) => void;
+  canSeePhone: boolean;
 }) {
-  const lifecycle = useMutateSalonLifecycle();
-  const [day, setDay] = useState(utcToSalonYmd(item.startTime));
-  const [initialH, initialM] = utcToSalonTime(item.startTime).split(":").map(Number);
-  const [hour, setHour] = useState(initialH);
-  const [minute, setMinute] = useState(snapMinute(initialM));
-  const [notifyCustomer, setNotifyCustomer] = useState(true);
-  const time = `${pad2(hour)}:${pad2(minute)}`;
-  const unchanged = day === utcToSalonYmd(item.startTime) && time === formatClock(item.startTime);
+  const remember = useCustomerPreviewStore((s) => s.remember);
+  const c = details?.customer;
+  const name = c?.fullName || item.customerName || "مشتری";
+  const phone = canSeePhone ? c?.phone ?? item.customerPhone : null;
+  const publicId = c?.publicId ?? item.customerPublicId;
+  const stats = c
+    ? [
+        c.visitsCount ? `${c.visitsCount.toLocaleString(APP_LOCALE)} مراجعه` : "مشتری جدید",
+        c.lastVisitAt ? `آخرین بار ${formatSalonDate(c.lastVisitAt, { day: "numeric", month: "long" })}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
 
-  const submit = async () => {
+  const nameNode = <span className="block truncate text-base font-bold text-foreground">{name}</span>;
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-brand text-base font-bold text-content-brand">
+          {name.charAt(0)}
+        </span>
+        <div className="min-w-0 flex-1">
+          {publicId ? (
+            <Link
+              href={RouteAddress.DASHBOARD.CUSTOMER_APPOINTMENTS(publicId)}
+              onClick={() => remember({ publicId, fullName: name, phone: phone ?? "" })}
+              className="hover:underline"
+            >
+              {nameNode}
+            </Link>
+          ) : (
+            nameNode
+          )}
+          {stats ? <span className="block text-xs text-foreground-muted">{stats}</span> : null}
+        </div>
+      </div>
+      {c && c.noShowCount > 0 ? (
+        <p className="flex items-center gap-1.5 text-xs text-warning">
+          <WarningCircleIcon size={14} weight="bold" />
+          {c.noShowCount.toLocaleString(APP_LOCALE)} بار مراجعه نکرده
+        </p>
+      ) : null}
+      {phone ? (
+        <div className="flex items-center gap-2">
+          <a href={`tel:${phone}`} className={roundAction}>
+            <PhoneIcon size={16} />
+            تماس
+          </a>
+          <a href={`sms:${phone}`} className={roundAction}>
+            <ChatCircleTextIcon size={16} />
+            پیامک
+          </a>
+          <span className="px-1 text-xs text-foreground-muted" dir="ltr">
+            {phone}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Internal salon note on this appointment — the customer never sees it. */
+function InternalNote({ details, onToast }: { details: ISalonAppointmentDetails; onToast: (t: DashboardToastState) => void }) {
+  const mutate = useMutateSalonAppointment();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(details.internalNote ?? "");
+  useEffect(() => setText(details.internalNote ?? ""), [details.internalNote]);
+
+  const save = async () => {
     try {
-      await lifecycle.reschedule.mutateAsync({
-        id: item.numericId,
-        newStartTime: salonWallClockToUtcIso(day, time),
-        notifyCustomer,
-      });
-      onToast({ type: "success", message: `نوبت به ${dayLabel(day)} ساعت ${time} منتقل شد.` });
-      onDone();
+      await mutate.internalNote.mutateAsync({ publicId: details.publicId, note: text.trim() || null });
+      setEditing(false);
     } catch (err) {
-      onToast({ type: "error", message: getApiErrorMessage(err, "جابه‌جایی نوبت ناموفق بود.") });
+      onToast({ type: "error", message: getApiErrorMessage(err, "ذخیره‌ی یادداشت ناموفق بود.") });
     }
   };
 
+  if (!editing) {
+    return (
+      <button type="button" onClick={() => setEditing(true)} className="flex flex-col items-start gap-0.5 px-4 py-3 text-right">
+        <span className="text-xs text-foreground-muted">یادداشت سالن (مشتری نمی‌بیند)</span>
+        <span className={cn("text-sm", details.internalNote ? "text-foreground" : "text-primary")}>
+          {details.internalNote || "＋ افزودن یادداشت"}
+        </span>
+      </button>
+    );
+  }
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="بازگشت"
-          className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-hover"
-        >
-          <ArrowRightIcon size={18} />
-        </button>
-        <DrawerTitle className="text-base font-bold">جابه‌جایی نوبت</DrawerTitle>
-      </div>
-      <DrawerDescription className="text-xs text-foreground-muted">
-        {item.customerName || "مشتری"} · الان {dayLabel(utcToSalonYmd(item.startTime))} ساعت{" "}
-        {formatClock(item.startTime)}
-      </DrawerDescription>
-
-      <DayPicker name="reschedule-day" value={day} onChange={setDay} />
-      <TimePicker
-        hour={hour}
-        minute={minute}
-        onChange={(h, m) => {
-          setHour(h);
-          setMinute(m);
-        }}
+    <div className="flex flex-col gap-2 px-4 py-3">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        autoFocus
+        className="w-full rounded-[12px] border border-input-border bg-input p-3 text-sm text-foreground focus:outline-none"
+        placeholder="مثلاً: حساسیت به رنگ آمونیاک‌دار"
       />
-
-      <NotifyCustomerCheckbox checked={notifyCustomer} onChange={setNotifyCustomer} />
-
-      <Button
-        type="button"
-        className="w-full rounded-[12px]"
-        disabled={unchanged}
-        isLoading={lifecycle.reschedule.isPending}
-        onClick={() => void submit()}
-      >
-        ثبت {dayLabel(day)} · {time}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" className="rounded-[12px]" isLoading={mutate.internalNote.isPending} onClick={() => void save()}>
+          ذخیره
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setText(details.internalNote ?? "");
+            setEditing(false);
+          }}
+        >
+          انصراف
+        </Button>
+      </div>
     </div>
   );
 }
 
 /**
- * Appointment details — bottom sheet on mobile, side panel on desktop. One primary action per
- * status; reschedule is a second step in the same sheet; cancel / no-show sit behind «⋯» and
- * always confirm.
+ * Appointment details — bottom sheet on mobile, side panel on desktop. Everything comes from
+ * `salon-details`; buttons follow the server's `allowedActions` (one primary action per status),
+ * reschedule and checkout are steps in the same sheet, cancel / no-show confirm, check-in and
+ * complete offer a 5-minute undo.
  */
 export function AppointmentDetailsSheet({
   item,
-  isStaff,
   showBranch,
   onClose,
   onToast,
 }: {
   item: IAgendaItem | null;
-  isStaff: boolean;
+  /** Kept for callers; what the user may do now comes from capabilities / allowedActions. */
+  isStaff?: boolean;
   showBranch: boolean;
   onClose: () => void;
   onToast: (t: DashboardToastState) => void;
 }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const lifecycle = useMutateSalonLifecycle();
-  const [step, setStep] = useState<"details" | "reschedule" | "payment">("details");
+  const { capabilities } = useQueryCapabilities();
+  const detailsQuery = useQuerySalonAppointmentDetails(item?.publicId);
+  const details = detailsQuery.data?.data ?? null;
+  const mutate = useMutateSalonAppointment();
+  const [step, setStep] = useState<Step>("details");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [cancelId, setCancelId] = useState<number | null>(null);
-  const [noShowId, setNoShowId] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [noShowOpen, setNoShowOpen] = useState(false);
 
-  const itemId = item?.numericId;
+  const itemKey = item?.publicId;
   useEffect(() => {
     setStep("details");
     setMoreOpen(false);
-  }, [itemId]);
+    setHistoryOpen(false);
+  }, [itemKey]);
 
-  const busy =
-    lifecycle.checkIn.isPending || lifecycle.complete.isPending || lifecycle.noShow.isPending;
-
-  const run = async (fn: () => Promise<unknown>, success: string, failure: string) => {
-    try {
-      await fn();
-      onToast({ type: "success", message: success });
-    } catch (err) {
-      onToast({ type: "error", message: getApiErrorMessage(err, failure) });
-    }
-  };
-
-  const status = Number(item?.status);
-  // Owner money: the appointment's invoice (if any) from the recent invoice list.
-  const invoices = useQueryInvoices({ pageSize: 100 }, { enabled: !isStaff && !!item });
-  const invoice =
-    (invoices.data?.data?.items ?? []).find((x) => x.appointmentId === item?.numericId) ?? null;
-  const paid = !!invoice && (invoice.outstandingAmount ?? 0) <= 0;
-  const due = invoice?.outstandingAmount ?? item?.totalPrice ?? 0;
+  const status = Number(details?.status ?? item?.status);
+  const allowed = new Set<string>(details?.allowedActions ?? []);
+  const can = (a: string) => allowed.has(a);
+  const busy = mutate.checkIn.isPending || mutate.complete.isPending || mutate.undo.isPending;
+  const canSeePhone = capabilities?.canSeeCustomerPhone ?? true;
+  const money = details?.money;
+  const showMoney = !!money && !!(capabilities?.canCollectPayment || capabilities?.canViewFinance);
   const subject = item
     ? `${item.customerName || "مشتری"} · ${dayLabel(utcToSalonYmd(item.startTime))} ${formatClock(item.startTime)}`
     : undefined;
-  const canReschedule = status === AppointmentStatus.Scheduled;
-  const canCancel = status === AppointmentStatus.Scheduled;
-  const canNoShow =
-    status === AppointmentStatus.Scheduled || status === AppointmentStatus.CheckedIn;
+
+  const undoAction = (publicId: string) => ({
+    label: "بازگردانی",
+    onClick: () =>
+      mutate.undo.mutate(publicId, {
+        onSuccess: () => onToast({ type: "success", message: "بازگردانده شد." }),
+        onError: (err) => onToast({ type: "error", message: getApiErrorMessage(err, "بازگردانی ممکن نشد.") }),
+      }),
+  });
+
+  const checkIn = async () => {
+    if (!item?.publicId) return;
+    try {
+      await mutate.checkIn.mutateAsync(item.publicId);
+      onToast({ type: "success", message: "ورود مشتری ثبت شد.", action: undoAction(item.publicId) });
+    } catch (err) {
+      onToast({ type: "error", message: getApiErrorMessage(err, "ثبت ورود ناموفق بود.") });
+    }
+  };
+
+  const completeOnly = async () => {
+    if (!item?.publicId) return;
+    try {
+      await mutate.complete.mutateAsync(item.publicId);
+      setMoreOpen(false);
+      onToast({ type: "success", message: "نوبت انجام شد.", action: undoAction(item.publicId) });
+    } catch (err) {
+      onToast({ type: "error", message: getApiErrorMessage(err, "ثبت انجام نوبت ناموفق بود.") });
+    }
+  };
+
+  const paymentLabel =
+    money?.paymentStatus === "paid"
+      ? "پرداخت شد"
+      : money?.paymentStatus === "partial"
+        ? `بخشی پرداخت شده · مانده ${formatToman(money.outstanding)} تومان`
+        : null;
 
   return (
     <>
-      <Drawer
-        open={!!item}
-        onOpenChange={(open) => !open && onClose()}
-        direction={isDesktop ? "left" : "bottom"}
-      >
+      <Drawer open={!!item} onOpenChange={(open) => !open && onClose()} direction={isDesktop ? "left" : "bottom"}>
         <DrawerContent
           className={cn(
             "border-border bg-background",
-            isDesktop ? "h-full w-[420px] max-w-[420px] sm:max-w-[420px]" : "max-h-[88vh]"
+            isDesktop ? "h-full w-[420px] max-w-[420px] sm:max-w-[420px]" : "max-h-[90vh]"
           )}
         >
           {item ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-safe-area pb-6 pt-2 lg:px-6 lg:pt-6">
-              {step === "payment" ? (
-                <PaymentStep
-                  appointmentId={item.numericId}
-                  invoice={invoice}
-                  fallbackAmount={item.totalPrice}
-                  title={item.customerName || "مشتری"}
-                  onBack={() => setStep("details")}
-                  onDone={() => setStep("details")}
-                  onToast={onToast}
-                />
-              ) : step === "reschedule" ? (
-                <RescheduleStep
-                  item={item}
+              <DrawerTitle className="sr-only">جزئیات نوبت</DrawerTitle>
+              <DrawerDescription className="sr-only">{subject}</DrawerDescription>
+              {details && step === "reschedule" ? (
+                <RescheduleStep details={details} onBack={() => setStep("details")} onDone={() => setStep("details")} onToast={onToast} />
+              ) : details && (step === "checkout" || step === "complete-checkout") ? (
+                <CheckoutStep
+                  details={details}
+                  completeFirst={step === "complete-checkout"}
+                  canDiscount={!!capabilities?.canViewFinance}
                   onBack={() => setStep("details")}
                   onDone={() => setStep("details")}
                   onToast={onToast}
@@ -205,13 +289,10 @@ export function AppointmentDetailsSheet({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <StatusMark status={status} />
-                      <DrawerTitle className="mt-1 text-base font-bold">
-                        {dayLabel(utcToSalonYmd(item.startTime))}
-                      </DrawerTitle>
-                      <DrawerDescription className="text-sm tabular-nums text-foreground-muted">
-                        {formatClock(item.startTime)} تا {formatClock(item.endTime)} ·{" "}
-                        {durationMinutes(item)} دقیقه
-                      </DrawerDescription>
+                      <p className="mt-1 text-base font-bold text-foreground">{dayLabel(utcToSalonYmd(item.startTime))}</p>
+                      <p className="text-sm tabular-nums text-foreground-muted">
+                        {formatClock(item.startTime)} تا {formatClock(item.endTime)} · {durationMinutes(item)} دقیقه
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -223,129 +304,147 @@ export function AppointmentDetailsSheet({
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-brand text-base font-bold text-content-brand">
-                      {(item.customerName || "م").charAt(0)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-bold text-foreground">
-                        {item.customerName || "مشتری"}
-                      </p>
-                      {showBranch && item.branchName ? (
-                        <p className="text-xs text-foreground-muted">شعبه {item.branchName}</p>
-                      ) : null}
-                    </div>
-                  </div>
+                  <CustomerBlock details={details} item={item} canSeePhone={canSeePhone} />
 
-                  <div className="flex flex-col divide-y divide-border rounded-[16px] bg-background-secondary">
-                    {item.services.map((s, i) => (
+                  <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+                    {(details?.services ?? item.services).map((s, i) => (
                       <div key={`${s.name}-${i}`} className="flex items-start justify-between gap-3 px-4 py-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground">{s.name}</p>
                           <p className="text-xs text-foreground-muted">
-                            {[s.staffName || (item.services.length === 1 ? item.staffNames : null), `${s.durationMinutes} دقیقه`]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            {[s.staffName, `${s.durationMinutes} دقیقه`].filter(Boolean).join(" · ")}
                           </p>
                         </div>
-                        <p className="shrink-0 text-sm tabular-nums text-foreground">
-                          {formatToman(s.price)}
-                        </p>
+                        <p className="shrink-0 text-sm tabular-nums text-foreground">{formatToman(s.price)}</p>
                       </div>
                     ))}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <p className="text-sm text-foreground-muted">جمع</p>
-                      <p className="text-sm font-bold tabular-nums text-foreground">
-                        {formatToman(item.totalPrice)} تومان
-                      </p>
-                    </div>
+                    {showBranch && (details?.branch?.name || item.branchName) ? (
+                      <div className="px-4 py-3 text-xs text-foreground-muted">
+                        شعبه {details?.branch?.name || item.branchName}
+                        {details?.branch?.address ? ` · ${details.branch.address}` : ""}
+                      </div>
+                    ) : null}
+                    {showMoney && money ? (
+                      <div className="flex flex-col gap-1 px-4 py-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-foreground-muted">جمع</span>
+                          <span className="font-bold tabular-nums text-foreground">{formatToman(money.total)} تومان</span>
+                        </div>
+                        {money.deposit > 0 ? (
+                          <div className="flex justify-between text-xs text-foreground-muted">
+                            <span>بیعانه</span>
+                            <span className="tabular-nums">{formatToman(money.deposit)} تومان</span>
+                          </div>
+                        ) : null}
+                        {money.discount > 0 ? (
+                          <div className="flex justify-between text-xs text-foreground-muted">
+                            <span>تخفیف</span>
+                            <span className="tabular-nums">{formatToman(money.discount)} تومان</span>
+                          </div>
+                        ) : null}
+                        {paymentLabel ? (
+                          <p className={cn("text-xs font-semibold", money.paymentStatus === "paid" ? "text-success" : "text-warning")}>
+                            {paymentLabel}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
-                  {status === AppointmentStatus.Completed && !isStaff ? (
-                    paid ? (
-                      <p className="rounded-[16px] bg-success-background px-4 py-3 text-sm font-semibold text-success-foreground">
-                        پرداخت شد · {formatToman(invoice?.grandTotal ?? item.totalPrice)} تومان
-                      </p>
-                    ) : (
-                      <Button
+                  {details ? (
+                    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+                      {details.customerNote ? (
+                        <div className="flex flex-col gap-0.5 px-4 py-3">
+                          <span className="text-xs text-foreground-muted">یادداشت مشتری</span>
+                          <span className="text-sm text-foreground">{details.customerNote}</span>
+                        </div>
+                      ) : null}
+                      {details.customer?.note ? (
+                        <div className="flex flex-col gap-0.5 px-4 py-3">
+                          <span className="text-xs text-foreground-muted">درباره‌ی این مشتری</span>
+                          <span className="text-sm text-foreground">{details.customer.note}</span>
+                        </div>
+                      ) : null}
+                      <InternalNote details={details} onToast={onToast} />
+                    </div>
+                  ) : detailsQuery.isLoading ? (
+                    <div className="h-16 animate-pulse rounded-[16px] bg-background-secondary" />
+                  ) : null}
+
+                  {details?.statusHistory?.length ? (
+                    <div className="flex flex-col">
+                      <button
                         type="button"
-                        className="w-full rounded-[12px]"
-                        disabled={invoices.isLoading}
-                        onClick={() => setStep("payment")}
+                        onClick={() => setHistoryOpen((v) => !v)}
+                        className="flex items-center gap-1 self-start px-1 text-xs font-semibold text-foreground-muted"
                       >
-                        دریافت {formatToman(due)} تومان
-                      </Button>
-                    )
+                        تاریخچه‌ی نوبت
+                        <CaretDownIcon size={12} className={cn("transition-transform", historyOpen && "rotate-180")} />
+                      </button>
+                      {historyOpen ? (
+                        <ol className="mt-2 flex flex-col gap-1.5 px-1 text-xs text-foreground-muted">
+                          {details.statusHistory.map((h, i) => (
+                            <li key={i}>
+                              {appointmentStatusLabel(Number(h.status))} ·{" "}
+                              {formatSalonDateTime(h.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                              {h.byName ? ` · ${h.byName}` : ""}
+                              {h.reason ? ` · ${h.reason}` : ""}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : null}
+                    </div>
                   ) : null}
 
                   {moreOpen ? (
-                    <div className="flex flex-col divide-y divide-border rounded-[16px] bg-background-secondary">
-                      {canNoShow ? (
-                        <button
-                          type="button"
-                          onClick={() => setNoShowId(item.numericId)}
-                          className="px-4 py-3 text-right text-sm font-semibold text-foreground hover:bg-surface-hover"
-                        >
+                    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+                      {can("noShow") ? (
+                        <button type="button" onClick={() => setNoShowOpen(true)} className="px-4 py-3 text-right text-sm font-semibold text-foreground hover:bg-surface-hover">
                           مراجعه نکرد
                         </button>
                       ) : null}
-                      {canCancel ? (
-                        <button
-                          type="button"
-                          onClick={() => setCancelId(item.numericId)}
-                          className="px-4 py-3 text-right text-sm font-semibold text-error hover:bg-surface-hover"
-                        >
+                      {status === AppointmentStatus.CheckedIn && can("complete") && can("collectPayment") ? (
+                        <button type="button" onClick={() => void completeOnly()} className="px-4 py-3 text-right text-sm font-semibold text-foreground hover:bg-surface-hover">
+                          انجام شد، بدون دریافت پرداخت
+                        </button>
+                      ) : null}
+                      {can("cancel") ? (
+                        <button type="button" onClick={() => setCancelOpen(true)} className="px-4 py-3 text-right text-sm font-semibold text-error hover:bg-surface-hover">
                           لغو نوبت
                         </button>
                       ) : null}
                     </div>
                   ) : null}
 
-                  {status === AppointmentStatus.Scheduled || status === AppointmentStatus.CheckedIn ? (
-                    <div className="flex flex-col gap-2">
-                      {status === AppointmentStatus.Scheduled ? (
-                        <Button
-                          type="button"
-                          className="w-full rounded-[12px]"
-                          disabled={busy}
-                          isLoading={lifecycle.checkIn.isPending}
-                          onClick={() =>
-                            void run(
-                              () => lifecycle.checkIn.mutateAsync(item.numericId),
-                              "ورود مشتری ثبت شد.",
-                              "ثبت ورود ناموفق بود."
-                            )
-                          }
-                        >
-                          مشتری رسید
+                  <div className="flex flex-col gap-2">
+                    {can("checkIn") ? (
+                      <Button type="button" className="w-full rounded-[12px]" disabled={busy || !details} isLoading={mutate.checkIn.isPending} onClick={() => void checkIn()}>
+                        مشتری رسید
+                      </Button>
+                    ) : can("complete") ? (
+                      can("collectPayment") ? (
+                        <Button type="button" className="w-full rounded-[12px]" disabled={busy || !details} onClick={() => setStep("complete-checkout")}>
+                          انجام شد و دریافت{money ? ` ${formatToman(money.outstanding)} تومان` : ""}
                         </Button>
                       ) : (
-                        <Button
-                          type="button"
-                          className="w-full rounded-[12px]"
-                          disabled={busy}
-                          isLoading={lifecycle.complete.isPending}
-                          onClick={() =>
-                            void run(
-                              async () => {
-                                await lifecycle.complete.mutateAsync(item.numericId);
-                                // Done → straight to collecting the payment (owner).
-                                if (!isStaff) setStep("payment");
-                              },
-                              "نوبت انجام شد.",
-                              "ثبت انجام نوبت ناموفق بود."
-                            )
-                          }
-                        >
+                        <Button type="button" className="w-full rounded-[12px]" disabled={busy || !details} isLoading={mutate.complete.isPending} onClick={() => void completeOnly()}>
                           انجام شد
                         </Button>
-                      )}
+                      )
+                    ) : can("collectPayment") && money && money.outstanding > 0 ? (
+                      <Button type="button" className="w-full rounded-[12px]" onClick={() => setStep("checkout")}>
+                        دریافت {formatToman(money.outstanding)} تومان
+                      </Button>
+                    ) : null}
+
+                    {can("reschedule") || can("noShow") || can("cancel") ? (
                       <div className="flex gap-2">
-                        {canReschedule ? (
+                        {can("reschedule") ? (
                           <Button
                             type="button"
                             variant="outline"
                             className={cn(dashboardQuietButtonClass, "flex-1 rounded-[12px]")}
+                            disabled={!details}
                             onClick={() => setStep("reschedule")}
                           >
                             جابه‌جایی
@@ -356,14 +455,14 @@ export function AppointmentDetailsSheet({
                           variant="outline"
                           aria-label="کارهای بیشتر"
                           aria-expanded={moreOpen}
-                          className={cn(dashboardQuietButtonClass, "rounded-[12px]", !canReschedule && "flex-1")}
+                          className={cn(dashboardQuietButtonClass, "rounded-[12px]", !can("reschedule") && "flex-1")}
                           onClick={() => setMoreOpen((v) => !v)}
                         >
                           <DotsThreeIcon size={20} weight="bold" />
                         </Button>
                       </div>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               )}
             </div>
@@ -372,34 +471,36 @@ export function AppointmentDetailsSheet({
       </Drawer>
 
       <CancelAppointmentDialog
-        appointmentId={cancelId}
+        appointmentId={cancelOpen ? item?.numericId ?? 0 : null}
         subject={subject}
-        onClose={() => setCancelId(null)}
-        isPending={lifecycle.cancel.isPending}
+        onClose={() => setCancelOpen(false)}
+        isPending={mutate.cancel.isPending}
         onConfirm={async (reason, notifyCustomer) => {
-          if (cancelId == null) return;
-          await run(
-            () => lifecycle.cancel.mutateAsync({ id: cancelId, reason, notifyCustomer }),
-            "نوبت لغو شد.",
-            "لغو نوبت ناموفق بود."
-          );
-          setCancelId(null);
+          if (!item?.publicId) return;
+          try {
+            await mutate.cancel.mutateAsync({ publicId: item.publicId, reason, notifyCustomer });
+            onToast({ type: "success", message: "نوبت لغو شد." });
+          } catch (err) {
+            onToast({ type: "error", message: getApiErrorMessage(err, "لغو نوبت ناموفق بود.") });
+          }
+          setCancelOpen(false);
           setMoreOpen(false);
         }}
       />
       <NoShowDialog
-        appointmentId={noShowId}
+        appointmentId={noShowOpen ? item?.numericId ?? 0 : null}
         subject={subject}
-        onClose={() => setNoShowId(null)}
-        isPending={lifecycle.noShow.isPending}
+        onClose={() => setNoShowOpen(false)}
+        isPending={mutate.noShow.isPending}
         onConfirm={async (notifyCustomer) => {
-          if (noShowId == null) return;
-          await run(
-            () => lifecycle.noShow.mutateAsync({ id: noShowId, notifyCustomer }),
-            "«مراجعه نکرد» ثبت شد.",
-            "ثبت ناموفق بود."
-          );
-          setNoShowId(null);
+          if (!item?.publicId) return;
+          try {
+            await mutate.noShow.mutateAsync({ publicId: item.publicId, notifyCustomer });
+            onToast({ type: "success", message: "«مراجعه نکرد» ثبت شد." });
+          } catch (err) {
+            onToast({ type: "error", message: getApiErrorMessage(err, "ثبت ناموفق بود.") });
+          }
+          setNoShowOpen(false);
           setMoreOpen(false);
         }}
       />

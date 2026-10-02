@@ -10,7 +10,6 @@ import {
   BellSimple,
   HeartIcon,
   ShieldCheckIcon,
-  PencilSimpleIcon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -42,7 +41,7 @@ const afterSubscription = [
     href: RouteAddress.NOTIFICATIONS.BASE,
   },
   {
-    label: "تنظیمات",
+    label: "حساب من",
     icon: Gear,
     href: RouteAddress.PROFILE.SETTINGS,
   },
@@ -84,6 +83,8 @@ function MenuRow({
 
 function SubscriptionMenuRow() {
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  // An approved salon renews from «سالن ← اشتراک» in the panel.
+  const { ownsApproved } = useOwnsApprovedSalon();
   const { isBillable, entitlement } = useSubscriptionEntitlement();
   const remainingDays = remainingSubscriptionDays(entitlement?.endDate);
 
@@ -94,6 +95,7 @@ function SubscriptionMenuRow() {
       ? `باقی‌مانده اعتبار: ${remainingDays.toLocaleString(APP_LOCALE)} روز`
       : undefined;
 
+  if (ownsApproved) return null;
   return (
     <MenuRow
       label={label}
@@ -119,78 +121,61 @@ function AdminPanelMenuRow() {
   );
 }
 
-/** Only for users with at least one salon membership (owner/staff) — the dashboard's
- * own notifications, surfaced here too instead of only being reachable from inside it. */
-function SalonNotificationsMenuRow() {
-  const memberships = useSalonContextStore((s) => s.memberships);
-  if (memberships.length === 0) return null;
-
-  return (
-    <MenuRow
-      label="اعلان‌های سالن"
-      icon={BellSimple}
-      href={RouteAddress.DASHBOARD.NOTIFICATIONS}
-    />
-  );
+/** True when the user owns an Approved salon — its subscription and settings live in the panel. */
+function useOwnsApprovedSalon(): { ownsApproved: boolean; status?: number | null; hasOwner: boolean } {
+  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
+  const { data } = useQueryAuthMe({ enabled: isLoggedIn });
+  const owner = data?.data?.memberships?.find((m) => m.roleName === SalonRoleName.SalonOwner);
+  const status = useQuerySalonById(owner?.salonPublicId).data?.data?.approvalStatus;
+  return { ownsApproved: status === SalonApprovalStatus.Approved, status, hasOwner: !!owner };
 }
 
 /**
- * State-aware "ثبت سالن" row(s): no salon yet -> starts the wizard fresh; Draft -> resumes
- * it (label changes to make that obvious); Rejected -> same resume, but labeled/subtitled to
- * surface the rejection instead of reading like an ordinary unfinished draft; Pending -> still
- * opens onboarding, which itself shows a read-only "awaiting admin review" screen (nothing to
- * fill in there); Approved -> skips the registration wizard and instead shows both the salon's
- * dashboard AND a direct "edit registration info" row (basic info, branches, services, staff,
- * media, schedule — the same categories the wizard walked through), since nothing else in the
- * app surfaces that editing entry point.
+ * Salon entry points in the customer profile — just one row each:
+ * - «پنل سالن» for anyone who works in an approved salon (owner or staff). Salon info, staff,
+ *   services and notifications are managed inside the panel, not from here.
+ * - the registration row while the owner's own salon is not approved yet (new / draft /
+ *   in review / rejected → resume in onboarding).
  */
-function SalonRegistrationMenuRow() {
-  const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
-  const { data: authMeData } = useQueryAuthMe({ enabled: isLoggedIn });
-  const ownerMembership = authMeData?.data?.memberships?.find(
-    (m) => m.roleName === SalonRoleName.SalonOwner
-  );
-  const { data: salonRes } = useQuerySalonById(ownerMembership?.salonPublicId);
-  const status = salonRes?.data?.approvalStatus;
+function SalonMenuRows() {
+  const memberships = useSalonContextStore((s) => s.memberships);
+  const { ownsApproved, status, hasOwner } = useOwnsApprovedSalon();
+  const worksInSalon = memberships.length > 0 && (ownsApproved || !hasOwner || memberships.length > 1);
 
-  if (status === SalonApprovalStatus.Approved) {
-    return (
-      <>
-        <MenuRow
-          label="داشبورد سالن"
-          icon={Storefront}
-          href={RouteAddress.DASHBOARD.BASE}
-        />
-        <MenuRow
-          label="ویرایش اطلاعات سالن"
-          subtitle="اطلاعات، شعبه‌ها، خدمات، پرسنل و رسانه"
-          icon={PencilSimpleIcon}
-          href={RouteAddress.DASHBOARD.SALON_INFO}
-        />
-      </>
-    );
-  }
-
-  if (ownerMembership && status === SalonApprovalStatus.Rejected) {
-    return (
+  const registration =
+    ownsApproved ? null : hasOwner && status === SalonApprovalStatus.Rejected ? (
       <MenuRow
         label="ویرایش و ارسال مجدد ثبت سالن"
         subtitle="درخواست ثبت سالن شما رد شده است"
         icon={Storefront}
         href={RouteAddress.ONBOARDING.BASE}
       />
+    ) : (
+      <MenuRow
+        label={
+          hasOwner && status === SalonApprovalStatus.Pending
+            ? "ثبت سالن (در حال بررسی)"
+            : hasOwner && status === SalonApprovalStatus.Draft
+              ? "تکمیل ثبت سالن"
+              : "ثبت سالن"
+        }
+        icon={Storefront}
+        href={RouteAddress.ONBOARDING.BASE}
+      />
     );
-  }
-
-  const label =
-    ownerMembership && status === SalonApprovalStatus.Pending
-      ? "ثبت سالن (در حال بررسی)"
-      : ownerMembership && status === SalonApprovalStatus.Draft
-        ? "تکمیل ثبت سالن"
-        : "ثبت سالن";
 
   return (
-    <MenuRow label={label} icon={Storefront} href={RouteAddress.ONBOARDING.BASE} />
+    <>
+      {worksInSalon ? (
+        <MenuRow
+          label="پنل سالن"
+          subtitle="نوبت‌ها، مشتریان، خدمات و تنظیمات سالن"
+          icon={Storefront}
+          href={RouteAddress.DASHBOARD.BASE}
+        />
+      ) : null}
+      {registration}
+    </>
   );
 }
 
@@ -198,11 +183,10 @@ export default function ProfileMenuList() {
   return (
     <div className="flex flex-col gap-2 px-safe-area">
       <AdminPanelMenuRow />
-      <SalonNotificationsMenuRow />
       {beforeSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />
       ))}
-      <SalonRegistrationMenuRow />
+      <SalonMenuRows />
       <SubscriptionMenuRow />
       {afterSubscription.map((item) => (
         <MenuRow key={item.label} {...item} />

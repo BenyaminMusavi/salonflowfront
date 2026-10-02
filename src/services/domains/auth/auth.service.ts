@@ -1,5 +1,7 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
+import type { TResponse } from "@/services/common/data-types/SharedDataTypes";
+import type { ISalonCapabilities } from "./types/auth.type";
 import {
   ILoginRequest,
   IVerifyOtpRequest,
@@ -94,6 +96,11 @@ class AuthService {
 
   async me() {
     return await axiosInstance.get<unknown, TAuthMeEntity>(API_ADDRESS.AUTH.ME);
+  }
+
+  /** Role abilities in the active panel salon. */
+  async capabilities() {
+    return await axiosInstance.get<unknown, TResponse<ISalonCapabilities>>(API_ADDRESS.AUTH.CAPABILITIES);
   }
 
   async updateProfile(data: IUpdateProfileRequest) {

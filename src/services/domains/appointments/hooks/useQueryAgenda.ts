@@ -1,49 +1,58 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import appointmentsService from "../appointments.service";
-import { SALON_APPOINTMENTS_QUERY_KEY } from "./useQuerySalonAppointments";
-import { BRANCH_DAY_BOARD_QUERY_KEY } from "./useQueryBranchDayBoard";
-import { MY_STAFF_APPOINTMENTS_QUERY_KEY } from "./useQueryAppointmentHistory";
 import type {
   IAgendaItem,
+  IAgendaItemDto,
   IAgendaQuery,
   IAppointmentHistoryItem,
-  ISalonAppointmentItem,
 } from "../types/appointments.type";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { addDaysYmd } from "@/shared/utils/salonTime";
 
-/** Longest range the stitched (per-day) loader fetches — one week plus a little. */
+export const AGENDA_QUERY_KEY = "AGENDA_QUERY_KEY";
+
+/** The agenda endpoint returns at most two weeks. */
 const MAX_DAYS = 14;
 
 function enumerateDays(from: string, to: string): string[] {
   const days: string[] = [];
-  for (let d = from; d <= to && days.length < MAX_DAYS; d = addDaysYmd(d, 1)) {
-    days.push(d);
-  }
+  for (let d = from; d <= to && days.length < MAX_DAYS; d = addDaysYmd(d, 1)) days.push(d);
   return days;
 }
 
-function fromSalonList(item: ISalonAppointmentItem, customerName: string | null): IAgendaItem {
-  const services = (item.services ?? []).map((s) => ({
-    name: s.serviceName,
+const staffNamesOf = (services: { staffName?: string | null }[]) =>
+  Array.from(new Set(services.map((s) => s.staffName).filter(Boolean))).join("، ") || null;
+
+/** Server agenda row → the item every panel list renders. */
+export function agendaDtoToItem(dto: IAgendaItemDto): IAgendaItem {
+  const services = (dto.services ?? []).map((s) => ({
+    name: s.name ?? "",
+    staffName: s.staffName,
+    staffPublicId: s.staffPublicId,
     durationMinutes: s.durationMinutes,
     price: s.price,
   }));
   return {
-    numericId: item.numericId,
-    publicId: item.publicId ?? null,
-    startTime: item.startTime,
-    endTime: item.endTime,
-    status: item.status,
-    customerName,
+    numericId: dto.numericId,
+    publicId: dto.publicId,
+    startTime: dto.startTime,
+    endTime: dto.endTime,
+    status: dto.status,
+    customerName: dto.customer?.fullName ?? null,
+    customerPublicId: dto.customer?.publicId ?? null,
+    customerPhone: dto.customer?.phone ?? null,
+    isNewCustomer: dto.customer?.isNew ?? false,
     services,
-    staffNames: item.staffNames ?? null,
-    branchName: item.branchName ?? null,
-    totalPrice: services.reduce((sum, s) => sum + (s.price || 0), 0),
+    staffNames: staffNamesOf(services),
+    branchName: dto.branch?.name ?? null,
+    totalPrice: dto.totalPrice,
+    paymentStatus: dto.paymentStatus,
+    outstanding: dto.outstanding,
+    hasNote: dto.hasNote,
   };
 }
 
@@ -59,6 +68,7 @@ export function historyToAgendaItem(item: IAppointmentHistoryItem): IAgendaItem 
     services: (item.services ?? []).map((s) => ({
       name: s.name,
       staffName: s.staffName,
+      staffPublicId: s.staffPublicId,
       durationMinutes: s.durationMinutes,
       price: s.price,
     })),
@@ -68,106 +78,43 @@ export function historyToAgendaItem(item: IAppointmentHistoryItem): IAgendaItem 
   };
 }
 
-const byStart = (a: IAgendaItem, b: IAgendaItem) =>
-  new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-
 /**
- * Appointments of the active salon for `from`…`to` (Tehran days), with customer names.
- *
- * - `mine`: one `staff/me` history request (already has customer names and a date range).
- * - otherwise: the day list per day (all statuses, optional branch/staff) plus each branch's
- *   day-board for the customer name, since the day list doesn't carry it.
- *
- * Query keys reuse the underlying hooks' keys, so lifecycle mutations that invalidate those
- * refresh this too.
+ * Appointments of the active salon for `from`…`to` (Tehran days) from the single agenda
+ * endpoint: customer, services, staff, branch and payment status per row.
  */
 export function useQueryAgenda(query: IAgendaQuery, options?: { enabled?: boolean }) {
   const salonId = useSalonContextStore((s) => s.salonId);
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
-  const enabled = !!salonId && (options?.enabled ?? true);
   const days = useMemo(() => enumerateDays(query.from, query.to), [query.from, query.to]);
-
   const branches = useQuerySalonById(salonPublicId || undefined).data?.data?.branches ?? [];
-  const boardBranches = query.branchId
-    ? branches.filter((b) => b.branchId === query.branchId)
-    : branches;
+  const branchPublicId =
+    query.branchPublicId ?? branches.find((b) => b.branchId === query.branchId)?.publicId;
+  const to = days[days.length - 1] ?? query.to;
 
-  const historyQuery = {
+  const params = {
     from: query.from,
-    to: query.to,
-    page: 1,
-    pageSize: 100,
+    to,
+    mine: query.mine || undefined,
+    staffPublicId: query.staffPublicId,
+    branchPublicId,
   };
-  const mine = useQuery({
-    queryKey: [MY_STAFF_APPOINTMENTS_QUERY_KEY, salonId, historyQuery],
-    queryFn: () => appointmentsService.getMyStaffAppointments(historyQuery),
-    enabled: enabled && !!query.mine,
+  const agenda = useQuery({
+    queryKey: [AGENDA_QUERY_KEY, salonId, params],
+    queryFn: () => appointmentsService.getAgenda(params),
+    enabled: !!salonId && (options?.enabled ?? true) && (query.branchId == null || !!branchPublicId),
   });
 
-  const listOptions = {
-    pageSize: 100,
-    branchId: query.branchId,
-    staffMemberId: query.staffMemberId,
+  const items = useMemo(
+    () => (agenda.data?.data?.days ?? []).flatMap((d) => d.items.map(agendaDtoToItem)),
+    [agenda.data]
+  );
+
+  return {
+    items,
+    isLoading: agenda.isLoading,
+    isError: agenda.isError,
+    /** Names come with the rows now; kept for callers that showed a placeholder. */
+    namesLoading: false,
+    days,
   };
-  const lists = useQueries({
-    queries: days.map((date) => ({
-      queryKey: [SALON_APPOINTMENTS_QUERY_KEY, salonId, date, listOptions],
-      queryFn: () =>
-        appointmentsService.getSalonAppointments({
-          salonId: salonId ?? undefined,
-          date,
-          ...listOptions,
-        }),
-      enabled: enabled && !query.mine,
-    })),
-  });
-
-  const boards = useQueries({
-    queries: days.flatMap((date) =>
-      boardBranches.map((branch) => ({
-        queryKey: [BRANCH_DAY_BOARD_QUERY_KEY, branch.publicId, date],
-        queryFn: () => appointmentsService.getBranchDayBoard(branch.publicId, date),
-        enabled: enabled && !query.mine && !!branch.publicId,
-      }))
-    ),
-  });
-
-  const items = useMemo<IAgendaItem[]>(() => {
-    if (query.mine) {
-      const rows = mine.data?.data?.items ?? [];
-      const branchName = query.branchId
-        ? branches.find((b) => b.branchId === query.branchId)?.name
-        : undefined;
-      return rows
-        .map(historyToAgendaItem)
-        .filter((x) => !branchName || x.branchName === branchName)
-        .sort(byStart);
-    }
-
-    const names = new Map<number, string>();
-    for (const board of boards) {
-      for (const group of board.data?.data ?? []) {
-        for (const row of group.items) {
-          if (row.customerName) names.set(row.appointmentId, row.customerName);
-        }
-      }
-    }
-    const seen = new Set<number>();
-    const out: IAgendaItem[] = [];
-    for (const list of lists) {
-      for (const row of list.data?.data?.items ?? []) {
-        if (seen.has(row.numericId)) continue;
-        seen.add(row.numericId);
-        out.push(fromSalonList(row, names.get(row.numericId) ?? null));
-      }
-    }
-    return out.sort(byStart);
-  }, [query.mine, query.branchId, mine.data, lists, boards, branches]);
-
-  const isLoading = query.mine ? mine.isLoading : lists.some((q) => q.isLoading);
-  const isError = query.mine ? mine.isError : lists.some((q) => q.isError);
-  // Names arrive a moment after the list; the row shows a placeholder meanwhile.
-  const namesLoading = !query.mine && boards.some((q) => q.isLoading);
-
-  return { items, isLoading, isError, namesLoading, days };
 }
