@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, ArrowRightIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { UploadFile } from "@/shared/components/composites/upload-file";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import { MediaUsageType } from "@/services/common/enums/domain-enums";
@@ -72,6 +72,8 @@ interface MediaSectionProps {
   onBannerChange: (banner: MediaSlotState) => void;
   onLogoChange: (logo: MediaSlotState) => void;
   onGalleryChange: (gallery: GalleryMediaItem[]) => void;
+  /** Saves a new gallery order (every gallery publicId once); arrows are shown only when given. */
+  onGalleryReorder?: (publicIds: string[]) => Promise<void>;
 }
 
 export default function MediaSection({
@@ -84,7 +86,30 @@ export default function MediaSection({
   onBannerChange,
   onLogoChange,
   onGalleryChange,
+  onGalleryReorder,
 }: MediaSectionProps) {
+  const [reordering, setReordering] = React.useState(false);
+  // Swap with a neighbour; on failure the previous order comes back.
+  const moveGalleryItem = async (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (!onGalleryReorder || reordering || target < 0 || target >= gallery.length) return;
+    const next = [...gallery];
+    [next[index], next[target]] = [next[target], next[index]];
+    const ids = next.map((g) => g.publicId).filter((id): id is string => !!id);
+    if (ids.length !== next.length) return;
+    const previous = gallery;
+    onGalleryChange(next);
+    setReordering(true);
+    setGalleryError(null);
+    try {
+      await onGalleryReorder(ids);
+    } catch (err) {
+      onGalleryChange(previous);
+      setGalleryError(getApiErrorMessage(err, "تغییر ترتیب ناموفق بود."));
+    } finally {
+      setReordering(false);
+    }
+  };
   const uploadMedia = useMutateUploadSalonMedia();
   const deleteMedia = useMutateDeleteSalonMedia();
   const [galleryError, setGalleryError] = React.useState<string | null>(null);
@@ -238,7 +263,7 @@ export default function MediaSection({
           <p className="text-xs font-semibold text-foreground">گالری</p>
           {gallery.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
-              {gallery.map((item) => {
+              {gallery.map((item, index) => {
                 const src = salonImageSrc(item.previewUrl || item.url, "");
                 const isDeleting = deletingGalleryKey === item.clientKey;
                 return (
@@ -267,6 +292,29 @@ export default function MediaSection({
                     >
                       <TrashIcon size={14} className="text-error" />
                     </button>
+                    {onGalleryReorder && gallery.length > 1 ? (
+                      <div className="absolute inset-x-1 bottom-1 flex justify-between">
+                        {/* RTL: the first picture sits on the right, so «قبل» points right. */}
+                        <button
+                          type="button"
+                          disabled={reordering || index === 0}
+                          onClick={() => void moveGalleryItem(index, -1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 disabled:opacity-0"
+                          aria-label="جابه‌جایی به قبل"
+                        >
+                          <ArrowRightIcon size={14} className="text-foreground" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reordering || index === gallery.length - 1}
+                          onClick={() => void moveGalleryItem(index, 1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 disabled:opacity-0"
+                          aria-label="جابه‌جایی به بعد"
+                        >
+                          <ArrowLeftIcon size={14} className="text-foreground" />
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
@@ -282,7 +330,7 @@ export default function MediaSection({
               title="افزودن به گالری"
               buttonText="انتخاب تصویر"
               accept="image/*"
-              hint={`حداکثر ${GALLERY_LIMIT} تصویر، به ترتیب افزودن نمایش داده می‌شوند.`}
+              hint={onGalleryReorder ? `حداکثر ${GALLERY_LIMIT} تصویر؛ ترتیب را با فلش‌های روی هر عکس عوض کنید.` : `حداکثر ${GALLERY_LIMIT} تصویر، به ترتیب افزودن نمایش داده می‌شوند.`}
               onUpload={async (file) => {
                 assertImageUpload(file);
                 try {

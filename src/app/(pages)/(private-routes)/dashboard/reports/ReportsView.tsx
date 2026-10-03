@@ -11,6 +11,7 @@ import {
   useQueryCustomersSummary,
   useQueryCustomersTop,
   useQueryDashboardSummary,
+  useQueryReportOverview,
   useQueryFillRate,
   useQueryOutstanding,
   useQueryPeakHours,
@@ -186,6 +187,7 @@ export default function ReportsView() {
   const on = (t: Topic) => (topic === t ? params : undefined);
 
   const summary = useQueryDashboardSummary(params);
+  const overview = useQueryReportOverview(params);
   const byMethod = useQueryRevenueByMethod(on("money"));
   const byBranch = useQueryRevenueByBranch(branches.length > 1 ? on("money") : undefined);
   const outstanding = useQueryOutstanding(on("money"));
@@ -200,10 +202,14 @@ export default function ReportsView() {
   const exportMut = useMutateExportReport();
 
   const s = summary.data?.data;
+  const o = overview.data?.data;
+  // The overview endpoint compares with the previous period; the summary stays the fallback.
+  const kpi = (k: { value: number; changePercent: number } | undefined, fallback: ReturnType<typeof pickMetric>) =>
+    k ? { value: k.value, percentChange: k.changePercent } : fallback;
   const headline = [
-    { label: "درآمد", m: pickMetric(s, "collected", "financial"), fmt: (v: number | null) => `${formatMoneyOrDash(v)}` },
-    { label: "نوبت انجام‌شده", m: pickMetric(s, "completedCount", "operational"), fmt: n },
-    { label: "مشتری جدید", m: pickMetric(s, "newCustomers", "customers"), fmt: n },
+    { label: "درآمد", m: kpi(o?.revenue, pickMetric(s, "collected", "financial")), fmt: (v: number | null) => `${formatMoneyOrDash(v)}` },
+    { label: "نوبت انجام‌شده", m: kpi(o?.completedAppointments, pickMetric(s, "completedCount", "operational")), fmt: n },
+    { label: "مشتری جدید", m: kpi(o?.newCustomers, pickMetric(s, "newCustomers", "customers")), fmt: n },
     { label: "مراجعه‌نکرده", m: pickMetric(s, "noShowRate", "operational"), fmt: (v: number | null) => formatRate(v), invert: true },
   ];
   const sparkline = Array.isArray(s?.sparkline) ? s.sparkline : [];

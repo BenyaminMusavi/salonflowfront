@@ -5,6 +5,7 @@ import {
   IRefundPaymentRequest,
   TPaymentResultEntity,
   TPaymentsEntity,
+  TReceivedPaymentsEntity,
 } from "./types/payments.type";
 
 class PaymentsService {
@@ -20,6 +21,13 @@ class PaymentsService {
       API_ADDRESS.PAYMENTS.REFUND,
       body
     );
+  }
+
+  /** Payments received `from`…`to` (Tehran days, ≤ 90 days), newest first. */
+  async list(params: { from: string; to: string; method?: number; page?: number; pageSize?: number }) {
+    return await axiosInstance.get<unknown, TReceivedPaymentsEntity>(API_ADDRESS.PAYMENTS.BASE, {
+      params: { from: params.from, to: params.to, method: params.method, page: params.page ?? 1, pageSize: params.pageSize ?? 20 },
+    });
   }
 
   async getByInvoice(invoiceId: number) {

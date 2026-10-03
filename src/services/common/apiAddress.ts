@@ -83,6 +83,15 @@ export const API_ADDRESS = {
       `/api/catalog/offerings/${offeringId}/staff/${staffMemberId}`,
   },
 
+  /** The active panel salon (resolved from `X-Salon-Id`). */
+  SALON_PANEL: {
+    PROFILE: "/api/salon/profile",
+    BRANCHES: "/api/salon/branches",
+    BRANCH: (publicId: string) => `/api/salon/branches/${publicId}`,
+    BRANCH_REMOVAL_IMPACT: (publicId: string) => `/api/salon/branches/${publicId}/removal-impact`,
+    GALLERY_ORDER: "/api/salon/media/gallery/order",
+  },
+
   /** Panel staff management (owner) + "who am I" and team schedule. */
   STAFF: {
     BASE: "/api/staff",
@@ -227,6 +236,8 @@ export const API_ADDRESS = {
   REPORTS: {
     Z_REPORT: "/api/reports/z-report",
     DASHBOARD_SUMMARY: "/api/reports/dashboard-summary",
+    /** Headline numbers with the previous period and % change. */
+    OVERVIEW: "/api/reports/overview",
     REVENUE_BY_METHOD: "/api/reports/revenue-by-method",
     REVENUE_BY_SERVICE: "/api/reports/revenue-by-service",
     REVENUE_BY_BRANCH: "/api/reports/revenue-by-branch",
@@ -254,6 +265,12 @@ export const API_ADDRESS = {
     BY_STAFF: (staffMemberId: number) => `/api/payouts/by-staff/${staffMemberId}`,
     APPROVE: (id: number) => `/api/payouts/${id}/approve`,
     MARK_PAID: (id: number) => `/api/payouts/${id}/mark-paid`,
+    /** Every staff member's earned / share / ready-to-pay for a period (owner). */
+    OVERVIEW: "/api/payouts/overview",
+    /** Amount a payout for one person and period would make; send its periodStart/End to POST. */
+    PREVIEW: "/api/payouts/preview",
+    /** The caller's own earnings and payouts (staff). */
+    MY_EARNINGS: "/api/staff/me/earnings",
   },
 
   COMMISSION: {
@@ -268,6 +285,7 @@ export const API_ADDRESS = {
     BASE: "/api/notifications",
     READ: (id: number) => `/api/notifications/${id}/read`,
     READ_ALL: "/api/notifications/read-all",
+    UNREAD_COUNT: "/api/notifications/unread-count",
   },
 
   MEDIA: {

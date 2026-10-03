@@ -17,8 +17,10 @@ import {
   PAYOUTS_BY_STAFF_QUERY_KEY,
   useMutatePayouts,
   useQueryEarnings,
+  useQueryPayoutOverview,
+  useQueryPayoutPreview,
 } from "@/services/domains/payouts/hooks";
-import type { IPayout } from "@/services/domains/payouts/types/payouts.type";
+import type { IPayout, IPayoutOverviewRow } from "@/services/domains/payouts/types/payouts.type";
 import { PaymentMethod } from "@/services/common/enums/domain-enums";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
@@ -26,6 +28,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { formatSalonDate, salonTodayYmd } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
 import {
   DashboardDateField,
   DashboardPage,
@@ -35,8 +38,8 @@ import {
   type DashboardToastState,
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
-import { periodRange } from "../_components/periods";
-import { useSalonStaff, type ISalonStaffMember } from "../_staff/useSalonStaff";
+import { PERIOD_LABEL, periodRange } from "../_components/periods";
+import { useSalonStaff } from "../_staff/useSalonStaff";
 import { CommissionPlans } from "./CommissionPlans";
 
 const EARNING = { Pending: 1, Approved: 2, Paid: 3 };
@@ -55,6 +58,12 @@ const chip = (active: boolean) =>
 
 const shortDate = (d?: string) => (d ? formatSalonDate(d, { day: "numeric", month: "long" }) : "");
 
+const periodChip = (active: boolean) =>
+  cn(
+    "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+    active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
+  );
+
 /**
  * «تسویه پرسنل» — per person: what they earned and still need approving, what is ready to
  * pay; payouts move draft → approved → paid. Commission plans decide the share.
@@ -62,19 +71,27 @@ const shortDate = (d?: string) => (d ? formatSalonDate(d, { day: "numeric", mont
 export default function PayoutsView() {
   const salonId = useSalonContextStore((s) => s.salonId);
   const { members } = useSalonStaff();
-  const people = members.filter((m) => m.staffMemberId != null);
-  const earningsQuery = useQueryEarnings({ pageSize: 100 });
-  const earnings = earningsQuery.data?.data?.items ?? [];
+  const [period, setPeriod] = useState<"month" | "lastMonth">("month");
+  const periodDates = periodRange(period);
+  const overview = useQueryPayoutOverview(periodDates);
+  const rowsAll = useMemo(() => overview.data?.data ?? [], [overview.data]);
+  // Only waiting earnings are listed one by one — «تأیید همه» needs their ids.
+  const pendingQuery = useQueryEarnings({ status: EARNING.Pending, pageSize: 100 });
+  const pendingEarnings = useMemo(() => pendingQuery.data?.data?.items ?? [], [pendingQuery.data]);
   const mutate = useMutatePayouts();
   const [toast, setToast] = useState<DashboardToastState>(null);
-  const [payoutFor, setPayoutFor] = useState<ISalonStaffMember | null>(null);
+  const [payoutFor, setPayoutFor] = useState<IPayoutOverviewRow | null>(null);
   const [range, setRange] = useState(() => periodRange("month"));
+  const preview = useQueryPayoutPreview(
+    payoutFor ? { staffPublicId: payoutFor.staff.publicId, from: range.from, to: range.to } : null
+  );
+  const previewData = preview.data?.data;
   const [markPaid, setMarkPaid] = useState<IPayout | null>(null);
   const [method, setMethod] = useState<number>(PaymentMethod.Transfer);
   const [approving, setApproving] = useState<number | null>(null);
 
   const payoutQueries = useQueries({
-    queries: people.map((m) => ({
+    queries: rowsAll.map((r) => r.staff).map((m) => ({
       queryKey: [PAYOUTS_BY_STAFF_QUERY_KEY, salonId, m.staffMemberId],
       queryFn: () => payoutsService.getPayoutsByStaff(m.staffMemberId!),
       enabled: !!salonId,
@@ -86,20 +103,15 @@ export default function PayoutsView() {
 
   const byPerson = useMemo(
     () =>
-      people.map((m) => {
-        const mine = earnings.filter((e) => e.staffMemberId === m.staffMemberId);
-        const sum = (status: number) =>
-          mine.filter((e) => e.status === status).reduce((s, e) => s + (e.commissionAmount || 0), 0);
-        return {
-          member: m,
-          pending: mine.filter((e) => e.status === EARNING.Pending),
-          pendingAmount: sum(EARNING.Pending),
-          readyAmount: sum(EARNING.Approved),
-        };
-      }),
-    [people, earnings]
+      rowsAll.map((row) => ({
+        row,
+        name: row.staff.fullName?.trim() || "پرسنل",
+        pending: pendingEarnings.filter((e) => e.staffMemberId === row.staff.staffMemberId),
+      })),
+    [rowsAll, pendingEarnings]
   );
-  const nameOf = (id: number) => people.find((p) => p.staffMemberId === id)?.name ?? "پرسنل";
+  const nameOf = (id: number) =>
+    rowsAll.find((r) => r.staff.staffMemberId === id)?.staff.fullName?.trim() || "پرسنل";
 
   const approveAll = async (staffMemberId: number, ids: number[]) => {
     setApproving(staffMemberId);
@@ -114,15 +126,17 @@ export default function PayoutsView() {
   };
 
   const createPayout = async () => {
-    if (!payoutFor?.staffMemberId || range.from > range.to) return;
+    if (!payoutFor || !previewData?.amount) return;
     try {
+      // The preview's own bounds make the payout group exactly the earnings it showed.
       await mutate.createPayout.mutateAsync({
-        staffMemberId: payoutFor.staffMemberId,
-        periodStart: range.from,
-        periodEnd: range.to,
+        staffMemberId: payoutFor.staff.staffMemberId,
+        periodStart: previewData.periodStart,
+        periodEnd: previewData.periodEnd,
+        approve: true,
       });
       setPayoutFor(null);
-      setToast({ type: "success", message: "تسویه ثبت شد. بعد از بررسی، آن را تأیید کنید." });
+      setToast({ type: "success", message: "تسویه ثبت و تأیید شد. بعد از پرداخت، «پرداخت شد» را بزنید." });
     } catch (err) {
       setToast({ type: "error", message: getApiErrorMessage(err, "ثبت تسویه ناموفق بود.") });
     }
@@ -144,23 +158,36 @@ export default function PayoutsView() {
       <DashboardPageHeader title="تسویه پرسنل" backHref={RouteAddress.DASHBOARD.FINANCE} />
 
       <section className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold text-foreground-muted">سهم پرسنل</h2>
-        {earningsQuery.isLoading ? (
+        <div className="flex items-center justify-between gap-2 px-1">
+          <h2 className="text-xs font-semibold text-foreground-muted">سهم پرسنل</h2>
+          <div className="flex gap-2">
+            {(["month", "lastMonth"] as const).map((p) => (
+              <button key={p} type="button" className={periodChip(period === p)} onClick={() => setPeriod(p)}>
+                {PERIOD_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+        {overview.isLoading ? (
           <DashboardSkeleton cards={1} rows={3} />
-        ) : people.length === 0 ? (
+        ) : overview.isError ? (
+          <p className="text-sm text-error">{getApiErrorMessage(overview.error, "دریافت سهم پرسنل ناموفق بود.")}</p>
+        ) : rowsAll.length === 0 ? (
           <p className="rounded-[16px] bg-background-secondary px-4 py-4 text-sm text-foreground-muted">پرسنل فعالی نیست.</p>
         ) : (
           <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
-            {byPerson.map(({ member, pending, pendingAmount, readyAmount }) => (
-              <div key={member.publicId} className="flex flex-col gap-2 px-4 py-3">
+            {byPerson.map(({ row, name, pending }) => (
+              <div key={row.staff.publicId} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="truncate text-sm font-semibold text-foreground">{member.name}</span>
+                  <span className="truncate text-sm font-semibold text-foreground">{name}</span>
                   <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                    {formatToman(readyAmount)} تومان
+                    {formatToman(row.readyAmount)} تومان
                   </span>
                 </div>
-                <p className="text-xs text-foreground-muted">
-                  آماده‌ی تسویه{pendingAmount ? ` · ${formatToman(pendingAmount)} تومان منتظر تأیید (${pending.length} خدمت)` : ""}
+                <p className="text-xs leading-5 text-foreground-muted">
+                  آماده‌ی تسویه · سهم {PERIOD_LABEL[period]} {formatToman(row.staffShare)} تومان از {formatToman(row.earned)} تومان کار
+                  {row.pendingCount ? ` · ${row.pendingCount.toLocaleString(APP_LOCALE)} خدمت منتظر تأیید` : ""}
+                  {row.lastPayoutAt ? ` · آخرین تسویه ${shortDate(row.lastPayoutAt)}` : ""}
                 </p>
                 <div className="flex gap-2">
                   {pending.length ? (
@@ -169,8 +196,8 @@ export default function PayoutsView() {
                       size="sm"
                       variant="outline"
                       className={cn(dashboardQuietButtonClass, "rounded-[12px]")}
-                      isLoading={approving === member.staffMemberId}
-                      onClick={() => void approveAll(member.staffMemberId!, pending.map((e) => e.id))}
+                      isLoading={approving === row.staff.staffMemberId}
+                      onClick={() => void approveAll(row.staff.staffMemberId, pending.map((e) => e.id))}
                     >
                       تأیید همه
                     </Button>
@@ -179,9 +206,10 @@ export default function PayoutsView() {
                     type="button"
                     size="sm"
                     className="rounded-[12px]"
+                    disabled={!row.readyAmount}
                     onClick={() => {
-                      setRange(periodRange("month"));
-                      setPayoutFor(member);
+                      setRange(periodDates);
+                      setPayoutFor(row);
                     }}
                   >
                     ثبت تسویه
@@ -241,16 +269,36 @@ export default function PayoutsView() {
       <BottomSheet open={!!payoutFor} onClose={() => setPayoutFor(null)}>
         {payoutFor ? (
           <div className="flex flex-col gap-4">
-            <h3 className="text-base font-bold text-foreground">تسویه با {payoutFor.name}</h3>
+            <h3 className="text-base font-bold text-foreground">تسویه با {payoutFor.staff.fullName?.trim() || "پرسنل"}</h3>
             <p className="text-xs leading-5 text-foreground-muted">
-              سهم‌های تأییدشده‌ی این بازه در یک تسویه جمع می‌شوند.
+              سهم‌های تأییدشده‌ی این بازه در یک تسویه جمع و همان‌جا تأیید می‌شوند.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <DashboardDateField name="payout-from" label="از" value={range.from} onChange={(from) => from && setRange((r) => ({ ...r, from }))} />
               <DashboardDateField name="payout-to" label="تا" value={range.to} onChange={(to) => to && setRange((r) => ({ ...r, to: to > salonTodayYmd() ? salonTodayYmd() : to }))} />
             </div>
-            <Button type="button" className="w-full rounded-[12px]" disabled={range.from > range.to} isLoading={mutate.createPayout.isPending} onClick={() => void createPayout()}>
-              ثبت تسویه
+            <div className="rounded-[12px] bg-background-secondary px-4 py-3 text-sm">
+              {range.from > range.to ? (
+                <span className="text-error">تاریخ پایان باید بعد از شروع باشد.</span>
+              ) : preview.isLoading ? (
+                <span className="text-foreground-muted">در حال محاسبه…</span>
+              ) : previewData?.amount ? (
+                <span className="text-foreground">
+                  <span className="font-bold tabular-nums">{formatToman(previewData.amount)} تومان</span>
+                  <span className="text-foreground-muted"> · {previewData.count.toLocaleString(APP_LOCALE)} خدمت</span>
+                </span>
+              ) : (
+                <span className="text-foreground-muted">در این بازه سهم تأییدشده‌ی تسویه‌نشده‌ای نیست.</span>
+              )}
+            </div>
+            <Button
+              type="button"
+              className="w-full rounded-[12px]"
+              disabled={!previewData?.amount || range.from > range.to}
+              isLoading={mutate.createPayout.isPending}
+              onClick={() => void createPayout()}
+            >
+              {previewData?.amount ? `ثبت و تأیید ${formatToman(previewData.amount)} تومان` : "ثبت تسویه"}
             </Button>
           </div>
         ) : null}

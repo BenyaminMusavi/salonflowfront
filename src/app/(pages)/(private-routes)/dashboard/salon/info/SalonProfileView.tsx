@@ -5,7 +5,9 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
-import { useMutateSalonBasicInfo } from "@/services/domains/salons/hooks/useMutateSalonBasicInfo";
+import { useMutateSalonPanel, useQuerySalonProfile } from "@/services/domains/salon-panel/hooks";
+import type { IPatchSalonProfileRequest } from "@/services/domains/salon-panel/types/salon-panel.type";
+import { SalonApprovalStatus } from "@/services/common/enums/domain-enums";
 import {
   getApiErrorMessage,
   getApiFieldErrorMessage,
@@ -40,7 +42,8 @@ export default function SalonProfileView() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salonQuery = useQuerySalonById(salonPublicId || undefined);
   const salon = salonQuery.data?.data;
-  const save = useMutateSalonBasicInfo();
+  const profile = useQuerySalonProfile().data?.data;
+  const { patchProfile: save } = useMutateSalonPanel();
   const draftSalonPublicId = useOnboardingDraftStore((s) => s.salonPublicId);
   const draftSubmitted = useOnboardingDraftStore((s) => s.submitted);
   const draftStep = useOnboardingDraftStore((s) => s.step);
@@ -87,16 +90,29 @@ export default function SalonProfileView() {
       whatsappNumber: form.contact.whatsappNumber.trim(),
       websiteUrl: form.contact.websiteUrl.trim(),
     };
+    // PATCH sends only what changed ("" clears an optional field).
+    const before = baseline.current;
+    const next: Required<IPatchSalonProfileRequest> = {
+      name,
+      username,
+      description: form.basic.description.trim(),
+      ...contact,
+    };
+    const prev: Required<IPatchSalonProfileRequest> = {
+      name: before?.basic.name.trim() ?? "",
+      username: before?.basic.username.trim() ?? "",
+      description: before?.basic.description.trim() ?? "",
+      instagramHandle: before?.contact.instagramHandle.trim() ?? "",
+      whatsappNumber: before?.contact.whatsappNumber.trim() ?? "",
+      websiteUrl: before?.contact.websiteUrl.trim() ?? "",
+    };
+    const body = Object.fromEntries(
+      (Object.keys(next) as (keyof IPatchSalonProfileRequest)[])
+        .filter((k) => next[k] !== prev[k])
+        .map((k) => [k, next[k]])
+    ) as IPatchSalonProfileRequest;
     try {
-      await save.mutateAsync({
-        publicId: salonPublicId,
-        name,
-        username,
-        description: form.basic.description.trim() || null,
-        instagramHandle: contact.instagramHandle || null,
-        whatsappNumber: contact.whatsappNumber || null,
-        websiteUrl: contact.websiteUrl || null,
-      });
+      if (Object.keys(body).length) await save.mutateAsync(body);
       setDraftBasicInfo({ name, username, description: form.basic.description.trim(), ...contact });
       // Keep the panel header in sync with a renamed salon.
       useSalonContextStore.setState({ salonName: name });
@@ -161,7 +177,13 @@ export default function SalonProfileView() {
                 (submitted && !form.basic.username.trim() ? "آدرس اختصاصی سالن الزامی است." : undefined)
               }
               // Backend rule: after approval at most 2 changes; an old address stops working.
-              usernameNote="بعد از تأیید سالن فقط 2 بار می‌توانید آدرس را تغییر دهید. با تغییر آدرس، لینک قبلی دیگر کار نمی‌کند."
+              usernameNote={
+                profile && Number(profile.approvalStatus) === SalonApprovalStatus.Approved
+                  ? profile.usernameChangesLeft > 0
+                    ? `${profile.usernameChangesLeft === 1 ? "فقط 1 بار دیگر" : `${profile.usernameChangesLeft} بار دیگر`} می‌توانید آدرس را تغییر دهید. با تغییر آدرس، لینک قبلی دیگر کار نمی‌کند.`
+                    : "دیگر نمی‌توانید آدرس را تغییر دهید (حداکثر 2 بار بعد از تأیید)."
+                  : "بعد از تأیید سالن فقط 2 بار می‌توانید آدرس را تغییر دهید. با تغییر آدرس، لینک قبلی دیگر کار نمی‌کند."
+              }
             />
           </section>
           <section className="flex flex-col gap-3 rounded-[16px] bg-background-secondary p-4">

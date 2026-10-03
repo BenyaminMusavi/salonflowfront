@@ -67,6 +67,26 @@ export interface IDashboardSummary {
 
 export type TDashboardSummaryEntity = TResponse<IDashboardSummary>;
 
+export interface IOverviewKpi {
+  value: number;
+  previous: number;
+  changePercent: number;
+}
+
+/** GET /api/reports/overview — four headline numbers against the previous period of the same length. */
+export interface IReportOverview {
+  from: string;
+  to: string;
+  previousFrom: string;
+  previousTo: string;
+  revenue: IOverviewKpi;
+  completedAppointments: IOverviewKpi;
+  newCustomers: IOverviewKpi;
+  averageTicket: IOverviewKpi;
+}
+
+export type TReportOverviewEntity = TResponse<IReportOverview>;
+
 export interface IRevenueByMethodRow {
   paymentMethod?: number;
   paymentType?: number;

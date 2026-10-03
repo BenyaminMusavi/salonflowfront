@@ -16,6 +16,7 @@ import {
   ITopCustomerRow,
   TDashboardExportReport,
   TDashboardSummaryEntity,
+  TReportOverviewEntity,
   TReportListEntity,
   TZReportEntity,
 } from "./types/reports.type";
@@ -34,6 +35,10 @@ class ReportsService {
       API_ADDRESS.REPORTS.DASHBOARD_SUMMARY,
       { params }
     );
+  }
+
+  async getOverview(params: IReportRangeParams) {
+    return await axiosInstance.get<unknown, TReportOverviewEntity>(API_ADDRESS.REPORTS.OVERVIEW, { params });
   }
 
   async getRevenueByMethod(params: IReportRangeParams) {

@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { CaretLeftIcon, ChartLineIcon, HandCoinsIcon } from "@phosphor-icons/react";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { useQueryInvoices } from "@/services/domains/invoices/hooks";
+import { useQueryReceivedPayments } from "@/services/domains/payments/hooks";
+import { PaymentStatus } from "@/services/common/enums/domain-enums";
 import type { IInvoice } from "@/services/domains/invoices/types/invoices.type";
 import { useQueryRevenueByMethod, useQueryZReport, useQueryDashboardSummary } from "@/services/domains/reports/hooks";
 import { paymentMethodLabel } from "@/services/domains/reports/utils/report-display";
@@ -11,7 +13,8 @@ import { asNumber, asReportRows } from "@/services/domains/reports/utils/report-
 import type { IRevenueByMethodRow } from "@/services/domains/reports/types/reports.type";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { formatToman } from "@/shared/utils/salonDisplay";
-import { formatSalonDate } from "@/shared/utils/salonTime";
+import { formatSalonDate, formatSalonDateTime, utcToSalonTime } from "@/shared/utils/salonTime";
+import { APP_LOCALE } from "@/shared/utils/locale";
 import { cn } from "@/shared/utils/className";
 import {
   DashboardPage,
@@ -25,6 +28,7 @@ import { PERIOD_LABEL, periodRange, type PeriodId } from "../_components/periods
 import { PaymentStep } from "../_agenda/PaymentStep";
 
 const PERIODS: PeriodId[] = ["today", "yesterday", "week", "month"];
+const PAYMENTS_STEP = 10;
 const UNPAID_STATUSES = [2, 3]; // Issued, PartiallyPaid
 
 const chip = (active: boolean) =>
@@ -54,6 +58,9 @@ export default function FinanceView() {
   const [toast, setToast] = useState<DashboardToastState>(null);
   const range = periodRange(period);
   const singleDay = range.from === range.to;
+  const [paymentsShown, setPaymentsShown] = useState(PAYMENTS_STEP);
+  const received = useQueryReceivedPayments({ from: range.from, to: range.to, pageSize: paymentsShown });
+  const receivedResult = received.data?.data;
 
   const zReport = useQueryZReport(singleDay ? range.from : undefined);
   const summary = useQueryDashboardSummary(singleDay ? undefined : range);
@@ -100,7 +107,15 @@ export default function FinanceView() {
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
         {PERIODS.map((p) => (
-          <button key={p} type="button" className={chip(period === p)} onClick={() => setPeriod(p)}>
+          <button
+            key={p}
+            type="button"
+            className={chip(period === p)}
+            onClick={() => {
+              setPeriod(p);
+              setPaymentsShown(PAYMENTS_STEP);
+            }}
+          >
             {PERIOD_LABEL[p]}
           </button>
         ))}
@@ -133,6 +148,47 @@ export default function FinanceView() {
 
       <section className="flex flex-col gap-2">
         <h2 className="px-1 text-xs font-semibold text-foreground-muted">
+          دریافت‌ها {receivedResult?.totalCount ? `· ${receivedResult.totalCount.toLocaleString(APP_LOCALE)} مورد` : ""}
+        </h2>
+        {received.isLoading ? (
+          <DashboardSkeleton cards={1} rows={3} />
+        ) : !receivedResult?.items?.length ? (
+          <p className="rounded-[16px] bg-background-secondary px-4 py-4 text-sm text-foreground-muted">
+            در این بازه پرداختی ثبت نشده.
+          </p>
+        ) : (
+          <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
+            {receivedResult.items.map((p) => (
+              <div key={p.publicId ?? p.id} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">{p.customerName || "مشتری"}</span>
+                  <span className="block truncate text-xs text-foreground-muted">
+                    {paymentMethodLabel(p.method)} ·{" "}
+                    {singleDay ? utcToSalonTime(p.at).slice(0, 5) : formatSalonDateTime(p.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {p.status === PaymentStatus.Refunded || p.refundedAmount > 0
+                      ? ` · ${formatToman(p.refundedAmount)} برگشت داده شد`
+                      : ""}
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">{formatToman(p.amount)}</span>
+              </div>
+            ))}
+            {receivedResult.hasNext && paymentsShown < 100 ? (
+              <button
+                type="button"
+                disabled={received.isFetching}
+                onClick={() => setPaymentsShown((n) => Math.min(100, n + PAYMENTS_STEP * 2))}
+                className="px-4 py-2.5 text-center text-xs font-semibold text-primary disabled:opacity-50"
+              >
+                بیشتر
+              </button>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="px-1 text-xs font-semibold text-foreground-muted">
           پرداخت‌نشده {unpaid.length ? `· ${unpaid.length} مورد · ${formatToman(unpaidTotal)} تومان` : ""}
         </h2>
         {issued.isLoading || partial.isLoading ? (
@@ -151,12 +207,15 @@ export default function FinanceView() {
                 className="flex items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-surface-hover"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold tabular-nums text-foreground">
-                    {formatToman(inv.outstandingAmount)} تومان مانده
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {inv.customerName || "مشتری"} · <span className="tabular-nums">{formatToman(inv.outstandingAmount)} تومان مانده</span>
                   </span>
                   <span className="block truncate text-xs text-foreground-muted">
-                    {inv.issuedAt ? formatSalonDate(inv.issuedAt, { weekday: "long", day: "numeric", month: "long" }) : ""}
-                    {inv.invoiceNumber ? ` · فاکتور ${inv.invoiceNumber}` : ""}
+                    {inv.appointmentStartTime
+                      ? `نوبت ${formatSalonDateTime(inv.appointmentStartTime, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`
+                      : inv.issuedAt
+                        ? formatSalonDate(inv.issuedAt, { weekday: "long", day: "numeric", month: "long" })
+                        : ""}
                   </span>
                 </span>
                 <span className="shrink-0 text-xs font-semibold text-primary">دریافت</span>
@@ -178,7 +237,7 @@ export default function FinanceView() {
             appointmentId={paying.appointmentId ?? null}
             invoice={paying}
             fallbackAmount={paying.outstandingAmount ?? 0}
-            title={paying.invoiceNumber ? `فاکتور ${paying.invoiceNumber}` : "نوبت انجام‌شده"}
+            title={paying.customerName || "نوبت انجام‌شده"}
             onDone={() => setPaying(null)}
             onToast={setToast}
           />

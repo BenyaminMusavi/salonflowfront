@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
+import { useMutateSalonPanel } from "@/services/domains/salon-panel/hooks";
 import { DashboardPage, DashboardPageHeader } from "../../_components";
 import SalonInfoSkeleton from "../../salon-info/components/SalonInfoSkeleton";
 import MediaSection, {
@@ -28,6 +29,7 @@ export default function SalonPhotosView() {
   const [banner, setBanner] = useState<MediaSlotState>(createEmptyMediaSlot);
   const [logo, setLogo] = useState<MediaSlotState>(createEmptyMediaSlot);
   const [gallery, setGallery] = useState<GalleryMediaItem[]>([]);
+  const { orderGallery } = useMutateSalonPanel();
 
   useEffect(() => {
     if (!salon || hydrated.current) return;
@@ -54,6 +56,9 @@ export default function SalonPhotosView() {
           onBannerChange={setBanner}
           onLogoChange={setLogo}
           onGalleryChange={setGallery}
+          onGalleryReorder={async (ids) => {
+            await orderGallery.mutateAsync(ids);
+          }}
         />
       )}
     </DashboardPage>

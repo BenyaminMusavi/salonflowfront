@@ -19,6 +19,16 @@ export const useQueryNotifications = (params?: {
   });
 };
 
+/** Bell badge — shares the list key so read / read-all refresh it; polled once a minute. */
+export const useQueryUnreadNotificationsCount = (enabled = true) =>
+  useQuery({
+    queryKey: [NOTIFICATIONS_QUERY_KEY, "unread-count"],
+    queryFn: () => notificationsService.unreadCount(),
+    enabled,
+    refetchInterval: 60_000,
+    select: (res) => res.data?.count ?? 0,
+  });
+
 export const useMutateNotifications = () => {
   const queryClient = useQueryClient();
   return {

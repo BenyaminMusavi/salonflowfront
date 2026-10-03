@@ -18,7 +18,9 @@ import {
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
-import { useMutateSalonBranches } from "@/services/domains/salons/hooks/useMutateSalonBranches";
+import { useMutateSalonPanel, useQueryBranchRemovalImpact } from "@/services/domains/salon-panel/hooks";
+import type { IBranchRequest } from "@/services/domains/salon-panel/types/salon-panel.type";
+import { APP_LOCALE } from "@/shared/utils/locale";
 import {
   GENDER_TYPE_OPTIONS,
   useOnboardingDraftStore,
@@ -60,6 +62,29 @@ function toApi(branches: BranchEditorValues[]): IOnboardingBranch[] {
   })) as IOnboardingBranch[];
 }
 
+function toBranchRequest(b: BranchEditorValues): IBranchRequest {
+  return {
+    name: b.name.trim(),
+    city: b.city.trim(),
+    address: b.address.trim(),
+    latitude: b.latitude,
+    longitude: b.longitude,
+    genderType: b.genderType,
+    phone: b.phone.trim() || null,
+    isActive: b.isActive,
+  };
+}
+
+/** Why a branch can't be removed — from the removal-impact check. */
+function removalBlockers(i: { isLastActiveBranch: boolean; futureAppointmentsCount: number; staffCount: number }): string[] {
+  const n = (x: number) => x.toLocaleString(APP_LOCALE);
+  return [
+    i.isLastActiveBranch ? "این تنها شعبه‌ی فعال سالن است." : null,
+    i.futureAppointmentsCount ? `${n(i.futureAppointmentsCount)} نوبت آینده دارد؛ اول آن‌ها را جابه‌جا یا لغو کنید.` : null,
+    i.staffCount ? `${n(i.staffCount)} نفر از پرسنل در این شعبه‌اند؛ اول آن‌ها را به شعبه‌ی دیگری ببرید.` : null,
+  ].filter((x): x is string => !!x);
+}
+
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5 text-xs font-semibold text-foreground-muted">
@@ -76,14 +101,19 @@ export default function SalonBranchesView() {
   const salon = useQuerySalonById(salonPublicId || undefined).data?.data;
   // Memoized: the mapper mints fresh client keys on every call.
   const branches = useMemo(() => (salon ? mapSalonToBranches(salon) : []), [salon]);
-  const save = useMutateSalonBranches();
+  const panel = useMutateSalonPanel();
   const setDraftBranches = useOnboardingDraftStore((s) => s.setBranches);
+  const draftSalonPublicId = useOnboardingDraftStore((s) => s.salonPublicId);
+  const saving = panel.createBranch.isPending || panel.patchBranch.isPending || panel.removeBranch.isPending;
 
   const [draft, setDraft] = useState<BranchEditorValues | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [coordsOpen, setCoordsOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [toast, setToast] = useState<DashboardToastState>(null);
+  const impactQuery = useQueryBranchRemovalImpact(removeOpen ? draft?.publicId ?? null : null);
+  const impact = impactQuery.data?.data;
+  const blockers = impact ? removalBlockers(impact) : [];
 
   const isNew = !!draft && !draft.publicId;
   const errors = draft && submitted
@@ -94,37 +124,42 @@ export default function SalonBranchesView() {
       }
     : {};
 
-  const persist = async (next: BranchEditorValues[], success: string) => {
-    if (!salonPublicId) return false;
-    try {
-      const res = await save.mutateAsync({ salonPublicId, branches: toApi(next) });
-      if (res.data?.length) setDraftBranches(res.data);
-      setToast({ type: "success", message: success });
-      return true;
-    } catch (err) {
-      setToast({ type: "error", message: getApiErrorMessage(err, "ذخیره‌ی شعبه ناموفق بود.") });
-      return false;
-    }
+  /** An unfinished onboarding draft of this salon keeps its own copy of the branches. */
+  const syncDraft = (next: BranchEditorValues[]) => {
+    if (salonPublicId && draftSalonPublicId === salonPublicId) setDraftBranches(toApi(next));
   };
 
+  // One branch per request: create / PATCH / guarded DELETE under api/salon/branches.
   const onSave = async () => {
     if (!draft) return;
     setSubmitted(true);
     if (!draft.name.trim() || !draft.city.trim() || !draft.address.trim()) return;
-    const next = isNew
-      ? [...branches, draft]
-      : branches.map((b) => (b.publicId === draft.publicId ? draft : b));
-    if (await persist(next, isNew ? "شعبه اضافه شد." : "شعبه ذخیره شد.")) setDraft(null);
+    try {
+      if (isNew) {
+        const res = await panel.createBranch.mutateAsync(toBranchRequest(draft));
+        syncDraft([...branches, { ...draft, publicId: res.data?.publicId ?? draft.publicId }]);
+      } else {
+        await panel.patchBranch.mutateAsync({ publicId: draft.publicId!, body: toBranchRequest(draft) });
+        syncDraft(branches.map((b) => (b.publicId === draft.publicId ? draft : b)));
+      }
+      setToast({ type: "success", message: isNew ? "شعبه اضافه شد." : "شعبه ذخیره شد." });
+      setDraft(null);
+    } catch (err) {
+      setToast({ type: "error", message: getApiErrorMessage(err, "ذخیره‌ی شعبه ناموفق بود.") });
+    }
   };
 
   const onRemove = async () => {
     if (!draft?.publicId) return;
-    const ok = await persist(
-      branches.filter((b) => b.publicId !== draft.publicId),
-      "شعبه حذف شد."
-    );
+    try {
+      await panel.removeBranch.mutateAsync(draft.publicId);
+      syncDraft(branches.filter((b) => b.publicId !== draft.publicId));
+      setToast({ type: "success", message: "شعبه حذف شد." });
+      setDraft(null);
+    } catch (err) {
+      setToast({ type: "error", message: getApiErrorMessage(err, "حذف شعبه ناموفق بود.") });
+    }
     setRemoveOpen(false);
-    if (ok) setDraft(null);
   };
 
   const open = (b: BranchEditorValues) => {
@@ -223,7 +258,7 @@ export default function SalonBranchesView() {
                 </Field>
               </div>
             ) : null}
-            <Button type="button" className="w-full rounded-[12px]" isLoading={save.isPending} onClick={() => void onSave()}>
+            <Button type="button" className="w-full rounded-[12px]" isLoading={saving} onClick={() => void onSave()}>
               {isNew ? "افزودن شعبه" : "ذخیره"}
             </Button>
             {!isNew && branches.length > 1 ? (
@@ -240,14 +275,36 @@ export default function SalonBranchesView() {
           <DialogHeader>
             <DialogTitle>حذف شعبه‌ی {draft?.name}؟</DialogTitle>
             <DialogDescription>
-              اگر فقط موقتاً تعطیل است، به‌جای حذف آن را غیرفعال کنید. پرسنلِ این شعبه را پیش از حذف به شعبه‌ی دیگری ببرید.
+              {impactQuery.isLoading
+                ? "در حال بررسی…"
+                : blockers.length
+                  ? "فعلاً نمی‌شود این شعبه را حذف کرد:"
+                  : "اگر فقط موقتاً تعطیل است، به‌جای حذف آن را غیرفعال کنید."}
             </DialogDescription>
+            {blockers.length ? (
+              <ul className="mt-2 flex list-disc flex-col gap-1 pr-5 text-sm text-foreground">
+                {blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            ) : impact?.branchOnlyServicesCount ? (
+              <p className="mt-2 text-sm text-warning">
+                {impact.branchOnlyServicesCount.toLocaleString(APP_LOCALE)} خدمت فقط مخصوص این شعبه است و دیگر رزرو نمی‌شود.
+              </p>
+            ) : null}
           </DialogHeader>
           <DialogFooter className="mt-2">
             <Button type="button" variant="outline" className={dashboardQuietButtonClass} onClick={() => setRemoveOpen(false)}>
               انصراف
             </Button>
-            <Button type="button" variant="ghost" className="text-error hover:bg-error-background" isLoading={save.isPending} onClick={() => void onRemove()}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-error hover:bg-error-background"
+              disabled={impactQuery.isLoading || (impact ? !impact.canRemove : false)}
+              isLoading={panel.removeBranch.isPending}
+              onClick={() => void onRemove()}
+            >
               حذف
             </Button>
           </DialogFooter>

@@ -32,6 +32,18 @@ export const useQueryPaymentsByInvoice = (invoiceId: number | undefined) => {
   });
 };
 
+/** Received payments of a period. Keyed under the reports key so every money mutation refreshes it. */
+export const useQueryReceivedPayments = (
+  params: { from: string; to: string; page?: number; pageSize?: number } | undefined
+) => {
+  const salonId = useSalonContextStore((s) => s.salonId);
+  return useQuery({
+    queryKey: [REPORTS_QUERY_KEY, "payments", salonId, params],
+    queryFn: () => paymentsService.list(params!),
+    enabled: !!salonId && !!params,
+  });
+};
+
 export const useMutatePayments = () => {
   const queryClient = useQueryClient();
   return {

@@ -19,6 +19,11 @@ export interface IInvoice {
   totalAmount?: number;
   outstandingAmount?: number;
   items?: IInvoiceItem[];
+  /** List rows only. */
+  publicId?: string;
+  customerName?: string | null;
+  appointmentPublicId?: string | null;
+  appointmentStartTime?: string | null;
 }
 
 export interface ICreateInvoiceItemRequest {

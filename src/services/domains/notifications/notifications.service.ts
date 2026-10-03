@@ -1,5 +1,6 @@
 import axiosInstance from "@/services/common/http/axios-instance";
 import { API_ADDRESS } from "@/services/common/apiAddress";
+import type { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import { TNotificationsEntity } from "./types/notifications.type";
 
 class NotificationsService {
@@ -18,6 +19,10 @@ class NotificationsService {
         },
       }
     );
+  }
+
+  async unreadCount() {
+    return await axiosInstance.get<unknown, TResponse<{ count: number }>>(API_ADDRESS.NOTIFICATIONS.UNREAD_COUNT);
   }
 
   async read(id: number) {

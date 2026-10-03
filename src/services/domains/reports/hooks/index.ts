@@ -33,6 +33,15 @@ export const useQueryDashboardSummary = (params: IReportRangeParams | undefined)
   });
 };
 
+export const useQueryReportOverview = (params: IReportRangeParams | undefined) => {
+  const salonId = useSalonContextStore((s) => s.salonId);
+  return useQuery({
+    queryKey: [REPORTS_QUERY_KEY, "overview", salonId, params],
+    queryFn: () => reportsService.getOverview(params!),
+    enabled: useRangeEnabled(params),
+  });
+};
+
 export const useQueryRevenueByMethod = (params: IReportRangeParams | undefined) => {
   const salonId = useSalonContextStore((s) => s.salonId);
   return useQuery({

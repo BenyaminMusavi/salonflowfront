@@ -3,6 +3,9 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import {
   ICreatePayoutRequest,
   TEarningsEntity,
+  TMyEarningsEntity,
+  TPayoutOverviewEntity,
+  TPayoutPreviewEntity,
   TPayoutEntity,
   TPayoutsEntity,
 } from "./types/payouts.type";
@@ -40,6 +43,20 @@ class PayoutsService {
     return await axiosInstance.get<unknown, TPayoutsEntity>(
       API_ADDRESS.PAYOUTS.BY_STAFF(staffMemberId)
     );
+  }
+
+  async getOverview(from: string, to: string) {
+    return await axiosInstance.get<unknown, TPayoutOverviewEntity>(API_ADDRESS.PAYOUTS.OVERVIEW, { params: { from, to } });
+  }
+
+  async preview(staffPublicId: string, from: string, to: string) {
+    return await axiosInstance.get<unknown, TPayoutPreviewEntity>(API_ADDRESS.PAYOUTS.PREVIEW, {
+      params: { staffPublicId, from, to },
+    });
+  }
+
+  async myEarnings(from: string, to: string) {
+    return await axiosInstance.get<unknown, TMyEarningsEntity>(API_ADDRESS.PAYOUTS.MY_EARNINGS, { params: { from, to } });
   }
 
   async approvePayout(id: number) {

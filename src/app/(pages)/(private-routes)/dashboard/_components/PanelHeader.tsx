@@ -39,6 +39,8 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import { salonRoleLabel } from "@/shared/utils/salonRoleLabel";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { useQueryUnreadNotificationsCount } from "@/services/domains/notifications/hooks";
 import { dashboardQuietButtonClass } from "./buttonClasses";
 
 const rowClass =
@@ -89,6 +91,7 @@ export function PanelHeader() {
   const memberships = useSalonContextStore((s) => s.memberships);
   const selectSalon = useSelectPanelSalon();
   const { data } = useQueryAuthMe();
+  const unread = useQueryUnreadNotificationsCount().data ?? 0;
   const me = data?.data;
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
@@ -151,10 +154,15 @@ export function PanelHeader() {
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href={RouteAddress.DASHBOARD.NOTIFICATIONS}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-hover"
-            aria-label="اعلان‌ها"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-hover"
+            aria-label={unread ? `اعلان‌ها، ${unread.toLocaleString(APP_LOCALE)} خوانده‌نشده` : "اعلان‌ها"}
           >
             <BellIcon size={19} className="text-foreground" />
+            {unread ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold leading-none text-primary-foreground">
+                {unread > 99 ? "99+" : unread.toLocaleString(APP_LOCALE)}
+              </span>
+            ) : null}
           </Link>
           <button
             type="button"
