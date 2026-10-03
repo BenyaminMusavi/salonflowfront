@@ -9,6 +9,8 @@ import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { hhmm } from "../_schedule/scheduleUtils";
 import {
   DashboardPage,
   DashboardPageHeader,
@@ -26,9 +28,21 @@ const chip = (active: boolean) =>
     active ? "bg-primary text-primary-foreground" : "bg-surface-hover text-foreground-muted"
   );
 
+/** «امروز 10:00 تا 14:00، 16:00 تا 20:00 · 3 نوبت» / «امروز تعطیل». */
+function todayLine(member: ISalonStaffMember): string | null {
+  const t = member.today;
+  if (!t || (member.state !== "active" && member.state !== "owner")) return null;
+  if (t.isOff || t.ranges.length === 0) return "امروز تعطیل";
+  const hours = t.ranges.map((r) => `${hhmm(r.start)} تا ${hhmm(r.end)}`).join("، ");
+  return [`امروز ${hours}`, t.appointmentsCount ? `${t.appointmentsCount.toLocaleString(APP_LOCALE)} نوبت` : null]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function StaffRow({ member, showBranch }: { member: ISalonStaffMember; showBranch: boolean }) {
   const meta = [
-    member.isCreator ? "مالک سالن" : STAFF_STATE_LABEL[member.state],
+    member.state === "active" ? null : STAFF_STATE_LABEL[member.state],
+    todayLine(member),
     showBranch ? member.branchName : null,
   ]
     .filter(Boolean)
@@ -68,7 +82,7 @@ function StaffRow({ member, showBranch }: { member: ISalonStaffMember; showBranc
 
 /** «پرسنل» — everyone in the salon; a row opens that person's page, «دعوت پرسنل» adds one. */
 export default function StaffView() {
-  const { members, branches, services, isLoading, isError, saveRoster, isSaving } = useSalonStaff();
+  const { members, branches, services, isLoading, isError, staff, isSaving } = useSalonStaff();
   const [toast, setToast] = useState<DashboardToastState>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [phone, setPhone] = useState("");
@@ -93,10 +107,7 @@ export default function StaffView() {
     if (offeringIds.length === 0) return setError("حداقل یک خدمت انتخاب کنید.");
     setError("");
     try {
-      await saveRoster((rows) => [
-        ...rows,
-        { publicId: null, isCreator: false, phoneNumber: value, branchPublicId, offeringPublicIds: offeringIds },
-      ]);
+      await staff.invite.mutateAsync({ phone: value, branchPublicId, offeringPublicIds: offeringIds });
       setInviteOpen(false);
       setToast({ type: "success", message: "دعوت فرستاده شد. بعد از پذیرش، در فهرست فعال می‌شود." });
     } catch (err) {

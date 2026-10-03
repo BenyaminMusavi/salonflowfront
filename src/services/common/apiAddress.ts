@@ -83,6 +83,19 @@ export const API_ADDRESS = {
       `/api/catalog/offerings/${offeringId}/staff/${staffMemberId}`,
   },
 
+  /** Panel staff management (owner) + "who am I" and team schedule. */
+  STAFF: {
+    BASE: "/api/staff",
+    ME: "/api/staff/me",
+    INVITATIONS: "/api/staff/invitations",
+    BY_ID: (publicId: string) => `/api/staff/${publicId}`,
+    REMOVAL_IMPACT: (publicId: string) => `/api/staff/${publicId}/removal-impact`,
+    RESEND_INVITATION: (publicId: string) => `/api/staff/${publicId}/resend-invitation`,
+    WEEKLY: (publicId: string) => `/api/staff/${publicId}/schedule/weekly`,
+    EXCEPTIONS: (publicId: string) => `/api/staff/${publicId}/schedule/exceptions`,
+    TEAM_SCHEDULE: "/api/schedules/team",
+  },
+
   STAFF_PROFILE: {
     BY_SALON_FOR_SERVICES: (salonId: number | string) =>
       `/api/staff-profiles/by-salon/${salonId}/for-services`,
@@ -164,6 +177,8 @@ export const API_ADDRESS = {
   CUSTOMERS: {
     BASE: "/api/customers",
     BY_ID: (id: number) => `/api/customers/${id}`,
+    /** Salon-side customer file by Customer.PublicId (GET / PATCH fullName + note). */
+    BY_PUBLIC_ID: (publicId: string) => `/api/customers/${publicId}`,
   },
 
   WORKING_SCHEDULES: {

@@ -1,19 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ChatCircleTextIcon, PhoneIcon, PlusIcon } from "@phosphor-icons/react";
-import { AppointmentStatus } from "@/services/common/enums/domain-enums";
+import { Button } from "@/shared/components/primitives/button/Button";
 import {
+  agendaDtoToItem,
   historyToAgendaItem,
   useQueryCustomerAppointments,
 } from "@/services/domains/appointments/hooks";
+import { useMutatePatchCustomer, useQueryCustomerDetails } from "@/services/domains/customers/hooks";
+import type { ICustomerDetails } from "@/services/domains/customers/types/customers.type";
 import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
 import { useCustomerPreviewStore } from "@/services/domains/customers/store/useCustomerPreviewStore";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { APP_LOCALE } from "@/shared/utils/locale";
-import { formatSalonDate, salonTodayYmd } from "@/shared/utils/salonTime";
+import { formatSalonDate } from "@/shared/utils/salonTime";
+import { formatToman } from "@/shared/utils/salonDisplay";
 import {
   DashboardPage,
   DashboardPageHeader,
@@ -39,6 +43,66 @@ function monthTitle(iso: string): string {
   }
 }
 
+/** The salon's own note about this customer — staff see it on every appointment; the customer never does. */
+function SalonNote({ details, onToast }: { details: ICustomerDetails; onToast: (t: DashboardToastState) => void }) {
+  const patch = useMutatePatchCustomer();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(details.note ?? "");
+  useEffect(() => setText(details.note ?? ""), [details.note]);
+
+  const save = async () => {
+    try {
+      await patch.mutateAsync({ publicId: details.publicId, body: { note: text.trim() } });
+      setEditing(false);
+    } catch (err) {
+      onToast({ type: "error", message: getApiErrorMessage(err, "ذخیره‌ی یادداشت ناموفق بود.") });
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="flex flex-col items-start gap-0.5 rounded-[16px] bg-background-secondary px-4 py-3 text-right"
+      >
+        <span className="text-xs text-foreground-muted">یادداشت سالن درباره‌ی این مشتری (مشتری نمی‌بیند)</span>
+        <span className={details.note ? "text-sm text-foreground" : "text-sm text-primary"}>
+          {details.note || "＋ افزودن یادداشت"}
+        </span>
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded-[16px] bg-background-secondary p-3">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        autoFocus
+        placeholder="مثلاً: پوست حساس، رنگ دلخواه…"
+        className="w-full rounded-[12px] border border-input-border bg-input p-3 text-sm text-foreground focus:outline-none"
+      />
+      <div className="flex gap-2">
+        <Button type="button" size="sm" className="rounded-[12px]" isLoading={patch.isPending} onClick={() => void save()}>
+          ذخیره
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setText(details.note ?? "");
+            setEditing(false);
+          }}
+        >
+          انصراف
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** A customer's page: who they are, how to reach them, what's next, and their history here. */
 export default function CustomerAppointmentsView() {
   const params = useParams<{ customerPublicId: string }>();
@@ -52,27 +116,18 @@ export default function CustomerAppointmentsView() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [toast, setToast] = useState<DashboardToastState>(null);
 
+  const detailsQuery = useQueryCustomerDetails(customerPublicId);
+  const details = detailsQuery.data?.data ?? null;
   const history = useQueryCustomerAppointments(customerPublicId, { page: 1, pageSize });
-  const upcoming = useQueryCustomerAppointments(customerPublicId, {
-    from: salonTodayYmd(),
-    status: AppointmentStatus.Scheduled,
-    page: 1,
-    pageSize: 3,
-  });
-  const noShows = useQueryCustomerAppointments(customerPublicId, {
-    status: AppointmentStatus.NoShow,
-    page: 1,
-    pageSize: 1,
-  });
 
   const result = history.data?.data;
   const items = useMemo(() => (result?.items ?? []).map(historyToAgendaItem), [result]);
   const upcomingItems = useMemo(
     () =>
-      (upcoming.data?.data?.items ?? [])
-        .map(historyToAgendaItem)
+      (details?.upcoming ?? [])
+        .map(agendaDtoToItem)
         .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-    [upcoming.data]
+    [details?.upcoming]
   );
   const months = useMemo(() => {
     // Upcoming ones are already shown above.
@@ -88,19 +143,21 @@ export default function CustomerAppointmentsView() {
     return groups;
   }, [items, upcomingItems]);
 
-  const name = preview?.fullName || result?.items?.[0]?.customerName || "مشتری";
-  const phone = preview?.phone;
-  const total = result?.totalCount ?? 0;
-  const noShowCount = noShows.data?.data?.totalCount ?? 0;
+  const name = details?.fullName || preview?.fullName || result?.items?.[0]?.customerName || "مشتری";
+  const phone = details?.phone || preview?.phone;
   const selected =
     [...upcomingItems, ...items].find((x) => x.numericId === selectedId) ?? null;
 
-  const stats = [
-    `${total.toLocaleString(APP_LOCALE)} نوبت`,
-    noShowCount ? `${noShowCount.toLocaleString(APP_LOCALE)} بار مراجعه نکرده` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const s = details?.stats;
+  const stats = s
+    ? [
+        s.completed ? `${s.completed.toLocaleString(APP_LOCALE)} مراجعه` : "هنوز مراجعه‌ی انجام‌شده ندارد",
+        s.totalSpent ? `${formatToman(s.totalSpent)} تومان خرید` : null,
+        s.cancelled ? `${s.cancelled.toLocaleString(APP_LOCALE)} لغو` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
 
   const row = (item: IAgendaItem) => (
     <AgendaRow
@@ -128,7 +185,10 @@ export default function CustomerAppointmentsView() {
                 {phone}
               </p>
             ) : null}
-            {result ? <p className="mt-0.5 text-xs text-foreground-muted">{stats}</p> : null}
+            {stats ? <p className="mt-0.5 text-xs text-foreground-muted">{stats}</p> : null}
+            {s?.noShow ? (
+              <p className="mt-0.5 text-xs text-warning">{s.noShow.toLocaleString(APP_LOCALE)} بار مراجعه نکرده</p>
+            ) : null}
           </div>
         </div>
         <div className="flex gap-2">
@@ -156,6 +216,8 @@ export default function CustomerAppointmentsView() {
           </button>
         </div>
       </section>
+
+      {details ? <SalonNote details={details} onToast={setToast} /> : null}
 
       {upcomingItems.length > 0 ? (
         <section className="flex flex-col gap-2">

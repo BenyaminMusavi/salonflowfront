@@ -12,6 +12,7 @@ import {
 import { useSalonContextStore } from "@/services/salon-context-store/useSalonContextStore";
 import { STAFF_FOR_OFFERINGS_QUERY_KEY } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
 import { STAFF_ROSTER_QUERY_KEY } from "@/services/domains/salons/hooks/useQueryStaffRoster";
+import { STAFF_LIST_QUERY_KEY } from "@/services/domains/staff/hooks";
 
 const CATALOG_OFFERINGS_QUERY_KEY = "CATALOG_OFFERINGS_QUERY_KEY";
 const CATALOG_PRICING_RULES_QUERY_KEY = "CATALOG_PRICING_RULES_QUERY_KEY";
@@ -24,6 +25,8 @@ const ASSIGNMENT_KEYS = [
   CATALOG_OFFERING_STAFF_QUERY_KEY,
   STAFF_FOR_OFFERINGS_QUERY_KEY,
   STAFF_ROSTER_QUERY_KEY,
+  // servicesCount on the staff list.
+  STAFF_LIST_QUERY_KEY,
 ];
 
 export const useQueryCatalogOfferings = (includeInactive = true) => {

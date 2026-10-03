@@ -18,16 +18,20 @@ import {
   useQuerySpecialSchedules,
 } from "@/services/domains/special-schedules/hooks";
 import type { ISpecialSchedule } from "@/services/domains/special-schedules/types/special-schedules.type";
-import { addDaysYmd, formatSalonDate, salonTodayYmd, ymdToDate } from "@/shared/utils/salonTime";
+import { useMutateStaff } from "@/services/domains/staff/hooks";
+import type { IScheduleConflict } from "@/services/domains/staff/types/staff.type";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDate, salonTodayYmd, ymdToDate } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import { DashboardDateField } from "../_components/DashboardDateField";
 import { DashboardSelect } from "../_components/DashboardSelect";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 import { TIME_OPTIONS, hhmm, scheduleErrorMessage, toApiTime } from "./scheduleUtils";
+import { ScheduleConflicts } from "./WeeklyScheduleEditor";
 
-/** Longest leave created in one go (one row per day). */
-const MAX_RANGE_DAYS = 31;
+/** Longest leave / special-hours range the backend takes in one request. */
+const MAX_RANGE_DAYS = 62;
 
 const chip = (active: boolean) =>
   cn(
@@ -66,11 +70,15 @@ const emptyDraft = (): Draft => ({
 /** Upcoming exceptions to the weekly schedule: leave (one day or a range) or different hours. */
 export function SpecialDaysEditor({
   staffMemberId,
+  staffPublicId,
   onToast,
 }: {
   staffMemberId: number;
+  staffPublicId: string;
   onToast: (t: DashboardToastState) => void;
 }) {
+  const staff = useMutateStaff();
+  const [conflicts, setConflicts] = useState<IScheduleConflict[]>([]);
   const today = salonTodayYmd();
   const query = useQuerySpecialSchedules(staffMemberId, { from: today });
   const mutations = useMutateSpecialSchedules();
@@ -87,7 +95,9 @@ export function SpecialDaysEditor({
       ? "ساعت پایان باید بعد از شروع باشد."
       : draft && draft.to && draft.to < draft.from
         ? "تاریخ پایان باید بعد از شروع باشد."
-        : null;
+        : draft && draft.to && (ymdToDate(draft.to).getTime() - ymdToDate(draft.from).getTime()) / 86_400_000 >= MAX_RANGE_DAYS
+          ? `حداکثر ${MAX_RANGE_DAYS.toLocaleString(APP_LOCALE)} روز در یک بار.`
+          : null;
 
   const openItem = (item: ISpecialSchedule) =>
     setDraft({
@@ -114,13 +124,28 @@ export function SpecialDaysEditor({
     try {
       if (draft.id != null) {
         await mutations.update.mutateAsync({ id: draft.id, body: body(draft.from) });
+        onToast({ type: "success", message: "روز خاص ذخیره شد." });
       } else {
-        const last = draft.to || draft.from;
-        for (let d = draft.from, n = 0; d <= last && n < MAX_RANGE_DAYS; d = addDaysYmd(d, 1), n++) {
-          await mutations.create.mutateAsync(body(d));
-        }
+        // One request for the whole range; it reports the appointments that fall on it.
+        const res = await staff.addException.mutateAsync({
+          publicId: staffPublicId,
+          body: {
+            from: draft.from,
+            to: draft.to || draft.from,
+            type: draft.isOffDay ? "off" : "hours",
+            ranges: draft.isOffDay ? [] : [{ start: toApiTime(draft.start), end: toApiTime(draft.end) }],
+            note: draft.note.trim() || null,
+          },
+        });
+        const affected = res.data?.affectedAppointments ?? [];
+        setConflicts(affected);
+        onToast({
+          type: "success",
+          message: affected.length
+            ? `ثبت شد · ${affected.length.toLocaleString(APP_LOCALE)} نوبت در این روزها هست.`
+            : "روز خاص ثبت شد.",
+        });
       }
-      onToast({ type: "success", message: "روز خاص ذخیره شد." });
       setDraft(null);
     } catch (err) {
       onToast({ type: "error", message: scheduleErrorMessage(err, "ذخیره‌ی روز خاص ناموفق بود.") });
@@ -154,6 +179,7 @@ export function SpecialDaysEditor({
           افزودن
         </button>
       </div>
+      <ScheduleConflicts conflicts={conflicts} title="نوبت در روزهای ثبت‌شده هست:" />
       {items.length === 0 ? (
         <p className="rounded-[16px] bg-background-secondary px-4 py-4 text-xs text-foreground-muted">
           روز خاصی در پیش نیست. مرخصی یا ساعت متفاوت یک روز را از «افزودن» ثبت کنید.
@@ -204,10 +230,10 @@ export function SpecialDaysEditor({
               value={draft.from}
               onChange={(from) => from && setDraft({ ...draft, from })}
             />
-            {draft.id == null && draft.isOffDay ? (
+            {draft.id == null ? (
               <DashboardDateField
                 name="special-to"
-                label="تا تاریخ (برای مرخصی چندروزه)"
+                label="تا تاریخ (برای چند روز، اختیاری)"
                 value={draft.to}
                 onChange={(to) => setDraft({ ...draft, to })}
               />

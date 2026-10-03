@@ -55,3 +55,14 @@ export function formatDayHours(day: IDayHours): string {
   const base = `${day.start} تا ${day.end}`;
   return day.breakStart && day.breakEnd ? `${base} · استراحت ${day.breakStart}–${day.breakEnd}` : base;
 }
+
+/** Day hours → API ranges: one range, or two around the break (split shift). */
+export function dayHoursToRanges(day: IDayHours): { start: string; end: string }[] {
+  if (!day.working) return [];
+  if (day.breakStart && day.breakEnd)
+    return [
+      { start: toApiTime(day.start), end: toApiTime(day.breakStart) },
+      { start: toApiTime(day.breakEnd), end: toApiTime(day.end) },
+    ];
+  return [{ start: toApiTime(day.start), end: toApiTime(day.end) }];
+}

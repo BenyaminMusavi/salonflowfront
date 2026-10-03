@@ -6,19 +6,15 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryStaffRoster } from "@/services/domains/salons/hooks/useQueryStaffRoster";
 import { useMutateSalonStaff } from "@/services/domains/salons/hooks/useMutateSalonStaff";
-import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
-import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
-import type {
-  IOnboardingStaff,
-  IStaffRosterMember,
-} from "@/services/domains/salons/types/onboarding.type";
+import { useMutateStaff, useQueryStaffList } from "@/services/domains/staff/hooks";
+import type { IStaffListItem, ITimeRange } from "@/services/domains/staff/types/staff.type";
+import type { IOnboardingStaff } from "@/services/domains/salons/types/onboarding.type";
 
 export type StaffState = "owner" | "active" | "pending" | "awaitingLogin" | "rejected";
 
 export interface ISalonStaffMember {
   publicId: string;
-  /** Numeric id the schedule / staff-services / quick-book endpoints need. Only known once the
-   * person is bookable (has a profile with at least one service). */
+  /** Numeric id the schedule / staff-services / quick-book endpoints need (known from the invite on). */
   staffMemberId: number | null;
   name: string;
   phone: string | null;
@@ -27,6 +23,9 @@ export interface ISalonStaffMember {
   branchPublicId: string;
   branchName: string | null;
   offeringPublicIds: string[];
+  servicesCount: number;
+  color: string | null;
+  today: { isOff: boolean; ranges: ITimeRange[]; appointmentsCount: number } | null;
 }
 
 export const STAFF_STATE_LABEL: Record<StaffState, string> = {
@@ -37,59 +36,56 @@ export const STAFF_STATE_LABEL: Record<StaffState, string> = {
   rejected: "دعوت را رد کرده",
 };
 
-function stateOf(row: IStaffRosterMember): StaffState {
-  if (row.isCreator) return "owner";
-  if (row.status === StaffInvitationStatus.Rejected) return "rejected";
-  if (row.status === StaffInvitationStatus.Pending) return "pending";
+function stateOf(row: IStaffListItem): StaffState {
+  if (row.isOwner) return "owner";
+  if (row.invitationStatus === StaffInvitationStatus.Rejected) return "rejected";
+  if (row.invitationStatus === StaffInvitationStatus.Pending) return "pending";
   if (!row.hasLoggedIn) return "awaitingLogin";
   return "active";
 }
 
 /**
- * The salon's people (owner only — the roster endpoint is owner-only): the invitation roster
- * enriched with display names and numeric ids from the bookable-staff lookup, plus helpers
- * that save the roster back through `save-staff` (the only roster write the backend has).
+ * The salon's people (owner only): `GET /api/staff` (names, ids, branch, invitation state, today's
+ * hours) plus each person's offering ids from the onboarding roster. Writes go through the staff
+ * endpoints (`staff` = invite / update / remove / resend); `saveRoster` stays only for the
+ * roster's offering list.
  */
 export function useSalonStaff() {
   const salonPublicId = useSalonContextStore((s) => s.salonPublicId);
   const salon = useQuerySalonById(salonPublicId || undefined).data?.data;
   const branches = salon?.branches ?? [];
   const services = salon?.services ?? [];
+  const listQuery = useQueryStaffList();
+  const list = listQuery.data?.data;
   const rosterQuery = useQueryStaffRoster(salonPublicId || undefined);
   const roster = rosterQuery.data?.data;
-  const ownerPhone = useQueryAuthMe().data?.data?.phone ?? null;
-
-  const offeringIds = useMemo(
-    () => services.map((s) => s.offeringPublicId).filter((id): id is string => !!id),
-    [services]
-  );
-  const profiles =
-    useQueryStaffForOfferings(salonPublicId || undefined, offeringIds, {
-      enabled: offeringIds.length > 0,
-    }).data?.data ?? [];
 
   const members = useMemo<ISalonStaffMember[]>(() => {
-    const list = (roster ?? []).map((row) => {
-      const profile = profiles.find((p) => p.staffPublicId === row.publicId);
-      const phone = row.isCreator ? ownerPhone : row.phoneNumber;
+    const rows = (list ?? []).map((row) => {
+      const rosterRow = roster?.find((r) => r.publicId === row.publicId);
+      const branchPublicId = row.branch?.publicId ?? rosterRow?.branchPublicId ?? "";
       return {
         publicId: row.publicId,
-        staffMemberId: profile?.staffMemberId ?? null,
-        name: profile?.firstName || (row.isCreator ? "شما" : phone || "پرسنل"),
-        phone,
-        isCreator: row.isCreator,
+        staffMemberId: row.staffMemberId || null,
+        name: row.fullName?.trim() || (row.isOwner ? "شما" : row.phone || "پرسنل"),
+        phone: row.phone,
+        isCreator: row.isOwner,
         state: stateOf(row),
-        branchPublicId: row.branchPublicId,
-        branchName: branches.find((b) => b.publicId === row.branchPublicId)?.name ?? null,
-        offeringPublicIds: row.offeringPublicIds ?? [],
+        branchPublicId,
+        branchName: row.branch?.name ?? branches.find((b) => b.publicId === branchPublicId)?.name ?? null,
+        offeringPublicIds: rosterRow?.offeringPublicIds ?? [],
+        servicesCount: row.servicesCount,
+        color: row.color,
+        today: row.today,
       };
     });
     // Owner first, then active people, then pending invitations.
     const order: StaffState[] = ["owner", "active", "awaitingLogin", "pending", "rejected"];
-    return list.sort((a, b) => order.indexOf(a.state) - order.indexOf(b.state));
-  }, [roster, profiles, branches, ownerPhone]);
+    return rows.sort((a, b) => order.indexOf(a.state) - order.indexOf(b.state));
+  }, [list, roster, branches]);
 
   const saveStaff = useMutateSalonStaff();
+  const staff = useMutateStaff();
 
   /** Writes the whole roster back, applying `change` to the rows first. */
   const saveRoster = (change: (rows: IOnboardingStaff[]) => IOnboardingStaff[]) => {
@@ -108,9 +104,11 @@ export function useSalonStaff() {
     members,
     branches,
     services,
-    isLoading: rosterQuery.isLoading,
-    isError: rosterQuery.isError,
+    isLoading: listQuery.isLoading,
+    isError: listQuery.isError,
     saveRoster,
-    isSaving: saveStaff.isPending,
+    staff,
+    isSaving:
+      saveStaff.isPending || staff.invite.isPending || staff.update.isPending || staff.remove.isPending,
   };
 }

@@ -19,6 +19,8 @@ import {
 } from "@/services/domains/appointments/hooks";
 import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import { useQueryStaffRemovalImpact } from "@/services/domains/staff/hooks";
+import { APP_LOCALE } from "@/shared/utils/locale";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonTodayYmd, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
@@ -138,7 +140,7 @@ function AppointmentsTab({ member, onToast }: { member: ISalonStaffMember; onToa
 export default function StaffDetailsView() {
   const router = useRouter();
   const { staffPublicId } = useParams<{ staffPublicId: string }>();
-  const { members, branches, isLoading, saveRoster, isSaving } = useSalonStaff();
+  const { members, branches, isLoading, saveRoster, staff, isSaving } = useSalonStaff();
   const member = members.find((m) => m.publicId === staffPublicId);
   const [tab, setTab] = useState<Tab>("appointments");
   const [toast, setToast] = useState<DashboardToastState>(null);
@@ -146,6 +148,8 @@ export default function StaffDetailsView() {
   const [branchOpen, setBranchOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const multiBranch = branches.length > 1;
+  const impact = useQueryStaffRemovalImpact(removeOpen ? staffPublicId : null);
+  const futureCount = impact.data?.data?.futureAppointmentsCount ?? 0;
 
   if (isLoading) {
     return (
@@ -167,9 +171,7 @@ export default function StaffDetailsView() {
 
   const changeBranch = async (branchPublicId: string) => {
     try {
-      await saveRoster((rows) =>
-        rows.map((r) => (r.publicId === member.publicId ? { ...r, branchPublicId } : r))
-      );
+      await staff.update.mutateAsync({ publicId: member.publicId, body: { branchPublicId } });
       setToast({ type: "success", message: "شعبه تغییر کرد." });
       setBranchOpen(false);
     } catch (err) {
@@ -179,7 +181,7 @@ export default function StaffDetailsView() {
 
   const remove = async () => {
     try {
-      await saveRoster((rows) => rows.filter((r) => r.publicId !== member.publicId));
+      await staff.remove.mutateAsync(member.publicId);
       router.replace(RouteAddress.DASHBOARD.STAFF);
     } catch (err) {
       setToast({ type: "error", message: getApiErrorMessage(err, "حذف ناموفق بود.") });
@@ -187,10 +189,21 @@ export default function StaffDetailsView() {
     }
   };
 
+  const resend = async () => {
+    setMoreOpen(false);
+    try {
+      await staff.resend.mutateAsync(member.publicId);
+      setToast({ type: "success", message: "پیامک دعوت دوباره فرستاده شد." });
+    } catch (err) {
+      setToast({ type: "error", message: getApiErrorMessage(err, "ارسال دوباره‌ی دعوت ناموفق بود.") });
+    }
+  };
+
   const meta = [STAFF_STATE_LABEL[member.state], multiBranch ? member.branchName : null]
     .filter(Boolean)
     .join(" · ");
   const canManage = !member.isCreator;
+  const hasMore = canManage || multiBranch;
 
   return (
     <DashboardPage className="gap-5">
@@ -198,7 +211,7 @@ export default function StaffDetailsView() {
         title="پرسنل"
         backHref={RouteAddress.DASHBOARD.STAFF}
         action={
-          canManage || multiBranch ? (
+          hasMore ? (
             <button
               type="button"
               onClick={() => setMoreOpen(true)}
@@ -234,8 +247,8 @@ export default function StaffDetailsView() {
       {tab === "schedule" ? (
         member.staffMemberId ? (
           <div className="flex flex-col gap-5">
-            <WeeklyScheduleEditor staffMemberId={member.staffMemberId} onToast={setToast} />
-            <SpecialDaysEditor staffMemberId={member.staffMemberId} onToast={setToast} />
+            <WeeklyScheduleEditor staffMemberId={member.staffMemberId} staffPublicId={member.publicId} onToast={setToast} />
+            <SpecialDaysEditor staffMemberId={member.staffMemberId} staffPublicId={member.publicId} onToast={setToast} />
           </div>
         ) : (
           <p className="rounded-[16px] bg-background-secondary p-4 text-sm leading-6 text-foreground-muted">
@@ -268,6 +281,15 @@ export default function StaffDetailsView() {
               className="flex min-h-12 items-center rounded-[12px] px-3 text-sm font-semibold text-foreground hover:bg-surface-hover"
             >
               تغییر شعبه
+            </button>
+          ) : null}
+          {member.state === "pending" ? (
+            <button
+              type="button"
+              onClick={() => void resend()}
+              className="flex min-h-12 items-center rounded-[12px] px-3 text-sm font-semibold text-foreground hover:bg-surface-hover"
+            >
+              ارسال دوباره‌ی دعوت
             </button>
           ) : null}
           {canManage ? (
@@ -310,7 +332,12 @@ export default function StaffDetailsView() {
           <DialogHeader>
             <DialogTitle>حذف {member.name} از پرسنل؟</DialogTitle>
             <DialogDescription>
-              دیگر به پنل این سالن دسترسی ندارد و برایش نوبت جدید ثبت نمی‌شود. نوبت‌های قبلی او را پیش از حذف بررسی کنید.
+              دیگر به پنل این سالن دسترسی ندارد و برایش نوبت جدید ثبت نمی‌شود.{" "}
+              {impact.isLoading
+                ? "در حال بررسی نوبت‌های آینده…"
+                : futureCount > 0
+                  ? `${futureCount.toLocaleString(APP_LOCALE)} نوبت آینده‌ی او لغو می‌شود و به مشتری‌ها پیامک می‌رود.`
+                  : "نوبت آینده‌ای ندارد."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-2">
@@ -321,7 +348,8 @@ export default function StaffDetailsView() {
               type="button"
               variant="ghost"
               className="text-error hover:bg-error-background"
-              isLoading={isSaving}
+              isLoading={staff.remove.isPending}
+              disabled={impact.isLoading}
               onClick={() => void remove()}
             >
               حذف

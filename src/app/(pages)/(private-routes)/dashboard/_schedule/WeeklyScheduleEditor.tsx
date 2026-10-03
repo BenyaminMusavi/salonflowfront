@@ -4,21 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Switch } from "@/shared/components/primitives/switch/Switch";
-import {
-  useMutateWorkingSchedules,
-  useQueryWorkingSchedules,
-} from "@/services/domains/working-schedules/hooks";
+import { useQueryWorkingSchedules } from "@/services/domains/working-schedules/hooks";
 import type { IWorkingSchedule } from "@/services/domains/working-schedules/types/working-schedules.type";
+import { useMutateStaff } from "@/services/domains/staff/hooks";
+import type { IScheduleConflict } from "@/services/domains/staff/types/staff.type";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { formatSalonDateTime } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import { DashboardSelect } from "../_components/DashboardSelect";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import {
   TIME_OPTIONS,
   WEEK_DAYS,
+  dayHoursToRanges,
   formatDayHours,
   hhmm,
   scheduleErrorMessage,
-  toApiTime,
   validateDayHours,
   type IDayHours,
 } from "./scheduleUtils";
@@ -62,19 +63,43 @@ function TimeSelect({
   );
 }
 
+/** Appointments the new hours leave outside the shift — reported, never cancelled. */
+export function ScheduleConflicts({ conflicts, title }: { conflicts: IScheduleConflict[]; title: string }) {
+  if (conflicts.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5 rounded-[16px] border border-warning/40 bg-background-secondary px-4 py-3">
+      <p className="text-xs font-semibold text-warning">
+        {conflicts.length.toLocaleString(APP_LOCALE)} {title}
+      </p>
+      <ul className="flex flex-col gap-1 text-xs text-foreground-muted">
+        {conflicts.slice(0, 8).map((c) => (
+          <li key={c.appointmentPublicId}>
+            {c.customerName || "مشتری"} ·{" "}
+            {formatSalonDateTime(c.startTime, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-foreground-muted">این نوبت‌ها لغو نشده‌اند؛ در صورت نیاز جابه‌جا یا لغوشان کنید.</p>
+    </div>
+  );
+}
+
 /**
  * One person's working week: a switch and hours per day, edited in a small sheet, saved
- * together. The API stores one row per day (with an optional break = a split shift).
+ * together in one `PUT /api/staff/{publicId}/schedule/weekly` (a break = a split shift).
  */
 export function WeeklyScheduleEditor({
   staffMemberId,
+  staffPublicId,
   onToast,
 }: {
   staffMemberId: number;
+  staffPublicId: string;
   onToast: (t: DashboardToastState) => void;
 }) {
   const query = useQueryWorkingSchedules(staffMemberId);
-  const mutations = useMutateWorkingSchedules();
+  const staff = useMutateStaff();
+  const [conflicts, setConflicts] = useState<IScheduleConflict[]>([]);
   const rows = query.data?.data;
 
   const serverDays = useMemo(() => {
@@ -112,26 +137,22 @@ export function WeeklyScheduleEditor({
   const save = async () => {
     setSaving(true);
     try {
-      for (let i = 0; i < WEEK_DAYS.length; i++) {
-        const local = days[i];
-        const server = serverDays[i];
-        if (same(local, server.hours) && server.rows.length <= 1) continue;
-        const [first, ...extra] = server.rows;
-        for (const row of extra) await mutations.remove.mutateAsync(row.id);
-        const body = {
-          staffMemberId,
-          dayOfWeek: WEEK_DAYS[i].value,
-          startTime: local.working ? toApiTime(local.start) : null,
-          endTime: local.working ? toApiTime(local.end) : null,
-          breakStart: local.working && local.breakStart ? toApiTime(local.breakStart) : null,
-          breakEnd: local.working && local.breakEnd ? toApiTime(local.breakEnd) : null,
-          isOffDay: !local.working,
-          isManagedBySalon: true,
-        };
-        if (first) await mutations.update.mutateAsync({ id: first.id, body });
-        else if (local.working) await mutations.create.mutateAsync(body);
-      }
-      onToast({ type: "success", message: "برنامه‌ی هفتگی ذخیره شد." });
+      const res = await staff.saveWeekly.mutateAsync({
+        publicId: staffPublicId,
+        days: WEEK_DAYS.map((d, i) => ({
+          dayOfWeek: d.value,
+          isOff: !days[i].working,
+          ranges: dayHoursToRanges(days[i]),
+        })),
+      });
+      const found = res.data?.conflicts ?? [];
+      setConflicts(found);
+      onToast({
+        type: "success",
+        message: found.length
+          ? `برنامه ذخیره شد · ${found.length.toLocaleString(APP_LOCALE)} نوبت بیرون از ساعت جدید است.`
+          : "برنامه‌ی هفتگی ذخیره شد.",
+      });
     } catch (err) {
       onToast({ type: "error", message: scheduleErrorMessage(err, "ذخیره‌ی برنامه ناموفق بود.") });
     } finally {
@@ -146,6 +167,7 @@ export function WeeklyScheduleEditor({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="px-1 text-xs font-semibold text-foreground-muted">هفته‌ی کاری</h2>
+      <ScheduleConflicts conflicts={conflicts} title="نوبت آینده بیرون از ساعت جدید افتاده:" />
       <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
         {WEEK_DAYS.map((d, i) => (
           <div key={d.value} className="flex items-center gap-3 px-4 py-2.5">
