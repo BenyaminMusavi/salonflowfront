@@ -31,8 +31,11 @@ import { AgendaRow } from "../../_agenda/AgendaRow";
 import { AppointmentDetailsSheet } from "../../_agenda/AppointmentDetailsSheet";
 
 const PAGE_STEP = 20;
-const actionClass =
-  "flex h-11 flex-1 items-center justify-center gap-2 rounded-[12px] bg-surface-hover text-sm font-semibold text-foreground transition-colors hover:bg-surface-active";
+// Shape only; each button adds its own colors (two bg-* classes on one element fight in the CSS order).
+const actionBase =
+  "flex h-11 flex-1 items-center justify-center gap-2 rounded-[12px] text-sm font-semibold transition-colors";
+const actionClass = `${actionBase} bg-surface-hover text-foreground hover:bg-surface-active`;
+const primaryActionClass = `${actionBase} bg-primary text-primary-foreground hover:opacity-90`;
 
 /** «مهر 1405» (Intl puts the year first for this locale). */
 function monthTitle(iso: string): string {
@@ -209,7 +212,7 @@ export default function CustomerAppointmentsView() {
             onClick={() =>
               openQuickBook(phone ? { customer: { phone, fullName: name } } : undefined)
             }
-            className={`${actionClass} bg-primary text-primary-foreground hover:bg-primary`}
+            className={primaryActionClass}
           >
             <PlusIcon size={18} weight="bold" />
             نوبت جدید
