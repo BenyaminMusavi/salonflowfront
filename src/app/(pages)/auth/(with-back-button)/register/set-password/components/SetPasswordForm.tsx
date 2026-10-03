@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { CaretLeft, LockKey } from "@phosphor-icons/react";
+import { CaretLeft, LockKey, UserIcon } from "@phosphor-icons/react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { InputReactHookForm } from "@/shared/components/primitives/input/InputReactHookForm";
 import { Button } from "@/shared/components/primitives/button/Button";
@@ -18,6 +18,26 @@ function SetPasswordForm() {
       <div
         className={"w-full py-6 items-center flex flex-col gap-x-2 gap-y-4 "}
       >
+        <div className={"grid w-full grid-cols-2 gap-3"}>
+          <InputReactHookForm
+            startIcon={<UserIcon size={20} />}
+            label={"نام"}
+            placeholder={"مثلاً سارا"}
+            className={"h-full"}
+            control={control}
+            name={"firstName"}
+            autoComplete={"given-name"}
+          />
+          <InputReactHookForm
+            label={"نام خانوادگی"}
+            placeholder={"مثلاً احمدی"}
+            className={"h-full"}
+            control={control}
+            name={"lastName"}
+            autoComplete={"family-name"}
+          />
+        </div>
+
         <div className={"flex w-full flex-col gap-2"}>
           <InputReactHookForm
             startIcon={<LockKey size={20} />}

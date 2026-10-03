@@ -12,7 +12,7 @@ const SetPasswordView = () => {
           </span>
         </h2>
         <span className={"text-foreground/60 text-[14px]"}>
-          برای ورودهای بعدی، یک رمز عبور برای حساب خود تعیین کنید.
+          نام خود را بنویسید و برای ورودهای بعدی یک رمز عبور تعیین کنید.
         </span>
       </div>
       <SetPasswordFormProvider>

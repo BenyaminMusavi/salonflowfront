@@ -8,7 +8,9 @@ import {
   setPasswordFormSchema,
   TSetPasswordFormSchema,
 } from "./setPasswordFormSchema";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSetPassword } from "@/services/domains/auth/hooks/useMutateSetPassword";
+import { AUTH_QUERY_KEY } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
@@ -25,6 +27,8 @@ const SetPasswordFormProvider = ({ children }: IProps) => {
     resolver: zodResolver(setPasswordFormSchema()),
     mode: "onChange",
     defaultValues: {
+      firstName: "",
+      lastName: "",
       password: "",
       repeatPassword: "",
     },
@@ -35,6 +39,7 @@ const SetPasswordFormProvider = ({ children }: IProps) => {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
   const { mutateAsync, isPending } = useSetPassword();
+  const queryClient = useQueryClient();
 
   // This screen only makes sense right after OTP verification — bounce anyone
   // arriving without a session back to registration instead of showing a form
@@ -48,7 +53,13 @@ const SetPasswordFormProvider = ({ children }: IProps) => {
   const onSubmit = async (data: TSetPasswordFormSchema) => {
     setGeneralError("");
     try {
-      await mutateAsync({ password: data.password });
+      await mutateAsync({
+        password: data.password,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+      });
+      // The header / profile read the name from /api/auth/me.
+      await queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEY] });
       router.push(resolvePostLoginRedirect());
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
