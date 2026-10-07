@@ -32,7 +32,7 @@ import { formatToman } from "@/shared/utils/salonDisplay";
 import { formatSalonDate, salonWallClockToUtcIso } from "@/shared/utils/salonTime";
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { cn } from "@/shared/utils/className";
-import { DashboardDateField } from "../_components/DashboardDateField";
+import { InlineDateField } from "../_agenda/DayTimePicker";
 import { DashboardSelect } from "../_components/DashboardSelect";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import type { ISalonStaffMember } from "../_staff/useSalonStaff";
@@ -280,9 +280,10 @@ function SpecialPrices({
             </DashboardSelect>
           ) : null}
           <MoneyInput placeholder="قیمت ویژه" value={price} onValueChange={setPrice} className="rounded-[12px]" />
-          <div className="grid grid-cols-2 gap-2">
-            <DashboardDateField name="special-price-from" label="از" value={from} onChange={setFrom} />
-            <DashboardDateField name="special-price-to" label="تا" value={to} onChange={setTo} />
+          {/* Stacked: each field opens a full-width calendar under itself. */}
+          <div className="flex flex-col gap-2">
+            <InlineDateField label="از" value={from} onChange={setFrom} />
+            <InlineDateField label="تا" value={to} onChange={setTo} />
           </div>
           <div className="flex gap-2">
             <Button type="button" size="sm" className="rounded-[12px]" isLoading={mutate.create.isPending} onClick={() => void add()}>
