@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { MagnifyingGlassIcon, UserPlusIcon, WarningCircleIcon, XIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, WarningCircleIcon, XIcon } from "@phosphor-icons/react";
 import {
   Drawer,
   DrawerContent,
@@ -15,8 +15,6 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryCatalogOfferings } from "@/services/domains/catalog/hooks";
 import { useQueryStaffForOfferings } from "@/services/domains/staff-profile/hooks/useQueryStaffForOfferings";
-import { useQueryCustomers } from "@/services/domains/customers/hooks";
-import type { ICustomer } from "@/services/domains/customers/types/customers.type";
 import {
   useMutateQuickBook,
   useQuerySalonAppointments,
@@ -31,15 +29,13 @@ import {
 } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useMediaQuery } from "@/shared/hooks";
-import { normalizePhoneInput } from "@/shared/utils/phoneInput";
 import { panelSheetClass } from "./_components/panelSheet";
 import { salonClockParts, salonTodayYmd } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import type { DashboardToastState } from "./_components";
 import { formatClock } from "./_agenda/AgendaRow";
 import { DayPicker, TimePicker, dayLabel, pad2, pickerChip } from "./_agenda/DayTimePicker";
-
-const PHONE_RULE = /^09\d{9}$/;
+import { CustomerPicker } from "./CustomerPicker";
 
 interface QuickBookDrawerProps {
   open: boolean;
@@ -86,9 +82,8 @@ export default function QuickBookDrawer({
   const { isEntitled, isLoading: entitlementLoading } = useSubscriptionEntitlement();
   const bookingLocked = !entitlementLoading && !isEntitled;
 
-  const [search, setSearch] = useState("");
-  const [debounced, setDebounced] = useState("");
   const [customer, setCustomer] = useState<CustomerChoice>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [offeringIds, setOfferingIds] = useState<number[]>([]);
   const [staffId, setStaffId] = useState<number | null>(null);
   const [branchId, setBranchId] = useState<number | null>(null);
@@ -102,8 +97,7 @@ export default function QuickBookDrawer({
   // Every opening starts clean on the day the page shows.
   useEffect(() => {
     if (!open) return;
-    setSearch("");
-    setDebounced("");
+    setPickerOpen(false);
     setCustomer(initialCustomer ? { ...initialCustomer, isNew: false } : null);
     setOfferingIds([]);
     setStaffId(null);
@@ -116,19 +110,6 @@ export default function QuickBookDrawer({
     setNotesOpen(false);
     setError("");
   }, [open, date, initialCustomer]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const searchDigits = normalizePhoneInput(search);
-  const looksLikePhone = /^0?9\d*$/.test(searchDigits) && searchDigits.length >= 4;
-  const customersQuery = useQueryCustomers(looksLikePhone ? searchDigits : debounced, 1);
-  const matches: ICustomer[] =
-    customer || debounced.length < 2 ? [] : (customersQuery.data?.data?.items ?? []).slice(0, 5);
-  const canCreateFromPhone =
-    PHONE_RULE.test(searchDigits) && !matches.some((c) => c.phone === searchDigits);
 
   const selectedOfferings = offerings.filter((o) => offeringIds.includes(o.id));
   const totalMinutes = selectedOfferings.reduce((sum, o) => sum + (o.durationMinutes || 0), 0);
@@ -167,10 +148,6 @@ export default function QuickBookDrawer({
   const toggleOffering = (id: number) =>
     setOfferingIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
-  const pickCustomer = (c: ICustomer) => {
-    setCustomer({ phone: c.phone, fullName: c.fullName, isNew: false });
-    setSearch("");
-  };
 
   const ready = !!customer && offeringIds.length > 0 && !!staffId && !!activeBranchId;
 
@@ -269,63 +246,14 @@ export default function QuickBookDrawer({
                   ) : null}
                 </div>
               ) : (
-                <>
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="نام یا موبایل مشتری"
-                    className="rounded-[12px]"
-                    startIcon={<MagnifyingGlassIcon size={18} />}
-                    autoComplete="off"
-                    // Always the normal keyboard: switching to the number pad mid-typing
-                    // (once the text looked like a phone) was confusing. Persian/Arabic digits
-                    // are still normalised for the search.
-                    inputMode="text"
-                    enterKeyHint="search"
-                    onFocus={(e) => {
-                      // After the keyboard has shrunk the sheet, bring the box to the top so the
-                      // matches below it are on screen.
-                      const el = e.currentTarget;
-                      setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 300);
-                    }}
-                  />
-                  {matches.length > 0 || canCreateFromPhone ? (
-                    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
-                      {matches.map((c) => (
-                        <button
-                          key={c.publicId}
-                          type="button"
-                          onClick={() => pickCustomer(c)}
-                          className="flex items-center justify-between gap-3 px-4 py-3 text-right hover:bg-surface-hover"
-                        >
-                          <span className="truncate text-sm font-semibold text-foreground">
-                            {c.fullName || "بدون نام"}
-                          </span>
-                          <span className="shrink-0 text-xs text-foreground-muted" dir="ltr">
-                            {c.phone}
-                          </span>
-                        </button>
-                      ))}
-                      {canCreateFromPhone ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCustomer({ phone: searchDigits, fullName: "", isNew: true });
-                            setSearch("");
-                          }}
-                          className="flex items-center gap-2 px-4 py-3 text-right text-sm font-semibold text-primary hover:bg-surface-hover"
-                        >
-                          <UserPlusIcon size={18} />
-                          مشتری جدید با <span dir="ltr">{searchDigits}</span>
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : debounced.length >= 2 && !customersQuery.isFetching ? (
-                    <p className="px-1 text-xs text-foreground-muted">
-                      مشتری‌ای پیدا نشد. برای مشتری جدید، شماره‌ی موبایلش را کامل وارد کنید.
-                    </p>
-                  ) : null}
-                </>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="flex h-12 w-full items-center gap-2 rounded-[12px] border border-input-border bg-input px-3 text-right text-sm text-foreground-muted"
+                >
+                  <MagnifyingGlassIcon size={18} />
+                  نام یا موبایل مشتری
+                </button>
               )}
             </section>
 
@@ -447,6 +375,15 @@ export default function QuickBookDrawer({
             </Button>
           </div>
         </form>
+        {pickerOpen ? (
+          <CustomerPicker
+            onClose={() => setPickerOpen(false)}
+            onPick={(c) => {
+              setCustomer(c);
+              setPickerOpen(false);
+            }}
+          />
+        ) : null}
       </DrawerContent>
     </Drawer>
   );
