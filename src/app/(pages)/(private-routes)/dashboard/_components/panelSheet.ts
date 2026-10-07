@@ -6,8 +6,9 @@
  * The bottom variant is needed: the Drawer primitive's own `data-[…=bottom]:max-h-[80vh]`
  * outranks a plain `max-h-*`. Desktop: a full-height side panel.
  *
- * Pair it with `repositionInputs={false}` on the Drawer — vaul otherwise resizes the sheet
- * whenever an input gains focus and the keyboard opens.
+ * Keep vaul's default `repositionInputs`: when the keyboard opens it shrinks the sheet to the
+ * visible part of the screen (and restores it after), so what is under the keyboard can still be
+ * scrolled to. Turning it off left search results hidden behind the keyboard with nothing to scroll.
  */
 export function panelSheetClass(isDesktop: boolean, width = 420): string {
   return isDesktop

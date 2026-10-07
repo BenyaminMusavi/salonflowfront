@@ -267,7 +267,6 @@ export function AppointmentDetailsSheet({
         open={!!item}
         onOpenChange={(open) => !open && onClose()}
         direction={isDesktop ? "left" : "bottom"}
-        repositionInputs={false}
       >
         <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop))}>
           {item ? (

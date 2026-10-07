@@ -215,7 +215,7 @@ export default function QuickBookDrawer({
   const summary = [dayLabel(day), time, selectedStaff?.firstName].filter(Boolean).join(" · ");
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"} repositionInputs={false}>
+    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"}>
       <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop, 440))}>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-safe-area pb-4 pt-2 lg:px-6 lg:pt-6">
@@ -282,6 +282,12 @@ export default function QuickBookDrawer({
                     // are still normalised for the search.
                     inputMode="text"
                     enterKeyHint="search"
+                    onFocus={(e) => {
+                      // After the keyboard has shrunk the sheet, bring the box to the top so the
+                      // matches below it are on screen.
+                      const el = e.currentTarget;
+                      setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 300);
+                    }}
                   />
                   {matches.length > 0 || canCreateFromPhone ? (
                     <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">

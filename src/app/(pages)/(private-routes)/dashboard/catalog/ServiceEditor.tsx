@@ -397,7 +397,7 @@ export function ServiceEditor({
   const busy = mutations.create.isPending || mutations.update.isPending || mutations.patchActive.isPending;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"} repositionInputs={false}>
+    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"}>
       <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop, 460))}>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-safe-area pb-6 pt-2 lg:px-6 lg:pt-6">
           <div className="mb-4">
