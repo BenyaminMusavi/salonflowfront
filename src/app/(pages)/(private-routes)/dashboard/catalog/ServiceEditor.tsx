@@ -33,6 +33,7 @@ import { formatSalonDate, salonWallClockToUtcIso } from "@/shared/utils/salonTim
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { cn } from "@/shared/utils/className";
 import { InlineDateField } from "../_agenda/DayTimePicker";
+import { panelSheetClass } from "../_components/panelSheet";
 import { DashboardSelect } from "../_components/DashboardSelect";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import type { ISalonStaffMember } from "../_staff/useSalonStaff";
@@ -396,13 +397,8 @@ export function ServiceEditor({
   const busy = mutations.create.isPending || mutations.update.isPending || mutations.patchActive.isPending;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"}>
-      <DrawerContent
-        className={cn(
-          "border-border bg-background",
-          isDesktop ? "h-full w-[460px] max-w-[460px] sm:max-w-[460px]" : "max-h-[92vh]"
-        )}
-      >
+    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"} repositionInputs={false}>
+      <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop, 460))}>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-safe-area pb-6 pt-2 lg:px-6 lg:pt-6">
           <div className="mb-4">
             <DrawerTitle className="text-base font-bold">

@@ -37,6 +37,7 @@ import CancelAppointmentDialog from "../CancelAppointmentDialog";
 import NoShowDialog from "../NoShowDialog";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
+import { panelSheetClass } from "../_components/panelSheet";
 import { StatusMark, formatClock } from "./AgendaRow";
 import { durationMinutes } from "./agendaUtils";
 import { dayLabel } from "./DayTimePicker";
@@ -262,13 +263,13 @@ export function AppointmentDetailsSheet({
 
   return (
     <>
-      <Drawer open={!!item} onOpenChange={(open) => !open && onClose()} direction={isDesktop ? "left" : "bottom"}>
-        <DrawerContent
-          className={cn(
-            "border-border bg-background",
-            isDesktop ? "h-full w-[420px] max-w-[420px] sm:max-w-[420px]" : "max-h-[90vh]"
-          )}
-        >
+      <Drawer
+        open={!!item}
+        onOpenChange={(open) => !open && onClose()}
+        direction={isDesktop ? "left" : "bottom"}
+        repositionInputs={false}
+      >
+        <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop))}>
           {item ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-safe-area pb-6 pt-2 lg:px-6 lg:pt-6">
               <DrawerTitle className="sr-only">جزئیات نوبت</DrawerTitle>

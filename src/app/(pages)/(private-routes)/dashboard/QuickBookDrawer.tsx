@@ -31,7 +31,8 @@ import {
 } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useMediaQuery } from "@/shared/hooks";
-import { normalizePhoneInput, PHONE_INPUT_ATTRS } from "@/shared/utils/phoneInput";
+import { normalizePhoneInput } from "@/shared/utils/phoneInput";
+import { panelSheetClass } from "./_components/panelSheet";
 import { salonClockParts, salonTodayYmd } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
 import type { DashboardToastState } from "./_components";
@@ -214,13 +215,8 @@ export default function QuickBookDrawer({
   const summary = [dayLabel(day), time, selectedStaff?.firstName].filter(Boolean).join(" · ");
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"}>
-      <DrawerContent
-        className={cn(
-          "border-border bg-background",
-          isDesktop ? "h-full w-[440px] max-w-[440px] sm:max-w-[440px]" : "max-h-[92vh]"
-        )}
-      >
+    <Drawer open={open} onOpenChange={onOpenChange} direction={isDesktop ? "left" : "bottom"} repositionInputs={false}>
+      <DrawerContent className={cn("border-border bg-background", panelSheetClass(isDesktop, 440))}>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-safe-area pb-4 pt-2 lg:px-6 lg:pt-6">
             <div>
@@ -281,7 +277,11 @@ export default function QuickBookDrawer({
                     className="rounded-[12px]"
                     startIcon={<MagnifyingGlassIcon size={18} />}
                     autoComplete="off"
-                    inputMode={looksLikePhone ? PHONE_INPUT_ATTRS.inputMode : undefined}
+                    // Always the normal keyboard: switching to the number pad mid-typing
+                    // (once the text looked like a phone) was confusing. Persian/Arabic digits
+                    // are still normalised for the search.
+                    inputMode="text"
+                    enterKeyHint="search"
                   />
                   {matches.length > 0 || canCreateFromPhone ? (
                     <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">

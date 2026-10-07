@@ -45,12 +45,15 @@ export default function BottomSheet({ open, onClose, children }: IProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-[600px] rounded-t-[24px] bg-surface pb-8"
+            // Never taller than the screen: long content scrolls inside instead of running off it.
+            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex max-h-[88dvh] max-w-[600px] flex-col rounded-t-[24px] bg-surface"
           >
-            <div className="flex justify-center pt-3">
+            <div className="flex shrink-0 justify-center pt-3">
               <div className="h-1 w-10 rounded-full bg-foreground-muted/30" />
             </div>
-            <div className="px-safe-area pt-4">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-safe-area pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
+              {children}
+            </div>
           </motion.div>
         </>
       )}
