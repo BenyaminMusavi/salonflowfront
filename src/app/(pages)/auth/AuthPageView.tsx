@@ -11,8 +11,8 @@ function AuthPageContent() {
   const searchParams = useSearchParams();
   const callback = searchParams.get("callback");
 
+  // One door for new and existing users: phone → SMS code.
   const loginHref = buildAuthHref(RouteAddress.AUTH.LOGIN.BASE, callback);
-  const registerHref = buildAuthHref(RouteAddress.AUTH.REGISTER.BASE, callback);
 
   return (
     <div
@@ -27,10 +27,7 @@ function AuthPageContent() {
       <div className={"flex flex-col gap-y-8 pt-6"}>
         <div className={"flex flex-col gap-y-2"}>
           <Button asChild>
-            <Link href={registerHref}>ثبت‌نام</Link>
-          </Button>
-          <Button asChild variant={"outline"}>
-            <Link href={loginHref}>ورود به حساب</Link>
+            <Link href={loginHref}>ورود یا ثبت‌نام</Link>
           </Button>
         </div>
         <div className={"flex justify-center"}>

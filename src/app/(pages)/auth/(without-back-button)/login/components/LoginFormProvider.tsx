@@ -12,6 +12,7 @@ import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
 import { useFormError } from "@/shared/hooks/useFormError";
 import { resolvePostLoginRedirect } from "@/shared/utils/authRedirect";
+import { useAuthPhoneStore } from "@/services/authentication-store/useAuthPhoneStore";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -19,10 +20,12 @@ interface IProps {
 }
 
 const LoginFormProvider = ({ children }: IProps) => {
+  const savedPhone = useAuthPhoneStore((s) => s.phone);
+  const setPhone = useAuthPhoneStore((s) => s.setPhone);
   const methods = useForm<TLoginFormSchema>({
     resolver: zodResolver(loginFormSchema()),
     defaultValues: {
-      phone: "",
+      phone: savedPhone,
       password: "",
     },
     mode: "onChange",
@@ -37,6 +40,7 @@ const LoginFormProvider = ({ children }: IProps) => {
 
   const onSubmit = async (data: TLoginFormSchema) => {
     clearError();
+    setPhone(data.phone);
     try {
       const res = await mutateAsync({
         phone: data.phone,
@@ -47,6 +51,12 @@ const LoginFormProvider = ({ children }: IProps) => {
       // Login JWT is always customer/global; memberships hydrate via GET /api/auth/me.
       router.push(resolvePostLoginRedirect());
     } catch (e) {
+      // The backend never says whether a phone has an account (no enumeration), so a 401 is
+      // worded for both cases; LoginForm then offers the SMS code for this phone.
+      if ((e as { response?: { status?: number } })?.response?.status === 401) {
+        setGeneralError("رمز عبور درست نیست، یا هنوز با این شماره ثبت‌نام نکرده‌اید.");
+        return;
+      }
       handleFormError(setError, setGeneralError)(e);
     }
   };

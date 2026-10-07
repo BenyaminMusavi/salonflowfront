@@ -5,7 +5,30 @@ const PASSWORD_LABEL = "رمز عبور";
 const SUBMIT_NAME = /ورود به حساب کاربری/;
 const LOGIN_ENDPOINT = "**/api/auth/login-password";
 
-test.describe("Login", () => {
+test.describe("Login or sign-up with an SMS code", () => {
+  test("/auth/login sends a code to the phone and opens the code step", async ({ page }) => {
+    let sent = "";
+    await page.route("**/api/auth/send-otp", async (route) => {
+      sent = route.request().postDataJSON()?.phone ?? "";
+      await route.fulfill({ status: 200, json: { data: null } });
+    });
+
+    await page.goto("/auth/login");
+    await page.getByLabel(PHONE_LABEL).fill("09123456789");
+    await page.getByRole("button", { name: /دریافت کد تأیید/ }).click();
+
+    await page.waitForURL((url) => url.pathname === "/auth/otp");
+    expect(sent).toBe("09123456789");
+  });
+
+  test("old /auth/register links land on the same page, keeping the callback", async ({ page }) => {
+    await page.goto("/auth/register?callback=/reservation");
+    await page.waitForURL((url) => url.pathname === "/auth/login");
+    expect(new URL(page.url()).searchParams.get("callback")).toBe("/reservation");
+  });
+});
+
+test.describe("Login with password (/auth/password)", () => {
   test("blocks submission and shows inline errors when both fields are empty", async ({
     page,
   }) => {
@@ -15,7 +38,7 @@ test.describe("Login", () => {
       return route.continue();
     });
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/password");
     await page.getByRole("button", { name: SUBMIT_NAME }).click();
 
     // Empty phone fails the /^09\d{9}$/ regex check before it ever reaches min-length,
@@ -35,12 +58,12 @@ test.describe("Login", () => {
       })
     );
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/password");
     await page.getByLabel(PHONE_LABEL).fill("09123456789");
     await page.getByLabel(PASSWORD_LABEL).fill("CorrectHorseBattery1");
     await page.getByRole("button", { name: SUBMIT_NAME }).click();
 
-    await page.waitForURL((url) => !url.pathname.startsWith("/auth/login"));
+    await page.waitForURL((url) => !url.pathname.startsWith("/auth/password"));
 
     const stored = await page.evaluate(() =>
       window.localStorage.getItem("salon_flow_token_state")
@@ -58,13 +81,16 @@ test.describe("Login", () => {
       })
     );
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/password");
     await page.getByLabel(PHONE_LABEL).fill("09123456789");
     await page.getByLabel(PASSWORD_LABEL).fill("WrongPassword1");
     await page.getByRole("button", { name: SUBMIT_NAME }).click();
 
-    await expect(page.getByText("شماره موبایل یا رمز عبور اشتباه است")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/auth/login");
+    // The backend never says whether the phone has an account, so the copy covers both
+    // cases and offers the SMS code for the same phone.
+    await expect(page.getByText("رمز عبور درست نیست، یا هنوز با این شماره ثبت‌نام نکرده‌اید.")).toBeVisible();
+    await expect(page.getByRole("button", { name: /ورود با کد پیامکی به/ })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/auth/password");
   });
 
   test("disables the submit button immediately so a rapid double click cannot fire two requests", async ({
@@ -81,7 +107,7 @@ test.describe("Login", () => {
       });
     });
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/password");
     await page.getByLabel(PHONE_LABEL).fill("09123456789");
     await page.getByLabel(PASSWORD_LABEL).fill("CorrectHorseBattery1");
 
@@ -96,7 +122,7 @@ test.describe("Login", () => {
     // A second tap while disabled must be a no-op at the DOM level.
     await submitButton.click({ force: true }).catch(() => {});
 
-    await page.waitForURL((url) => !url.pathname.startsWith("/auth/login"));
+    await page.waitForURL((url) => !url.pathname.startsWith("/auth/password"));
     expect(calls).toBe(1);
   });
 
@@ -109,7 +135,7 @@ test.describe("Login", () => {
       return route.continue();
     });
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/password");
     await expect(page.getByLabel(PASSWORD_LABEL)).toHaveAttribute("type", "password");
 
     // Whitespace and non-09-prefixed numbers now fail the phone regex before any request fires.

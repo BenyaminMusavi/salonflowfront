@@ -15,6 +15,7 @@ import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
 import { resolvePostLoginRedirect } from "@/shared/utils/authRedirect";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import authService from "@/services/domains/auth/auth.service";
 
 // ---------- PROVIDER ----------
 interface IProps {
@@ -54,14 +55,16 @@ const OtpFormProvider = ({ children }: IProps) => {
       });
       clearSalon();
       setToken(res.data, true);
-      // Brand-new accounts have no password yet — send them to set one before
-      // continuing, otherwise they'd be stuck with no way to log back in
-      // (the login page is password-only, there's no OTP-login fallback).
-      if (res.data.hasPassword === false) {
-        router.push(RouteAddress.AUTH.SET_PASSWORD.BASE);
-        return;
+      // The SMS code is the normal way in now, so a password is optional. The only thing asked
+      // once is the name: «تکمیل حساب» opens only while first or last name is missing.
+      let needsName = false;
+      try {
+        const me = (await authService.me()).data;
+        needsName = !me?.firstName?.trim() || !me?.lastName?.trim();
+      } catch {
+        // Logged in either way; don't block on a failed profile read.
       }
-      router.push(resolvePostLoginRedirect());
+      router.push(needsName ? RouteAddress.AUTH.SET_PASSWORD.BASE : resolvePostLoginRedirect());
     } catch (e) {
       handleFormError(setError, setGeneralError, {
         acceptedterms: "acceptedTerms",

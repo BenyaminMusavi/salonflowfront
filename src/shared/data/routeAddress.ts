@@ -3,8 +3,13 @@ export const RouteAddress = {
     LOGIN: {
       BASE: "/auth/login",
     },
+    /** Old sign-up page — only redirects to LOGIN («ورود یا ثبت‌نام»). */
     REGISTER: {
       BASE: "/auth/register",
+    },
+    /** «ورود با رمز عبور» — the secondary way in. */
+    PASSWORD: {
+      BASE: "/auth/password",
     },
     OTP: {
       BASE: "/auth/otp",

@@ -4,27 +4,24 @@ import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  registerFormSchema,
-  TRegisterFormSchema,
-} from "./registerFormSchema";
+import { phoneStartFormSchema, TPhoneStartFormSchema } from "./phoneStartFormSchema";
 import { useMutateSendOtp } from "@/services/domains/auth/hooks/useMutateSendOtp";
+import { useAuthPhoneStore } from "@/services/authentication-store/useAuthPhoneStore";
 import { handleFormError } from "@/shared/utils/handleFormError";
 import { FormLoadingProvider } from "@/shared/contexts/FormLoadingContext";
+import { RouteAddress } from "@/shared/data/routeAddress";
 
-// ---------- PROVIDER ----------
-interface IProps {
-  children: ReactNode;
-}
-
-const RegisterFormProvider = ({ children }: IProps) => {
-  const methods = useForm<TRegisterFormSchema>({
-    resolver: zodResolver(registerFormSchema()),
+/**
+ * «ورود یا ثبت‌نام» — one door for everyone: send an SMS code to the phone. verify-otp logs an
+ * existing account in and creates a new one, so the user never has to know which they are.
+ */
+const PhoneStartFormProvider = ({ children }: { children: ReactNode }) => {
+  const savedPhone = useAuthPhoneStore((s) => s.phone);
+  const setPhone = useAuthPhoneStore((s) => s.setPhone);
+  const methods = useForm<TPhoneStartFormSchema>({
+    resolver: zodResolver(phoneStartFormSchema()),
     mode: "onChange",
-    defaultValues: {
-      phone: "",
-      referralCode: ""
-    }
+    defaultValues: { phone: savedPhone },
   });
 
   const { setError, handleSubmit } = methods;
@@ -32,11 +29,12 @@ const RegisterFormProvider = ({ children }: IProps) => {
   const router = useRouter();
   const { mutateAsync, isPending } = useMutateSendOtp();
 
-  const onSubmit = async (data: TRegisterFormSchema) => {
+  const onSubmit = async (data: TPhoneStartFormSchema) => {
     setGeneralError("");
+    setPhone(data.phone);
     try {
       await mutateAsync({ phone: data.phone });
-      router.push(`/auth/otp?phone=${encodeURIComponent(data.phone)}`);
+      router.push(`${RouteAddress.AUTH.OTP.BASE}?phone=${encodeURIComponent(data.phone)}`);
     } catch (e) {
       handleFormError(setError, setGeneralError)(e);
     }
@@ -46,9 +44,7 @@ const RegisterFormProvider = ({ children }: IProps) => {
     <FormLoadingProvider isLoading={isPending}>
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {generalError && (
-            <p className="px-4 text-xs font-medium text-error">{generalError}</p>
-          )}
+          {generalError && <p className="px-4 text-xs font-medium text-error">{generalError}</p>}
           {children}
         </form>
       </FormProvider>
@@ -56,4 +52,4 @@ const RegisterFormProvider = ({ children }: IProps) => {
   );
 };
 
-export default RegisterFormProvider;
+export default PhoneStartFormProvider;

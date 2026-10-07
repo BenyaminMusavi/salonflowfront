@@ -1,23 +1,45 @@
 "use client";
 import { normalizePhoneInput, PHONE_INPUT_ATTRS } from "@/shared/utils/phoneInput";
-import React, { useState } from "react";
+import React from "react";
 import {
   CaretLeftIcon,
+  ChatCircleTextIcon,
   DeviceMobileIcon,
   LockKeyIcon,
 } from "@phosphor-icons/react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutateSendOtp } from "@/services/domains/auth/hooks/useMutateSendOtp";
+import { useAuthPhoneStore } from "@/services/authentication-store/useAuthPhoneStore";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { InputReactHookForm } from "@/shared/components/primitives/input/InputReactHookForm";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { useFormLoading } from "@/shared/contexts/FormLoadingContext";
 import { useFormError } from "@/shared/hooks/useFormError";
 
+const PHONE_RULE = /^09\d{9}$/;
+
 function LoginForm() {
   const { control } = useFormContext();
-  const { generalError } = useFormError();
+  const { generalError, setGeneralError } = useFormError();
   const isLoading = useFormLoading();
+  const router = useRouter();
+  const sendOtp = useMutateSendOtp();
+  const setPhone = useAuthPhoneStore((s) => s.setPhone);
+  const phone = normalizePhoneInput((useWatch({ control, name: "phone" }) as string | undefined) ?? "");
+
+  /** Same door as «ورود یا ثبت‌نام»: an SMS code logs an account in or creates it. */
+  const loginWithCode = async () => {
+    setPhone(phone);
+    try {
+      await sendOtp.mutateAsync({ phone });
+      router.push(`${RouteAddress.AUTH.OTP.BASE}?phone=${encodeURIComponent(phone)}`);
+    } catch (err) {
+      setGeneralError(getApiErrorMessage(err, "ارسال کد ناموفق بود."));
+    }
+  };
 
   return (
     <div className={"w-full flex justify-center"}>
@@ -56,8 +78,20 @@ function LoginForm() {
         </div>
 
         {generalError && (
-          <div className="bg-error/5 border border-error text-error px-4 py-3 rounded-[2px] text-sm w-full">
-            {generalError}
+          <div className="flex w-full flex-col gap-3 rounded-[12px] border border-error bg-error/5 px-4 py-3 text-sm text-error">
+            <span>{generalError}</span>
+            {PHONE_RULE.test(phone) ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                isLoading={sendOtp.isPending}
+                onClick={() => void loginWithCode()}
+              >
+                <ChatCircleTextIcon size={18} />
+                ورود با کد پیامکی به <span dir="ltr">{phone}</span>
+              </Button>
+            ) : null}
           </div>
         )}
 
@@ -83,15 +117,14 @@ function LoginForm() {
 
           <span className={"w-full h-px bg-border"} />
 
-          <div className={"flex gap-x-2 items-center"}>
-            <span className={"text-foreground/60"}>حساب کاربری ندارید؟</span>
-            <Link
-              className={"text-primary"}
-              href={RouteAddress.AUTH.REGISTER.BASE}
-            >
-              ثبت نام کنید
-            </Link>
-          </div>
+          <Link
+            className={"flex items-center gap-2 text-primary text-[14px]"}
+            href={RouteAddress.AUTH.LOGIN.BASE}
+            onClick={() => setPhone(phone)}
+          >
+            <ChatCircleTextIcon size={18} />
+            ورود یا ثبت‌نام با کد پیامکی
+          </Link>
         </div>
       </div>
     </div>

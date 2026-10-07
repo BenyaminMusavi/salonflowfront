@@ -8,11 +8,11 @@ const SetPasswordView = () => {
       <div className={"flex flex-col gap-y-1"}>
         <h2 className={"flex items-center gap-x-1"}>
           <span className={"text-foreground text-[20px] font-semibold"}>
-            تعیین رمز عبور
+            تکمیل حساب
           </span>
         </h2>
         <span className={"text-foreground/60 text-[14px]"}>
-          نام خود را بنویسید و برای ورودهای بعدی یک رمز عبور تعیین کنید.
+          فقط یک بار: نام خود را بنویسید تا سالن‌ها شما را بشناسند.
         </span>
       </div>
       <SetPasswordFormProvider>
