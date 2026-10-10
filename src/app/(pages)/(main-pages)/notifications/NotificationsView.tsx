@@ -8,6 +8,8 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 import { formatSalonDayTime } from "@/shared/utils/salonTime";
+import { CaretLeftIcon } from "@phosphor-icons/react";
+import { NOTIFICATION_ENTITY_APPOINTMENT } from "@/services/domains/notifications/types/notifications.type";
 
 interface IProps {
   title: string;
@@ -73,6 +75,17 @@ export default function NotificationsView({ title }: IProps) {
         <div className="flex flex-col gap-2">
           {notifications.map((n) => {
             const unread = !n.readAt;
+            // A reminder / booking notice opens its appointment (once the API sends its Guid).
+            const appointmentHref =
+              n.relatedEntityType === NOTIFICATION_ENTITY_APPOINTMENT && n.relatedEntityPublicId
+                ? RouteAddress.RESERVATION.DETAILS(n.relatedEntityPublicId)
+                : null;
+            const open = appointmentHref
+              ? () => {
+                  if (unread) mutate.read.mutate(n.id);
+                  router.push(appointmentHref);
+                }
+              : undefined;
             return (
               <div
                 key={n.id}
@@ -82,7 +95,13 @@ export default function NotificationsView({ title }: IProps) {
                     : "rounded-[20px] bg-surface p-4"
                 }
               >
-                <div className="flex items-start gap-2">
+                <div
+                  className={open ? "flex cursor-pointer items-start gap-2" : "flex items-start gap-2"}
+                  role={open ? "link" : undefined}
+                  tabIndex={open ? 0 : undefined}
+                  onClick={open}
+                  onKeyDown={open ? (e) => e.key === "Enter" && open() : undefined}
+                >
                   {unread && (
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   )}
@@ -93,7 +112,9 @@ export default function NotificationsView({ title }: IProps) {
                     <p className="mt-1 text-xs text-foreground-muted">
                       {n.body || "—"}
                     </p>
+                    {open ? <p className="mt-1.5 text-[11px] font-semibold text-primary">مشاهده‌ی نوبت</p> : null}
                   </div>
+                  {open ? <CaretLeftIcon size={16} className="mt-1 shrink-0 text-foreground-muted" /> : null}
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <p className="text-[11px] text-foreground-muted">

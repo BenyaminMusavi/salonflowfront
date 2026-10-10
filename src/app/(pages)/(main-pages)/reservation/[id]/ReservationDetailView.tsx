@@ -20,6 +20,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import AppointmentReviewSection from "./components/AppointmentReviewSection";
+import AppointmentActions from "./components/AppointmentActions";
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 
 export default function ReservationDetailView() {
@@ -125,6 +126,8 @@ export default function ReservationDetailView() {
         </span>
       </div>
 
+      {!cancelled ? <AppointmentActions appointment={appointment} /> : null}
+
       {(appointment.branchName || appointment.branchAddress) && (
         <div className="rounded-[20px] bg-surface-tertiary p-4 text-sm">
           {appointment.branchName && (
@@ -154,7 +157,7 @@ export default function ReservationDetailView() {
                 </p>
               </div>
               <span className="shrink-0 font-bold text-foreground">
-                {formatToman(svc.price)}
+                {formatToman(svc.price)} <span className="text-xs font-medium text-foreground-muted">تومان</span>
               </span>
             </li>
           ))}
@@ -193,17 +196,11 @@ export default function ReservationDetailView() {
 
       {canCancel && !showCancelForm && (
         <div className="flex flex-col gap-2">
-          {!freeCancel && (
-            <p className="text-xs text-orange-400">
-              کمتر از 24 ساعت تا نوبت مانده؛ لغو ممکن است شامل جریمه بیعانه شود.
-            </p>
-          )}
-          {freeCancel && (
-            <p className="text-xs text-foreground-muted">
-              لغو در پنجره رایگان (≥ 24 ساعت) بیعانه‌ی پرداخت‌شده از کیف پول را
-              به کیف پول برمی‌گرداند؛ بیعانه‌ی پرداخت‌شده در سالن را خود سالن پس می‌دهد.
-            </p>
-          )}
+          <p className={cn("text-xs", freeCancel ? "text-foreground-muted" : "text-warning")}>
+            {freeCancel
+              ? "لغو رایگان تا 24 ساعت قبل از نوبت."
+              : "کمتر از 24 ساعت مانده؛ با لغو، بیعانه ممکن است برنگردد."}
+          </p>
           <button
             type="button"
             onClick={() => setShowCancelForm(true)}

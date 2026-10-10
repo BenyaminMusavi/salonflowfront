@@ -49,6 +49,12 @@ export interface IMyAppointmentDetail {
   salonName: string;
   branchName?: string | null;
   branchAddress?: string | null;
+  /** Requested from the backend — call / directions / rebook show only once they are sent. */
+  salonPublicId?: string | null;
+  salonPhone?: string | null;
+  branchPhone?: string | null;
+  branchLatitude?: number | null;
+  branchLongitude?: number | null;
   services: IMyAppointmentService[];
   totalPrice: number;
   totalDurationMinutes: number;

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import HelpSheet from "../help-sheet/HelpSheet";
 import {
   CaretLeft,
   Gear,
@@ -10,6 +12,8 @@ import {
   BellSimple,
   HeartIcon,
   ShieldCheckIcon,
+  WalletIcon,
+  ChatCircleDotsIcon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -21,31 +25,39 @@ import { remainingSubscriptionDays } from "@/services/domains/subscriptions/util
 import { SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
 import { APP_LOCALE } from "@/shared/utils/locale";
 
-const beforeSubscription = [
-  {
-    label: "نوبت‌های من",
-    icon: CalendarBlank,
-    href: RouteAddress.RESERVATION.BASE,
-  },
-  {
-    label: "علاقه‌مندی‌های من",
-    icon: HeartIcon,
-    href: RouteAddress.FAVORITES.BASE,
-  },
+/** «من»: one row per destination — no tiles repeating the same links. */
+const mine = [
+  { label: "نوبت‌های من", icon: CalendarBlank, href: RouteAddress.RESERVATION.BASE },
+  { label: "علاقه‌مندی‌های من", icon: HeartIcon, href: RouteAddress.FAVORITES.BASE },
+  { label: "اعلان‌ها", icon: BellSimple, href: RouteAddress.NOTIFICATIONS.BASE },
+  // Wallet top-up is off for now; the page only shows the balance.
+  { label: "کیف پول", subtitle: "موجودی و تراکنش‌ها", icon: WalletIcon, href: RouteAddress.WALLET.BASE },
+  { label: "حساب من", icon: Gear, href: RouteAddress.PROFILE.SETTINGS },
 ];
 
-const afterSubscription = [
-  {
-    label: "اعلان‌ها",
-    icon: BellSimple,
-    href: RouteAddress.NOTIFICATIONS.BASE,
-  },
-  {
-    label: "حساب من",
-    icon: Gear,
-    href: RouteAddress.PROFILE.SETTINGS,
-  },
-];
+function GroupTitle({ children }: { children: React.ReactNode }) {
+  return <p className="mt-3 px-1 text-xs font-semibold text-foreground-muted first:mt-0">{children}</p>;
+}
+
+function HelpMenuRow() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-3 rounded-[16px] bg-surface p-4 text-right"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-tertiary">
+          <ChatCircleDotsIcon size={20} className="text-primary" />
+        </div>
+        <span className="flex-1 text-[14px] font-bold text-foreground">راهنما و پشتیبانی</span>
+        <CaretLeft size={18} className="text-foreground-muted" />
+      </button>
+      <HelpSheet open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
 
 function MenuRow({
   label,
@@ -182,15 +194,16 @@ function SalonMenuRows() {
 export default function ProfileMenuList() {
   return (
     <div className="flex flex-col gap-2 px-safe-area">
-      <AdminPanelMenuRow />
-      {beforeSubscription.map((item) => (
+      <GroupTitle>من</GroupTitle>
+      {mine.map((item) => (
         <MenuRow key={item.label} {...item} />
       ))}
+      <GroupTitle>کسب‌وکار</GroupTitle>
+      <AdminPanelMenuRow />
       <SalonMenuRows />
       <SubscriptionMenuRow />
-      {afterSubscription.map((item) => (
-        <MenuRow key={item.label} {...item} />
-      ))}
+      <GroupTitle>پشتیبانی</GroupTitle>
+      <HelpMenuRow />
     </div>
   );
 }

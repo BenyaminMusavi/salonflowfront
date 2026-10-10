@@ -48,7 +48,8 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 export default function BookView() {
   const params = useParams<{ id: string }>();
   const salonPublicId = params?.id;
-  // ?service=&branch= from the salon page's service rows: start with that service picked.
+  // ?service=&branch= from the salon page's service rows (or «رزرو دوباره», which sends several
+  // comma-separated offerings): start with those services picked.
   const searchParams = useSearchParams();
   const preselectService = searchParams.get("service");
   const preselectBranch = searchParams.get("branch");
@@ -325,11 +326,12 @@ export default function BookView() {
     }
     if (!branchPublicId || servicesLoading) return;
     preselectApplied.current = true;
-    const svc = branchServices.find((x) => x.offeringPublicId === preselectService);
-    if (!svc) return;
+    const wanted = preselectService.split(",").filter(Boolean);
+    const picked = branchServices.filter((x) => wanted.includes(x.offeringPublicId));
+    if (!picked.length) return;
     // A link from the salon page wins over an older draft of this salon.
     setStep(1);
-    setSelectedServices([svc]);
+    setSelectedServices(picked);
     resetFromStaff();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectService, preselectBranch, branchPublicId, branches, branchServices, servicesLoading]);
