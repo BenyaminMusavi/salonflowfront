@@ -9,85 +9,71 @@ import {
   HouseSimpleIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
-  WalletIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/utils/className";
 import { RouteAddress } from "@/shared/data/routeAddress";
 
+/**
+ * Customer bottom bar: five destinations, each with a short label under the icon. The wallet is
+ * not here while top-up is off — it stays reachable from the profile.
+ */
+const NAV_ITEMS = [
+  { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon, label: "خانه" },
+  { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon, label: "جستجو" },
+  { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon, label: "نوبت‌ها" },
+  { href: RouteAddress.FAVORITES.BASE, icon: HeartIcon, label: "علاقه‌مندی" },
+  { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon, label: "پروفایل" },
+];
+
+const getPurePath = (path: string) => path.split("?")[0].replace(/\/$/, "");
+
 function BottomNavigation() {
-  const pathname = usePathname();
+  const currentPath = getPurePath(usePathname());
 
-  const getPurePath = (path: string) => path.split("?")[0].replace(/\/$/, "");
-
-  const currentPath = getPurePath(pathname);
-
-  const navItems = [
-    { href: RouteAddress.HOME.BASE, icon: HouseSimpleIcon, label: "خانه" },
-    { href: RouteAddress.SEARCH.BASE, icon: MagnifyingGlassIcon, label: "جستجو" },
-    { href: RouteAddress.FAVORITES.BASE, icon: HeartIcon, label: "علاقه‌مندی‌ها" },
-    { href: RouteAddress.RESERVATION.BASE, icon: CalendarBlankIcon, label: "نوبت‌های من" },
-    { href: RouteAddress.WALLET.BASE, icon: WalletIcon, label: "کیف پول" },
-    { href: RouteAddress.PROFILE.BASE, icon: UserCircleIcon, label: "پروفایل" },
-  ];
-
-  const isMainPage = navItems.some(
-    (item) => getPurePath(item.href) === currentPath,
-  );
-
+  const isMainPage = NAV_ITEMS.some((item) => getPurePath(item.href) === currentPath);
   if (!isMainPage) return null;
 
   return (
-    <div className="fixed bottom-4 inset-x-0 flex justify-center z-40 px-safe-area">
-      <div className="relative flex items-center px-1 w-fit h-[64px] rounded-full border border-foreground/10 bg-foreground/5 backdrop-blur-md">
-        {navItems.map(({ href, icon: Icon, label }) => {
+    <nav
+      aria-label="منوی اصلی"
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-safe-area pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+    >
+      <div className="flex h-[64px] w-full max-w-[560px] items-stretch rounded-[22px] border border-foreground/10 bg-background/90 px-1 backdrop-blur-md">
+        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
           const isActive = currentPath === getPurePath(href);
 
           return (
             <Link
               key={href}
               href={href}
-              aria-label={label}
               aria-current={isActive ? "page" : undefined}
-              className="relative flex flex-1 items-center justify-center h-full"
+              className="relative flex flex-1 flex-col items-center justify-center gap-0.5"
             >
-              {/* ACTIVE BACKGROUND PILL */}
               {isActive && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute flex h-[calc(100%-8px)] aspect-square inset-y-1 rounded-full bg-on-media/10"
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                  }}
+                  className="absolute inset-x-1 inset-y-1.5 rounded-[16px] bg-surface-brand"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
-
-              {/* ICON */}
-              <motion.div
-                className="relative z-10 w-14 flex justify-center items-center"
-                animate={{
-                  scale: isActive ? 1.2 : 1,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                }}
+              <Icon
+                size={22}
+                weight={isActive ? "fill" : "regular"}
+                className={cn("relative z-10", isActive ? "text-primary" : "text-foreground-muted")}
+              />
+              <span
+                className={cn(
+                  "relative z-10 text-[10px] leading-none",
+                  isActive ? "font-bold text-primary" : "text-foreground-muted"
+                )}
               >
-                <Icon
-                  size={24}
-                  weight={isActive ? "fill" : "regular"}
-                  className={cn(
-                    isActive ? "text-primary" : "text-foreground/40",
-                  )}
-                />
-              </motion.div>
+                {label}
+              </span>
             </Link>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }
 

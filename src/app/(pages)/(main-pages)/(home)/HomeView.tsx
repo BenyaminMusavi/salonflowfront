@@ -3,14 +3,18 @@ import HomeSalons from "@/app/(pages)/(main-pages)/(home)/components/home-salons
 import HomeHeader from "@/app/(pages)/(main-pages)/(home)/components/home-header/HomeHeader";
 import HomeSearch from "@/app/(pages)/(main-pages)/(home)/components/home-search/HomeSearch";
 import IncompleteDraftBanner from "@/app/(pages)/(main-pages)/(home)/components/incomplete-draft-banner/IncompleteDraftBanner";
+import HomeNextAppointment from "@/app/(pages)/(main-pages)/(home)/components/home-next-appointment/HomeNextAppointment";
+import HomeExplore from "@/app/(pages)/(main-pages)/(home)/components/home-explore/HomeExplore";
 
 function HomeView() {
   return (
-    <div className="flex flex-col gap-y-4 pb-6 pt-24">
+    <div className="flex flex-col gap-y-5 pb-32 pt-24">
       <HomeHeader />
       <IncompleteDraftBanner />
-      <HomeSalons />
+      <HomeNextAppointment />
       <HomeSearch />
+      <HomeSalons />
+      <HomeExplore />
       <div className="flex justify-end px-safe-area pt-2">
         <a
           referrerPolicy="origin"

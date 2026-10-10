@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, CaretLeftIcon, SignOutIcon, UserIcon, ShieldCheckIcon } from "@phosphor-icons/react";
+import { PlusIcon, CaretLeftIcon, SignOutIcon, UserIcon, ShieldCheckIcon, StorefrontIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
@@ -34,7 +34,6 @@ export default function BusinessSwitcher() {
   const selectSalon = useSelectPanelSalon();
   const { mutateAsync: logout, isPending: isLoggingOut } = useMutateLogout();
 
-  const displayInitial = data?.data?.firstName?.charAt(0) ?? "?";
 
   // ADR-0012: opening a salon's panel is just navigation; no token swap.
   const handleOpenPanel = (membership: ISalonMembership) => {
@@ -59,17 +58,16 @@ export default function BusinessSwitcher() {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)}>
-        {memberships.length > 0 ? (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-[14px] font-bold">
-            {displayInitial}
-          </div>
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <UserIcon size={20} weight="bold" />
-          </div>
-        )}
-      </button>
+      {memberships.length > 0 || data?.data?.isAdmin ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-10 items-center gap-1.5 rounded-full bg-primary px-3 text-[13px] font-bold text-primary-foreground"
+        >
+          {memberships.length > 0 ? <StorefrontIcon size={18} weight="bold" /> : <ShieldCheckIcon size={18} weight="bold" />}
+          {memberships.length > 0 ? "پنل سالن" : "مدیریت"}
+        </button>
+      ) : null}
 
       <BottomSheet open={open} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-4">
