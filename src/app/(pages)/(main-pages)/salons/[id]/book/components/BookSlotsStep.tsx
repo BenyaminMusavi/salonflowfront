@@ -7,10 +7,17 @@ function formatSlotTime(time: string) {
   return time.length >= 5 ? time.slice(0, 5) : time;
 }
 
-function formatSlotLabel(slot: ISalonBrowseSlot) {
+/** Screen readers get the full range; the button itself shows only the start time. */
+function slotAriaLabel(slot: ISalonBrowseSlot) {
   const start = formatSlotTime(slot.time);
   const end = slot.endTime ? formatSlotTime(slot.endTime) : null;
-  return end ? `${start} – ${end}` : start;
+  return end ? `از ${start} تا ${end}` : start;
+}
+
+/** One button per start time — with several people free at once the API repeats a time. */
+function uniqueByStart(slots: ISalonBrowseSlot[]) {
+  const seen = new Set<string>();
+  return slots.filter((s) => (seen.has(s.time) ? false : (seen.add(s.time), true)));
 }
 
 interface BookSlotsStepProps {
@@ -101,23 +108,24 @@ export default function BookSlotsStep({
       ) : null}
 
       {!isLoading && slots.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
-          {slots.map((slot) => {
-            const label = formatSlotLabel(slot);
+        <div className="grid grid-cols-4 gap-2">
+          {uniqueByStart(slots).map((slot) => {
             const selected = selectedTime === slot.time;
             return (
               <button
-                key={`${slot.time}-${slot.endTime}`}
+                key={slot.time}
                 type="button"
                 onClick={() => onSelect(slot)}
+                aria-label={slotAriaLabel(slot)}
+                aria-pressed={selected}
                 className={cn(
-                  "rounded-2xl px-1 py-3 text-xs font-medium transition sm:text-sm",
+                  "rounded-2xl px-1 py-3 text-sm font-semibold tabular-nums transition",
                   selected
                     ? "bg-primary text-primary-foreground"
                     : "bg-surface text-foreground hover:bg-surface-hover"
                 )}
               >
-                {label}
+                {formatSlotTime(slot.time)}
               </button>
             );
           })}

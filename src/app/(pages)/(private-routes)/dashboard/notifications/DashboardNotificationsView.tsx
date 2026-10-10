@@ -13,7 +13,7 @@ import {
   DashboardSkeleton,
 } from "../_components";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
-import { formatSalonDateTime } from "@/shared/utils/salonTime";
+import { formatSalonDayTime } from "@/shared/utils/salonTime";
 
 export default function DashboardNotificationsView() {
   const query = useQueryNotifications({ pageSize: 30 });
@@ -56,9 +56,7 @@ export default function DashboardNotificationsView() {
               <p className="mt-1 text-xs text-foreground-muted">{n.body || "—"}</p>
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-[11px] text-foreground-muted">
-                  {n.createdAt
-                    ? formatSalonDateTime(n.createdAt)
-                    : ""}
+                  {n.createdAt ? formatSalonDayTime(n.createdAt, { relative: true }) : ""}
                 </p>
                 {!n.readAt ? (
                   <Button size="sm" onClick={() => mutate.read.mutate(n.id)}>

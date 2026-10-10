@@ -41,7 +41,7 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
   if (isLoading) {
     return (
       <div className="-mt-20 flex flex-col pb-32">
-        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE} variant="overlay" />
         <div className="flex h-[40vh] items-center justify-center text-sm text-foreground-muted">
           در حال بارگذاری…
         </div>
@@ -54,7 +54,7 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
       !isError || (error as { response?: { status?: number } })?.response?.status === 404;
     return (
       <div className="-mt-20 flex flex-col pb-32">
-        <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
+        <TopNavigation fallbackHref={RouteAddress.HOME.BASE} variant="overlay" />
         <div className="flex h-[40vh] flex-col items-center justify-center gap-3 px-safe-area text-center">
           <p className="text-sm text-error">
             {notFound
@@ -78,7 +78,7 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
 
   return (
     <div className="-mt-20 flex flex-col pb-32">
-      <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>جزئیات</TopNavigation>
+      <TopNavigation fallbackHref={RouteAddress.HOME.BASE} variant="overlay" />
       <SalonsDetailHero salon={salon} />
       <div className="mt-5 flex flex-col">
         <SalonsDetailIdentity

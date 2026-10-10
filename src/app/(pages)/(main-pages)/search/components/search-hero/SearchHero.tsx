@@ -11,6 +11,7 @@ import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleF
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 import barbershop from "@/shared/assets/images/barbershop.png";
+import { salonGenderLabel } from "@/shared/utils/genderLabel";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
 
 function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
@@ -42,7 +43,7 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
 
       <div className="relative z-10 flex h-full w-3/5 flex-col justify-end gap-2 p-5">
         <span className="text-[11px] text-on-media/70">
-          {slide.genderType || slide.services || "سالن"}
+          {salonGenderLabel(slide.genderType) || slide.services || "سالن"}
         </span>
 
         <h3 className="text-[18px] font-bold leading-tight text-on-media">

@@ -393,11 +393,8 @@ export default function BookView() {
   return (
     <div className="flex flex-col pb-28">
       <TopNavigation fallbackHref={RouteAddress.SALONS.DETAILS(salonPublicId!)}>
-        رزرو نوبت
+        {salon.name ? `رزرو نوبت · ${salon.name}` : "رزرو نوبت"}
       </TopNavigation>
-      {salon.name ? (
-        <p className="-mt-1 px-safe-area text-xs text-foreground-muted">{salon.name}</p>
-      ) : null}
 
       <BookProgressHeader step={step} branchChip={showBranchChip ? branchName : null} />
 

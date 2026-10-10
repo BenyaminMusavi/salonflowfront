@@ -1,5 +1,5 @@
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
-import { formatSalonDateTime } from "@/shared/utils/salonTime";
+import { formatSalonDayTime } from "@/shared/utils/salonTime";
 
 const DEFAULT_FREE_CANCEL_HOURS = 24;
 
@@ -39,14 +39,7 @@ export function appointmentStatusClass(status: number): string {
 
 export function formatAppointmentDateTime(iso: string): string {
   try {
-    return formatSalonDateTime(iso, {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatSalonDayTime(iso);
   } catch {
     return iso;
   }

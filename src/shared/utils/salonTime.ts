@@ -54,6 +54,27 @@ export function formatSalonDate(value: TDateInput, options?: Intl.DateTimeFormat
   return new Date(value).toLocaleDateString(APP_LOCALE, { ...options, timeZone: SALON_TIME_ZONE });
 }
 
+/**
+ * «دوشنبه 20 مهر · 19:00» on the salon calendar — the year only when it isn't this year, and
+ * «امروز» / «دیروز» / «فردا» when `relative`. Never the raw Intl date-time string
+ * («20:14:58,1405/7/18»).
+ */
+export function formatSalonDayTime(value: TDateInput, options?: { relative?: boolean }): string {
+  const iso = new Date(value).toISOString();
+  const day = utcToSalonYmd(iso);
+  const today = salonTodayYmd();
+  const time = utcToSalonTime(iso).slice(0, 5);
+  if (options?.relative) {
+    if (day === today) return `امروز · ${time}`;
+    if (day === addDaysYmd(today, -1)) return `دیروز · ${time}`;
+    if (day === addDaysYmd(today, 1)) return `فردا · ${time}`;
+  }
+  const dayPart = formatSalonDate(iso, { weekday: "long", day: "numeric", month: "long" });
+  const year = formatSalonDate(iso, { year: "numeric" });
+  const thisYear = formatSalonDate(new Date(), { year: "numeric" });
+  return `${dayPart}${year !== thisYear ? ` ${year}` : ""} · ${time}`;
+}
+
 export function formatSalonTime(value: TDateInput, options?: Intl.DateTimeFormatOptions): string {
   return new Date(value).toLocaleTimeString(APP_LOCALE, { ...options, timeZone: SALON_TIME_ZONE });
 }

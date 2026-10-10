@@ -11,6 +11,7 @@ import barbershop from "@/shared/assets/images/barbershop.png";
 import { useQueryApprovedSalons } from "@/services/domains/salons/hooks/useQueryApprovedSalons";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { salonGenderLabel } from "@/shared/utils/genderLabel";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
 
 function HomeSalonSlide({
@@ -87,7 +88,7 @@ function HomeSalons() {
                   id={salon.id}
                   name={salon.name}
                   address={
-                    [salon.genderType, salon.services]
+                    [salonGenderLabel(salon.genderType), salon.services]
                       .filter(Boolean)
                       .join(" · ") || "—"
                   }
