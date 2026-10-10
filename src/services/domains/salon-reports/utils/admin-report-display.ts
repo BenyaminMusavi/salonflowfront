@@ -23,7 +23,7 @@ export function salonReportStatusLabel(status: SalonReportStatus): string {
     case SalonReportStatus.Investigating:
       return "در حال بررسی";
     case SalonReportStatus.Resolved:
-      return "تایید و بسته‌شده";
+      return "تأیید و بسته‌شده";
     case SalonReportStatus.Dismissed:
       return "ردشده";
     default:

@@ -52,7 +52,7 @@ function HomeHeader() {
           <span className="truncate text-[15px] font-bold text-foreground">
             {firstName ? `سلام، ${firstName}` : "سلام"}
           </span>
-          <span className="text-[12px] text-foreground-muted">امروز نوبت کجا بگیریم؟</span>
+          <span className="text-[12px] text-foreground-muted">بدون صف، آنلاین نوبت بگیرید</span>
         </div>
       </Link>
       <div className="flex shrink-0 items-center gap-x-2">

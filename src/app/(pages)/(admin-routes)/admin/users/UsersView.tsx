@@ -51,7 +51,7 @@ export default function UsersView() {
       <div>
         <h1 className="text-lg font-bold text-foreground">کاربران و دسترسی‌ها</h1>
         <p className="mt-1 text-xs text-foreground-muted">
-          جست‌وجوی کاربران برای پشتیبانی و مدیریت دسترسی آن‌ها به پلتفرم.
+          جستجوی کاربران برای پشتیبانی و مدیریت دسترسی آن‌ها به پلتفرم.
         </p>
       </div>
 

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Saffa | بدون صف، با صفا",
     short_name: "Saffa",
-    description: "رزرو آنلاین نوبت سالن‌های زیبایی، بدون صف و بدون تماس تلفنی.",
+    description: "رزرو آنلاین نوبت در سالن‌های زیبایی و پیرایش، بدون صف و بدون تماس تلفنی.",
     start_url: "/",
     display: "standalone",
     dir: "rtl",

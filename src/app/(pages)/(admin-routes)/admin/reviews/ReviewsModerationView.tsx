@@ -16,7 +16,7 @@ export default function ReviewsModerationView() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-bold text-foreground">تایید نظرات و پاسخ سالن‌ها</h1>
+        <h1 className="text-lg font-bold text-foreground">تأیید نظرات و پاسخ سالن‌ها</h1>
         <p className="mt-1 text-xs text-foreground-muted">
           نظرات مشتریان و پاسخ سالن‌ها به آن‌ها که در انتظار بررسی هستند.
         </p>
@@ -39,7 +39,7 @@ export default function ReviewsModerationView() {
         </div>
       ) : items.length === 0 ? (
         <AdminEmptyState
-          title="نظر در انتظار تاییدی وجود ندارد"
+          title="نظر در انتظار تأییدی وجود ندارد"
           description="همهٔ نظرات و پاسخ‌ها بررسی شده‌اند."
         />
       ) : (

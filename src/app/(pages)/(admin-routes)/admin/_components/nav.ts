@@ -23,7 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: "dashboard", label: "داشبورد", href: RouteAddress.ADMIN.BASE, icon: GaugeIcon },
   {
     id: "salons-pending",
-    label: "تایید سالن‌های جدید",
+    label: "تأیید سالن‌های جدید",
     href: RouteAddress.ADMIN.SALONS_PENDING,
     icon: StorefrontIcon,
   },

@@ -202,7 +202,7 @@ export function UserDetailDrawer({
             ) : mode === "confirm-unblock" ? (
               <div className="flex gap-2">
                 <Button className="flex-1" isLoading={isPending} onClick={handleUnblock}>
-                  تایید رفع مسدودیت
+                  تأیید رفع مسدودیت
                 </Button>
                 <Button
                   variant="secondary"

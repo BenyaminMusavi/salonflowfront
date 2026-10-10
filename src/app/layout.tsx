@@ -5,7 +5,7 @@ import "@/shared/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "Saffa | بدون صف، با صفا",
-  description: "رزرو آنلاین نوبت سالن‌های زیبایی، بدون صف و بدون تماس تلفنی.",
+  description: "رزرو آنلاین نوبت در سالن‌های زیبایی و پیرایش، بدون صف و بدون تماس تلفنی.",
   appleWebApp: {
     capable: true,
     title: "Saffa",

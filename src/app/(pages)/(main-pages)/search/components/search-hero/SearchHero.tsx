@@ -55,7 +55,7 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
             href={RouteAddress.SALONS.DETAILS(slide.id)}
             className="rounded-full bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground"
           >
-            رزرو کن
+            مشاهده و رزرو
           </Link>
 
           <Link

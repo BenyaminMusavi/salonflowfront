@@ -5,9 +5,9 @@ import { formatSalonDate } from "@/shared/utils/salonTime";
 export function salonApprovalStatusLabel(status: SalonApprovalStatus): string {
   switch (status) {
     case SalonApprovalStatus.Pending:
-      return "در انتظار تایید";
+      return "در انتظار تأیید";
     case SalonApprovalStatus.Approved:
-      return "تاییدشده";
+      return "تأییدشده";
     case SalonApprovalStatus.Rejected:
       return "ردشده";
     case SalonApprovalStatus.Draft:

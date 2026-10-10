@@ -51,7 +51,7 @@ export default function SalonStatusBanner({
           {rejectionReason
             ? `دلیل رد: ${rejectionReason}`
             : "دلیل رد ثبت نشده است."}
-          {" "}اطلاعات را اصلاح کنید و دوباره برای بررسی ارسال نمایید.
+          {" "}اطلاعات را اصلاح کنید و دوباره برای بررسی ارسال کنید.
         </p>
         <button
           type="button"

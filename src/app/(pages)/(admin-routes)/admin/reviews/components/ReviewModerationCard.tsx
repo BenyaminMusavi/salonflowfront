@@ -82,7 +82,7 @@ export function ReviewModerationCard({ review }: { review: IAdminPendingReview }
               isLoading={isApprovingReview}
               onClick={() => approveReview(review.id)}
             >
-              تایید نظر
+              تأیید نظر
             </Button>
             <Button
               variant="destructive"
@@ -128,7 +128,7 @@ export function ReviewModerationCard({ review }: { review: IAdminPendingReview }
                   isLoading={isApprovingReply}
                   onClick={() => approveReply(review.id)}
                 >
-                  تایید پاسخ
+                  تأیید پاسخ
                 </Button>
                 <Button
                   variant="destructive"

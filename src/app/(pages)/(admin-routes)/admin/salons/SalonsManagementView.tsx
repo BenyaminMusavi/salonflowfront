@@ -20,9 +20,9 @@ import { AdminSelectFilter } from "../_components/AdminSelectFilter";
 import { SalonDetailDrawer } from "../_components/SalonDetailDrawer";
 
 const APPROVAL_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "", label: "همهٔ وضعیت‌های تایید" },
-  { value: String(SalonApprovalStatus.Pending), label: "در انتظار تایید" },
-  { value: String(SalonApprovalStatus.Approved), label: "تاییدشده" },
+  { value: "", label: "همهٔ وضعیت‌های تأیید" },
+  { value: String(SalonApprovalStatus.Pending), label: "در انتظار تأیید" },
+  { value: String(SalonApprovalStatus.Approved), label: "تأییدشده" },
   { value: String(SalonApprovalStatus.Rejected), label: "ردشده" },
   { value: String(SalonApprovalStatus.Draft), label: "پیش‌نویس" },
 ];
@@ -120,7 +120,7 @@ export default function SalonsManagementView() {
               <tr className="border-b border-border bg-background-secondary text-[11px] text-foreground-muted">
                 <th className="px-4 py-3 font-semibold">نام سالن</th>
                 <th className="px-4 py-3 font-semibold">مالک</th>
-                <th className="px-4 py-3 font-semibold">وضعیت تایید</th>
+                <th className="px-4 py-3 font-semibold">وضعیت تأیید</th>
                 <th className="px-4 py-3 font-semibold">وضعیت اعتماد</th>
                 <th className="px-4 py-3 font-semibold">تاریخ ثبت</th>
                 <th className="px-4 py-3 font-semibold"></th>

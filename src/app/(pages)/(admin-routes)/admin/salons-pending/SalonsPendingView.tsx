@@ -38,9 +38,9 @@ export default function SalonsPendingView() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-bold text-foreground">تایید سالن‌های جدید</h1>
+        <h1 className="text-lg font-bold text-foreground">تأیید سالن‌های جدید</h1>
         <p className="mt-1 text-xs text-foreground-muted">
-          سالن‌هایی که در انتظار بررسی و تایید برای ورود به پلتفرم هستند.
+          سالن‌هایی که در انتظار بررسی و تأیید برای ورود به پلتفرم هستند.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export default function SalonsPendingView() {
                 <tr>
                   <td colSpan={5} className="px-4 py-8">
                     <AdminEmptyState
-                      title="سالن در انتظار تاییدی وجود ندارد"
+                      title="سالن در انتظار تأییدی وجود ندارد"
                       description="همهٔ درخواست‌های ثبت سالن بررسی شده‌اند."
                     />
                   </td>

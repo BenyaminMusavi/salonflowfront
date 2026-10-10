@@ -81,7 +81,7 @@ export function SalonReportCard({ report }: { report: IAdminSalonReportListItem 
                 isLoading={isPending}
                 onClick={handleConfirm}
               >
-                {mode === "resolve" ? "ثبت تایید تخلف" : "ثبت رد گزارش"}
+                {mode === "resolve" ? "ثبت تأیید تخلف" : "ثبت رد گزارش"}
               </Button>
               <Button
                 size="sm"
@@ -100,7 +100,7 @@ export function SalonReportCard({ report }: { report: IAdminSalonReportListItem 
         ) : report.status === SalonReportStatus.Investigating ? (
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={() => setMode("resolve")}>
-              تایید تخلف و بستن
+              تأیید تخلف و بستن
             </Button>
             <Button size="sm" variant="secondary" onClick={() => setMode("dismiss")}>
               رد گزارش

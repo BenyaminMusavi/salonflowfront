@@ -9,7 +9,7 @@ const OtpView = () => {
       <div className={"flex flex-col gap-y-1"}>
         <h2 className={"flex items-center gap-x-1"}>
           <span className={"text-foreground text-[20px] font-semibold"}>
-            تایید شماره همراه
+            تأیید شماره موبایل
           </span>
         </h2>
         <OtpPhoneSubtitle />

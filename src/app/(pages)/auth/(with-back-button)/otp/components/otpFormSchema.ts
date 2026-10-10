@@ -3,8 +3,8 @@ import { z } from "zod";
 export const otpFormSchema = () =>
   z.object({
     otp: z
-      .string({ message: "لطفا کد یکبار مصرف دریافتی را وارد نمایید" })
-      .min(1, "لطفا کد یکبار مصرف دریافتی را وارد نمایید"),
+      .string({ message: "لطفاً کد تأیید را وارد کنید" })
+      .min(1, "لطفاً کد تأیید را وارد کنید"),
     /**
      * Only matters if this verification creates a brand-new account — ignored by the
      * backend for a returning user. Always shown/required client-side since the frontend

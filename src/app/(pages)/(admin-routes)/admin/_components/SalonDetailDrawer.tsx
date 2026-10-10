@@ -158,7 +158,7 @@ export function SalonDetailDrawer({
             {isLoading ? "در حال بارگذاری…" : salon?.name ?? "جزئیات سالن"}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
-            جزئیات کامل سالن برای تصمیم تایید، رد، تعلیق یا بازگرداندن
+            جزئیات کامل سالن برای تصمیم تأیید، رد، تعلیق یا بازگرداندن
           </DrawerDescription>
           {salon ? (
             <div className="mt-1 flex flex-wrap gap-1.5">
@@ -372,7 +372,7 @@ export function SalonDetailDrawer({
             ) : mode === "confirm-approve" ? (
               <div className="flex gap-2">
                 <Button className="flex-1" isLoading={isPending} onClick={handleApprove}>
-                  تایید نهایی سالن
+                  تأیید نهایی سالن
                 </Button>
                 <Button variant="secondary" onClick={() => setMode("idle")} disabled={isPending}>
                   انصراف
@@ -381,7 +381,7 @@ export function SalonDetailDrawer({
             ) : salon.approvalStatus === SalonApprovalStatus.Pending ? (
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => setMode("confirm-approve")}>
-                  تایید سالن
+                  تأیید سالن
                 </Button>
                 <Button variant="destructive" onClick={() => setMode("reject")}>
                   رد درخواست

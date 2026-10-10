@@ -21,8 +21,8 @@ function AuthPageContent() {
       }
     >
       <div className={"flex flex-col items-center gap-y-3"}>
-        <span className={"text-[18px] font-semibold"}>Salon Flow</span>
-        <span className={"text-[14px]"}>-</span>
+        <span className={"text-[18px] font-semibold"}>صفا</span>
+        <span className={"text-[14px] text-foreground-muted"}>بدون صف، با صفا</span>
       </div>
       <div className={"flex flex-col gap-y-8 pt-6"}>
         <div className={"flex flex-col gap-y-2"}>

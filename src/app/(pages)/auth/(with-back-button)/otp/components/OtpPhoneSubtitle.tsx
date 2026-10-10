@@ -8,7 +8,7 @@ export default function OtpPhoneSubtitle() {
 
   return (
     <span className="text-foreground/60 text-[14px]">
-      کد تایید به شماره {phone} ارسال شد.
+      کد تأیید به شماره {phone} ارسال شد.
     </span>
   );
 }

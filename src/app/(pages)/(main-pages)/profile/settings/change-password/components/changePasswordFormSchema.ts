@@ -12,13 +12,13 @@ export const changePasswordFormSchema = (hasPassword: boolean) =>
     .object({
       oldPassword: hasPassword
         ? z
-            .string({ message: "لطفا رمز عبور فعلی را وارد نمایید" })
-            .min(1, "لطفا رمز عبور فعلی را وارد نمایید")
+            .string({ message: "لطفاً رمز عبور فعلی را وارد کنید" })
+            .min(1, "لطفاً رمز عبور فعلی را وارد کنید")
         : z.string().optional(),
-      password: newPasswordField("لطفا رمز عبور جدید را وارد نمایید"),
+      password: newPasswordField("لطفاً رمز عبور جدید را وارد کنید"),
       repeatPassword: z
-        .string({ message: "لطفا تکرار رمز عبور جدید را وارد نمایید" })
-        .min(1, "لطفا تکرار رمز عبور جدید را وارد نمایید"),
+        .string({ message: "لطفاً تکرار رمز عبور جدید را وارد کنید" })
+        .min(1, "لطفاً تکرار رمز عبور جدید را وارد کنید"),
     })
     .refine((data) => data.password === data.repeatPassword, {
       message: "رمز عبور جدید با تکرار آن مطابقت ندارد",

@@ -59,15 +59,15 @@ const NewPasswordFormProvider = ({ children }: IProps) => {
         <p className="px-4 text-sm text-foreground-muted">
           {tokenError ||
             (resetToken
-              ? "مهلت تغییر رمز عبور تمام شده است. لطفاً دوباره کد تایید دریافت کنید."
-              : "برای تغییر رمز عبور ابتدا کد تایید را وارد کنید.")}
+              ? "مهلت تغییر رمز عبور تمام شده است. لطفاً دوباره کد تأیید دریافت کنید."
+              : "برای تغییر رمز عبور ابتدا کد تأیید را وارد کنید.")}
         </p>
         <Link
           href={RouteAddress.AUTH.RESET_PASSWORD.BASE}
           onClick={clearReset}
           className="w-full rounded-full bg-primary py-3 text-center text-sm font-bold text-primary-foreground"
         >
-          دریافت کد تایید
+          دریافت کد تأیید
         </Link>
       </div>
     );

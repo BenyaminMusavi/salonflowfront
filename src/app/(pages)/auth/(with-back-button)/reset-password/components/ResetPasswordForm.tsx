@@ -37,7 +37,7 @@ function ResetPasswordForm() {
 
         <div className={"flex flex-col w-full pt-5"}>
           <Button className={"w-full flex gap-x-2 items-center"} isLoading={isLoading}>
-            <span className={"mt-[1px]"}>ارسال کد تایید</span>
+            <span className={"mt-[1px]"}>ارسال کد تأیید</span>
             <CaretLeft size={20} weight="bold" />
           </Button>
         </div>

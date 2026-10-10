@@ -23,14 +23,14 @@ function ResetVerifyForm() {
           <InputOtpReactHookForm
             control={control}
             name="otp"
-            label="کد تایید"
+            label="کد تأیید"
             length={6}
           />
         </div>
 
         <div className={"flex flex-col gap-y-4 w-full pt-5"}>
           <Button className={"w-full flex gap-x-2 items-center"} isLoading={isLoading}>
-            <span className={"mt-[1px]"}>تایید و ادامه</span>
+            <span className={"mt-[1px]"}>تأیید و ادامه</span>
             <CaretLeft size={20} weight="bold" />
           </Button>
 

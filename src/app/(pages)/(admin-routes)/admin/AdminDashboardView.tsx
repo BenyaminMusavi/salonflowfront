@@ -46,21 +46,21 @@ export default function AdminDashboardView() {
         ) : (
           <>
             <AdminKpiCard
-              title="سالن‌های در انتظار تایید"
+              title="سالن‌های در انتظار تأیید"
               value={summary?.pendingSalons ?? 0}
               icon={StorefrontIcon}
               tone="warning"
               href={RouteAddress.ADMIN.SALONS_PENDING}
             />
             <AdminKpiCard
-              title="نظرات در انتظار تایید"
+              title="نظرات در انتظار تأیید"
               value={summary?.pendingReviews ?? 0}
               icon={ChatCircleTextIcon}
               tone="warning"
               href={RouteAddress.ADMIN.REVIEWS}
             />
             <AdminKpiCard
-              title="پاسخ‌های در انتظار تایید"
+              title="پاسخ‌های در انتظار تأیید"
               value={summary?.pendingReplies ?? 0}
               icon={ChatCenteredDotsIcon}
               tone="warning"
