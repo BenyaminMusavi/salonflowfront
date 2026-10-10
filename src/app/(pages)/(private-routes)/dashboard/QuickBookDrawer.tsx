@@ -275,14 +275,18 @@ export default function QuickBookDrawer({
                   ))}
                 </div>
               )}
-              {totalMinutes > 0 ? (
-                <p className="px-1 text-[11px] text-foreground-muted">مدت حدودی: {totalMinutes} دقیقه</p>
-              ) : null}
+              <p className="min-h-4 px-1 text-[11px] text-foreground-muted">
+                {totalMinutes > 0 ? `مدت حدودی: ${totalMinutes} دقیقه` : null}
+              </p>
             </section>
 
-            {offeringIds.length > 0 ? (
-              <section className="flex flex-col gap-2">
-                <SectionTitle>پرسنل</SectionTitle>
+            {/* Always rendered with a stable height so picking a service doesn't push the rest down. */}
+            <section className="flex min-h-[76px] flex-col gap-2">
+              <SectionTitle>پرسنل</SectionTitle>
+              {offeringIds.length === 0 ? (
+                <p className="text-xs text-foreground-muted">اول خدمت را انتخاب کنید.</p>
+              ) : (
+                <>
                 {staffQuery.isLoading ? (
                   <p className="text-xs text-foreground-muted">در حال بارگذاری…</p>
                 ) : staff.length === 0 ? (
@@ -303,8 +307,9 @@ export default function QuickBookDrawer({
                     ))}
                   </div>
                 )}
-              </section>
-            ) : null}
+                </>
+              )}
+            </section>
 
             {branches.length > 1 ? (
               <section className="flex flex-col gap-2">
