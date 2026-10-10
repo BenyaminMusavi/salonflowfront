@@ -89,6 +89,16 @@ export const useOnboardingDraftStore = create<IOnboardingDraftState>()(
     {
       name: "salon_flow_onboarding_draft",
       storage: createJSONStorage(() => localStorage),
+      // v1: the wizard went from 7 steps (… 5 media, 6 schedule, 7 submit) to 5
+      // (1 salon, 2 branches, 3 services, 4 team + hours, 5 photos + submit).
+      version: 1,
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<IOnboardingDraftState>;
+        if (version < 1 && typeof p.step === "number") {
+          p.step = ([1, 1, 2, 3, 4, 5, 4, 5] as const)[p.step] ?? 1;
+        }
+        return p as IOnboardingDraftState;
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<IOnboardingDraftState>;
         return {

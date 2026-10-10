@@ -50,6 +50,9 @@ export interface IScheduleDay {
   isOffDay: boolean;
   startTime: string | null;
   endTime: string | null;
+  /** Optional mid-day break («HH:mm:ss»); save-my-schedule accepts it. */
+  breakStart?: string | null;
+  breakEnd?: string | null;
 }
 
 /** Roster row from GET /api/salons/{salonPublicId}/staff — the server's source of truth. */

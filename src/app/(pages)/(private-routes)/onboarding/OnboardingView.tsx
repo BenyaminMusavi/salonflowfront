@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Stepper } from "@/shared/components/primitives/stepper/Stepper";
+import { CheckCircleIcon } from "@phosphor-icons/react";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -11,11 +11,7 @@ import { useQueryAuthMe } from "@/services/domains/auth/hooks/useQueryAuthMe";
 import { useQueryServiceTypes } from "@/services/domains/service-type/hooks/useQueryServiceTypes";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import salonService from "@/services/domains/salons/salon.service";
-import {
-  DAY_LABELS,
-  GENDER_TYPE_OPTIONS,
-  useOnboardingDraftStore,
-} from "@/services/domains/salons/store/useOnboardingDraftStore";
+import { useOnboardingDraftStore } from "@/services/domains/salons/store/useOnboardingDraftStore";
 import {
   IOnboardingBranch,
   IOnboardingService,
@@ -26,35 +22,30 @@ import {
   getApiErrorMessage,
   getApiFieldErrorMessage,
 } from "@/services/domains/booking/utils/booking-mappers";
-import SalonUsernameField from "@/shared/components/composites/salon-username/SalonUsernameField";
-import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
-import { PhoneInput } from "@/shared/components/primitives/input/PhoneInput";
-import { DurationPicker } from "@/shared/components/primitives/input/DurationPicker";
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { cn } from "@/shared/utils/className";
-import { formatToman } from "@/shared/utils/salonDisplay";
-import { GenderType, SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
+import { APP_LOCALE } from "@/shared/utils/locale";
+import { SalonApprovalStatus, SalonRoleName } from "@/services/common/enums/domain-enums";
 import { getLoginHref } from "@/shared/utils/authRedirect";
 import {
-  IMAGE_UPLOAD_MAX_MB,
-  SALON_GALLERY_LIMIT,
-  validateImageUpload,
-} from "@/shared/utils/imageUpload";
+  StepBranches,
+  StepPhotosSubmit,
+  StepSalon,
+  StepServices,
+  StepTeam,
+  isBranchComplete,
+  newBranch,
+} from "./components/steps";
 
+/** Five steps (was seven): media + submit and staff + schedule are now one step each. */
 const STEPS = [
-  { id: 1, label: "اطلاعات" },
-  { id: 2, label: "شعبه‌ها" },
+  { id: 1, label: "سالن" },
+  { id: 2, label: "شعبه" },
   { id: 3, label: "خدمات" },
-  { id: 4, label: "پرسنل" },
-  { id: 5, label: "رسانه" },
-  { id: 6, label: "برنامه" },
-  { id: 7, label: "ارسال" },
+  { id: 4, label: "تیم و ساعت کاری" },
+  { id: 5, label: "عکس‌ها و ارسال" },
 ];
-
-function isBranchComplete(b: IOnboardingBranch) {
-  return Boolean(b.name.trim() && b.city.trim() && b.address.trim());
-}
 
 function offeringIdsFromServices(services: IOnboardingService[]): string[] {
   return services
@@ -64,30 +55,12 @@ function offeringIdsFromServices(services: IOnboardingService[]): string[] {
 }
 
 /** Drop staff offering ids that are no longer in the saved services list. */
-function pruneStaffOfferings(
-  staff: IOnboardingStaff[],
-  services: IOnboardingService[]
-): IOnboardingStaff[] {
+function pruneStaffOfferings(staff: IOnboardingStaff[], services: IOnboardingService[]): IOnboardingStaff[] {
   const valid = new Set(offeringIdsFromServices(services));
   return staff.map((s) => ({
     ...s,
-    offeringPublicIds: (s.offeringPublicIds ?? [])
-      .map(String)
-      .filter((id) => valid.has(id)),
+    offeringPublicIds: (s.offeringPublicIds ?? []).map(String).filter((id) => valid.has(id)),
   }));
-}
-
-function staffOfferingsNeedPrune(
-  staff: IOnboardingStaff[],
-  pruned: IOnboardingStaff[]
-): boolean {
-  return staff.some((s, i) => {
-    const next = pruned[i]?.offeringPublicIds ?? [];
-    const prev = s.offeringPublicIds ?? [];
-    return (
-      prev.length !== next.length || prev.some((id, j) => id !== next[j])
-    );
-  });
 }
 
 /** Remap staff branchPublicId when save-branches replaces temp/local IDs with server Guids. */
@@ -99,31 +72,49 @@ function remapStaffBranchIds(
   const remap = new Map<string, string>();
   previous.forEach((old, i) => {
     const nextId = saved[i]?.publicId;
-    if (!nextId) return;
-    if (old.publicId && old.publicId !== nextId) {
-      remap.set(String(old.publicId), String(nextId));
-    }
+    if (nextId && old.publicId && old.publicId !== nextId) remap.set(String(old.publicId), String(nextId));
   });
   if (remap.size === 0) return staff;
-  return staff.map((s) => ({
-    ...s,
-    branchPublicId: remap.get(s.branchPublicId) ?? s.branchPublicId,
-  }));
+  return staff.map((s) => ({ ...s, branchPublicId: remap.get(s.branchPublicId) ?? s.branchPublicId }));
 }
 
-const fieldClass =
-  "rounded-2xl bg-input border border-input-border px-3 py-2 text-sm text-foreground outline-none placeholder:text-input-placeholder hover:bg-input-hover focus:bg-input-focus focus:border-border-strong";
-
-const cardClass = "flex flex-col gap-2 rounded-[20px] bg-surface p-4";
+/** «گام 2 از 5 · شعبه» + five segments; a segment jumps there once the salon exists. */
+function Progress({ step, canJump, onJump }: { step: number; canJump: boolean; onJump: (n: number) => void }) {
+  const label = STEPS.find((s) => s.id === step)?.label ?? "";
+  return (
+    <div className="flex flex-col gap-2 px-safe-area pb-4 pt-2">
+      <div className="flex gap-1.5">
+        {STEPS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-label={`گام ${s.id.toLocaleString(APP_LOCALE)}: ${s.label}`}
+            aria-current={s.id === step ? "step" : undefined}
+            disabled={!(s.id < step || canJump)}
+            onClick={() => onJump(s.id)}
+            className={cn(
+              "h-1.5 flex-1 rounded-full transition-colors",
+              s.id < step ? "bg-primary" : s.id === step ? "bg-primary/60" : "bg-border"
+            )}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-semibold text-foreground">
+          گام {step.toLocaleString(APP_LOCALE)} از {STEPS.length.toLocaleString(APP_LOCALE)} · {label}
+        </span>
+        <span className="text-foreground-muted">پیشرفت شما ذخیره می‌شود</span>
+      </div>
+    </div>
+  );
+}
 
 export default function OnboardingView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
 
-  // SF-QA-038: useTokenStore rehydrates isLoggedIn from localStorage asynchronously, so it
-  // reads as false for a moment on every fresh load (hard refresh, direct link) even for an
-  // already-logged-in user — checking it before rehydration finishes redirected them straight
-  // to Login. Mirrors the same tokenReady gate DashboardLayoutClient already uses.
+  // SF-QA-038: useTokenStore rehydrates isLoggedIn from localStorage asynchronously, so it reads
+  // as false for a moment on every fresh load even for a logged-in user — wait for hydration.
   const [tokenReady, setTokenReady] = useState(false);
   useEffect(() => {
     const persist = useTokenStore.persist;
@@ -133,11 +124,7 @@ export default function OnboardingView() {
     return unsub;
   }, []);
 
-  const {
-    canCreateSalon,
-    isLoading: entitlementLoading,
-    isFetched: entitlementFetched,
-  } = useSubscriptionEntitlement();
+  const { canCreateSalon, isLoading: entitlementLoading, isFetched: entitlementFetched } = useSubscriptionEntitlement();
 
   const draft = useOnboardingDraftStore();
   const { data: serviceTypesRes } = useQueryServiceTypes();
@@ -147,16 +134,11 @@ export default function OnboardingView() {
   /** Field error for «آدرس اختصاصی» (client required-check or server 400); cleared on edit. */
   const [usernameError, setUsernameError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [mediaError, setMediaError] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
   const [gateBlocked, setGateBlocked] = useState(false);
   /**
-   * Set when creating a new salon 400s because this user already has a Draft,
-   * Pending, or Rejected one. All shapes carry `{ publicId }` from the backend
-   * now — "draft"/"rejected" mean the user can resume the wizard on it (rejected
-   * gets its own copy so the reason for rejection isn't lost in generic "draft"
-   * wording); "pending" means it's already submitted and awaiting admin review,
-   * so there is nothing to resume yet.
+   * Creating a new salon 400s with `{ publicId }` when this user already has a Draft, Pending or
+   * Rejected one: draft / rejected can be resumed here; pending is waiting for review.
    */
   const [pendingConflict, setPendingConflict] = useState<{
     kind: "draft" | "pending" | "rejected";
@@ -175,28 +157,14 @@ export default function OnboardingView() {
       return;
     }
     if (!entitlementFetched || entitlementLoading) return;
-    // New salon create requires entitlement; resuming draft is allowed
-    if (!canCreateSalon && !hasDraft) {
-      setGateBlocked(true);
-    }
-  }, [
-    tokenReady,
-    isLoggedIn,
-    entitlementFetched,
-    entitlementLoading,
-    canCreateSalon,
-    hasDraft,
-    router,
-  ]);
+    // New salon create requires entitlement; resuming a draft is allowed.
+    if (!canCreateSalon && !hasDraft) setGateBlocked(true);
+  }, [tokenReady, isLoggedIn, entitlementFetched, entitlementLoading, canCreateSalon, hasDraft, router]);
 
-  // Detects an existing owner salon straight away (no local draft needed) — so visiting
-  // /onboarding directly (e.g. from the profile menu, or a fresh device) shows the right
-  // screen immediately instead of a blank step-1 form the user has to submit once just to
-  // discover a conflict. Only kicks in when this browser has no local draft of its own.
+  // An existing owner salon (no local draft) shows the right screen at once instead of a blank
+  // step 1 that would only discover the conflict on submit.
   const { data: authMeData } = useQueryAuthMe({ enabled: tokenReady && isLoggedIn });
-  const ownerMembership = authMeData?.data?.memberships?.find(
-    (m) => m.roleName === SalonRoleName.SalonOwner
-  );
+  const ownerMembership = authMeData?.data?.memberships?.find((m) => m.roleName === SalonRoleName.SalonOwner);
   const { data: ownerSalonRes, isSuccess: ownerSalonFetched } = useQuerySalonById(
     !hasDraft && ownerMembership ? ownerMembership.salonPublicId : undefined
   );
@@ -204,7 +172,6 @@ export default function OnboardingView() {
   useEffect(() => {
     if (hasDraft || !ownerMembership || !ownerSalonFetched) return;
     const status = ownerSalonRes?.data?.approvalStatus;
-
     if (status === SalonApprovalStatus.Approved) {
       router.replace(RouteAddress.DASHBOARD.BASE);
       return;
@@ -212,7 +179,7 @@ export default function OnboardingView() {
     if (status === SalonApprovalStatus.Pending) {
       setPendingConflict({
         kind: "pending",
-        message: "شما یک درخواست ثبت سالن در حال بررسی دارید. لطفاً تا اعلام نتیجه صبر کنید.",
+        message: "درخواست ثبت سالن شما در حال بررسی است. بعد از تأیید به شما پیامک می‌دهیم.",
         publicId: ownerMembership.salonPublicId,
       });
       return;
@@ -220,7 +187,7 @@ export default function OnboardingView() {
     if (status === SalonApprovalStatus.Draft) {
       setPendingConflict({
         kind: "draft",
-        message: "شما یک سالن پیش‌نویس دارید؛ ابتدا همان را تکمیل کنید.",
+        message: "ثبت یک سالن را شروع کرده‌اید؛ همان را ادامه دهید.",
         publicId: ownerMembership.salonPublicId,
       });
       return;
@@ -230,27 +197,47 @@ export default function OnboardingView() {
       setPendingConflict({
         kind: "rejected",
         message: reason
-          ? `دلیل رد: ${reason}`
-          : "دلیل رد ثبت نشده است. اطلاعات را اصلاح کنید و دوباره برای بررسی ارسال نمایید.",
+          ? `دلیل: ${reason}`
+          : "دلیلی ثبت نشده است. اطلاعات را اصلاح کنید و دوباره برای بررسی بفرستید.",
         publicId: ownerMembership.salonPublicId,
       });
     }
   }, [hasDraft, ownerMembership, ownerSalonFetched, ownerSalonRes, router]);
 
-  const step = draft.step;
+  const step = Math.min(STEPS.length, Math.max(1, draft.step));
+  const goTo = (n: number) => {
+    setError("");
+    setShowErrors(false);
+    draft.setStep(n);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  };
 
+  // Step 4 always has exactly one owner row (the backend requires it) with a branch, and nobody
+  // keeps a service that no longer exists.
   useEffect(() => {
     if (step !== 4) return;
-    const { staff, services, setStaff } = useOnboardingDraftStore.getState();
-    const pruned = pruneStaffOfferings(staff, services);
-    if (staffOfferingsNeedPrune(staff, pruned)) {
-      setStaff(pruned);
+    const { staff, services, branches, setStaff } = useOnboardingDraftStore.getState();
+    const firstBranch = String(branches.find((b) => b.publicId)?.publicId ?? "");
+    let next = pruneStaffOfferings(staff, services);
+    if (!next.some((s) => s.isCreator)) {
+      next = [
+        { publicId: null, branchPublicId: firstBranch, isCreator: true, phoneNumber: null, offeringPublicIds: offeringIdsFromServices(services) },
+        ...next,
+      ];
     }
+    next = next.map((s) => (s.branchPublicId || !firstBranch ? s : { ...s, branchPublicId: firstBranch }));
+    if (JSON.stringify(next) !== JSON.stringify(staff)) setStaff(next);
   }, [step, draft.services]);
 
-  const ensureSalonPublicId = async () => {
-    if (draft.salonPublicId) return draft.salonPublicId;
-    throw new Error("ابتدا اطلاعات پایه را ذخیره کنید.");
+  // A first visit to «شعبه» starts with one empty card instead of an empty page.
+  useEffect(() => {
+    if (step === 2 && draft.branches.length === 0) draft.setBranches([newBranch()]);
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Stops with inline errors and a short message right above the buttons. */
+  const invalid = (message: string) => {
+    setShowErrors(true);
+    setError(message);
   };
 
   const saveStep = async () => {
@@ -258,14 +245,12 @@ export default function OnboardingView() {
     setSaving(true);
     try {
       if (step === 1) {
-        if (!draft.basicInfo.name.trim()) {
-          throw new Error("نام سالن الزامی است.");
-        }
+        if (!draft.basicInfo.name.trim()) return invalid("نام سالن را بنویسید.");
         const username = draft.basicInfo.username?.trim() ?? "";
         // Required on create; on an existing draft an empty value keeps the server's current one.
         if (!draft.salonPublicId && !username) {
-          setUsernameError("آدرس اختصاصی سالن الزامی است.");
-          return;
+          setUsernameError("آدرس اختصاصی سالن را بنویسید.");
+          return invalid("آدرس اختصاصی سالن را بنویسید.");
         }
         const res = await salonService.saveBasicInfo({
           publicId: draft.salonPublicId,
@@ -279,133 +264,97 @@ export default function OnboardingView() {
         const publicId = res.data?.publicId;
         if (!publicId) throw new Error("شناسه سالن از سرور دریافت نشد.");
         draft.setSalonPublicId(publicId);
-        draft.setStep(2);
+        goTo(2);
         return;
       }
 
-      const salonPublicId = await ensureSalonPublicId();
+      const salonPublicId = draft.salonPublicId;
+      if (!salonPublicId) throw new Error("ابتدا اطلاعات سالن را ذخیره کنید.");
 
       if (step === 2) {
-        if (draft.branches.length === 0) {
-          throw new Error("حداقل یک شعبه اضافه کنید.");
-        }
+        if (draft.branches.length === 0) return invalid("حداقل یک شعبه لازم است.");
         if (draft.branches.some((b) => !isBranchComplete(b))) {
-          throw new Error(
-            "برای ادامه، نام، شهر و آدرس همه شعبه‌ها را تکمیل کنید."
-          );
+          return invalid("نام، شهر، آدرس و مشتری‌های همه‌ی شعبه‌ها را کامل کنید.");
         }
-        const previousBranches = draft.branches;
-        const payload = previousBranches.map((b) => ({
-          ...b,
-          publicId: b.publicId || null,
-        }));
-        const res = await salonService.saveBranches(salonPublicId, payload);
+        const previous = draft.branches;
+        const res = await salonService.saveBranches(salonPublicId, previous.map((b) => ({ ...b, publicId: b.publicId || null })));
         const saved = res.data ?? [];
-        if (saved.length === 0) {
-          throw new Error("لیست شعبه‌ها از سرور دریافت نشد.");
-        }
+        if (saved.length === 0) throw new Error("لیست شعبه‌ها از سرور دریافت نشد.");
         draft.setBranches(saved);
-        if (draft.staff.length > 0) {
-          draft.setStaff(
-            remapStaffBranchIds(draft.staff, previousBranches, saved)
-          );
-        }
-        draft.setStep(3);
+        if (draft.staff.length > 0) draft.setStaff(remapStaffBranchIds(draft.staff, previous, saved));
+        goTo(3);
         return;
       }
 
       if (step === 3) {
-        if (draft.services.length === 0) {
-          throw new Error("حداقل یک خدمت اضافه کنید.");
-        }
+        if (draft.services.length === 0) return invalid("حداقل یک خدمت اضافه کنید.");
+        if (draft.services.some((s) => !(s.basePrice > 0))) return invalid("قیمت همه‌ی خدمت‌ها باید بیشتر از صفر باشد.");
         if (draft.services.some((s) => !isValidServiceDuration(s.durationMinutes))) {
-          throw new Error("مدت هر خدمت باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 12 ساعت).");
+          return invalid("مدت هر خدمت باید مضرب 15 دقیقه باشد (بین 15 دقیقه تا 12 ساعت).");
         }
-        const payload = draft.services.map((s) => ({
-          ...s,
-          publicId: s.publicId || null,
-        }));
-        const res = await salonService.saveServices(salonPublicId, payload);
+        const res = await salonService.saveServices(salonPublicId, draft.services.map((s) => ({ ...s, publicId: s.publicId || null })));
         const saved = res.data ?? [];
-        if (saved.length === 0) {
-          throw new Error("لیست خدمات از سرور دریافت نشد.");
-        }
+        if (saved.length === 0) throw new Error("لیست خدمات از سرور دریافت نشد.");
         draft.setServices(saved);
-        const pruned = pruneStaffOfferings(
-          useOnboardingDraftStore.getState().staff,
-          saved
-        );
-        draft.setStaff(pruned);
-        draft.setStep(4);
+        draft.setStaff(pruneStaffOfferings(useOnboardingDraftStore.getState().staff, saved));
+        goTo(4);
         return;
       }
 
       if (step === 4) {
-        if (draft.staff.length === 0) {
-          throw new Error("حداقل یک عضو پرسنل اضافه کنید.");
+        const staff = pruneStaffOfferings(draft.staff, draft.services);
+        if (staff.filter((s) => s.isCreator).length !== 1) return invalid("اطلاعات شما (مالک) کامل نیست؛ صفحه را دوباره باز کنید.");
+        for (const s of staff) {
+          if (!s.branchPublicId) return invalid("شعبه‌ی همه را مشخص کنید.");
+          if (!s.isCreator && !/^09\d{9}$/.test(s.phoneNumber ?? "")) return invalid("شماره‌ی موبایل همکار را درست بنویسید.");
+          if (s.offeringPublicIds.length < 1) return invalid("برای هر نفر حداقل یک خدمت انتخاب کنید.");
         }
-        if (offeringIdsFromServices(draft.services).length === 0) {
-          throw new Error("ابتدا در مرحله خدمات، حداقل یک خدمت ذخیره کنید.");
-        }
-        const pruned = pruneStaffOfferings(draft.staff, draft.services);
-        draft.setStaff(pruned);
-        for (const s of pruned) {
-          if (!s.branchPublicId) throw new Error("شعبه هر پرسنل را مشخص کنید.");
-          if (!s.isCreator && !s.phoneNumber?.trim()) {
-            throw new Error("شماره موبایل برای پرسنل غیرمالک الزامی است.");
-          }
-          if (s.offeringPublicIds.length < 1) {
-            throw new Error("برای هر پرسنل حداقل یک خدمت انتخاب کنید.");
-          }
-        }
-        await salonService.saveStaff(salonPublicId, pruned);
-        draft.setStep(5);
+        if (!draft.schedule.some((d) => !d.isOffDay)) return invalid("حداقل یک روز کاری لازم است.");
+        draft.setStaff(staff);
+        await salonService.saveStaff(salonPublicId, staff);
+        await salonService.saveMySchedule(salonPublicId, draft.schedule);
+        goTo(5);
         return;
       }
 
       if (step === 5) {
-        if (mediaFiles.length > 0) {
-          await salonService.saveMedias(salonPublicId, mediaFiles);
-        }
-        draft.setStep(6);
-        return;
-      }
-
-      if (step === 6) {
-        await salonService.saveMySchedule(salonPublicId, draft.schedule);
-        draft.setStep(7);
-        return;
-      }
-
-      if (step === 7) {
         await salonService.submitForReview(salonPublicId);
         draft.setSubmitted(true);
       }
     } catch (e) {
       const message =
-        e instanceof Error && !("response" in e)
-          ? e.message
-          : getApiErrorMessage(e, "ذخیره این مرحله ناموفق بود.");
+        e instanceof Error && !("response" in e) ? e.message : getApiErrorMessage(e, "ذخیره‌ی این مرحله ناموفق بود.");
 
       // Username 400 = nothing was saved; show it under the field and keep every typed value.
-      const usernameFieldError =
-        step === 1 ? getApiFieldErrorMessage(e, "username") : undefined;
+      const usernameFieldError = step === 1 ? getApiFieldErrorMessage(e, "username") : undefined;
       if (usernameFieldError) {
         setUsernameError(usernameFieldError);
+        setError(usernameFieldError);
         return;
       }
 
-      // Creating a brand-new salon (step 1, no existing publicId) 400s with this
-      // shape when the user already has one Pending — surface it as a dedicated
-      // screen instead of an inline form error.
+      // Creating a brand-new salon 400s with { publicId } when the user already has one.
       if (step === 1 && !draft.salonPublicId) {
         const conflictData = getApiErrorFieldData<{ publicId?: string }>(e);
         if (conflictData?.publicId) {
-          // Backend uses two distinct messages for the same {publicId} shape —
-          // "پیش‌نویس" (draft, resumable) vs. already-submitted ("در انتظار
-          // بررسی" / Pending, nothing to resume yet).
           const kind = message.includes("پیش‌نویس") ? "draft" : "pending";
           setPendingConflict({ kind, message, publicId: conflictData.publicId });
+          return;
+        }
+      }
+
+      // Submit checks name what is missing: open that step with the message.
+      if (step === 5) {
+        const target = getApiFieldErrorMessage(e, "Branches")
+          ? 2
+          : getApiFieldErrorMessage(e, "Services")
+            ? 3
+            : getApiFieldErrorMessage(e, "Staff") || getApiFieldErrorMessage(e, "Schedule")
+              ? 4
+              : null;
+        if (target) {
+          goTo(target);
+          setError(message);
           return;
         }
       }
@@ -416,72 +365,8 @@ export default function OnboardingView() {
     }
   };
 
-  const lastBranch = draft.branches[draft.branches.length - 1];
-  const canAddBranch =
-    draft.branches.length === 0 ||
-    (lastBranch != null && isBranchComplete(lastBranch));
-
-  const addBranch = () => {
-    if (!canAddBranch) {
-      setError(
-        "برای افزودن شعبه جدید، نام، شهر و آدرس شعبه قبلی را تکمیل کنید."
-      );
-      return;
-    }
-    setError("");
-    const branch: IOnboardingBranch = {
-      publicId: null,
-      name: "",
-      city: "",
-      address: "",
-      latitude: null,
-      longitude: null,
-      genderType: GenderType.Male,
-      phone: "",
-      isActive: true,
-    };
-    draft.setBranches([...draft.branches, branch]);
-  };
-
-  const addService = () => {
-    const firstType = serviceTypes[0];
-    const svc: IOnboardingService = {
-      publicId: null,
-      serviceTypePublicId: String(firstType?.id ?? ""),
-      basePrice: 0,
-      durationMinutes: 45,
-    };
-    draft.setServices([...draft.services, svc]);
-  };
-
-  const addStaff = () => {
-    const firstBranch = draft.branches[0]?.publicId;
-    const member: IOnboardingStaff = {
-      publicId: null,
-      branchPublicId: firstBranch ? String(firstBranch) : "",
-      isCreator: draft.staff.length === 0,
-      phoneNumber: null,
-      offeringPublicIds: offeringIdsFromServices(draft.services),
-    };
-    draft.setStaff([...draft.staff, member]);
-  };
-
-  const toggleStaffOffering = (staffIdx: number, offeringPublicId: string) => {
-    const id = String(offeringPublicId);
-    const next = [...draft.staff];
-    const member = next[staffIdx];
-    if (!member) return;
-    const selected = new Set(member.offeringPublicIds.map(String));
-    if (selected.has(id)) selected.delete(id);
-    else selected.add(id);
-    next[staffIdx] = { ...member, offeringPublicIds: [...selected] };
-    draft.setStaff(next);
-  };
-
-  /** Rehydrates the local draft store from the server's own copy of this salon — needed when this
-   * browser's localStorage draft is empty/stale (different device, cleared storage) but the salon
-   * already exists server-side. Landing step is picked by which wizard steps already have data;
-   * the free step navigation (Stepper below) lets the user jump anywhere from there. */
+  /** Rehydrates the local draft from the server's copy (other device / cleared storage) and lands
+   * on the first step that still misses data. */
   const resumeDraft = async (publicId: string) => {
     setResuming(true);
     setResumeError("");
@@ -491,7 +376,7 @@ export default function OnboardingView() {
         salonService.getStaff(publicId),
       ]);
       const data = draftRes.data;
-      if (!data) throw new Error("دیتای پیش‌نویس از سرور دریافت نشد.");
+      if (!data) throw new Error("اطلاعات پیش‌نویس از سرور دریافت نشد.");
 
       draft.setBasicInfo({
         name: data.name,
@@ -516,32 +401,19 @@ export default function OnboardingView() {
           }))
         );
       }
-
-      // Never saved yet server-side → keep this browser's own default schedule instead of
-      // overwriting it with an empty list.
+      // Never saved yet server-side → keep this browser's default week.
       if (data.schedule.length > 0) {
         draft.setSchedule(
-          data.schedule.map((d) => ({
-            dayOfWeek: d.dayOfWeek,
-            isOffDay: d.isOffDay,
-            startTime: d.startTime,
-            endTime: d.endTime,
-          }))
+          data.schedule.map((d) => ({ dayOfWeek: d.dayOfWeek, isOffDay: d.isOffDay, startTime: d.startTime, endTime: d.endTime }))
         );
       }
 
       const staffWithOfferings = roster.filter((s) => s.offeringPublicIds.length > 0);
       const resumeStep =
-        data.branches.length === 0
-          ? 2
-          : data.services.length === 0
-            ? 3
-            : staffWithOfferings.length === 0
-              ? 4
-              : 6;
+        data.branches.length === 0 ? 2 : data.services.length === 0 ? 3 : staffWithOfferings.length === 0 || data.schedule.length === 0 ? 4 : 5;
 
       draft.setSalonPublicId(publicId);
-      draft.setStep(resumeStep);
+      goTo(resumeStep);
       setPendingConflict(null);
     } catch (e) {
       setResumeError(getApiErrorMessage(e, "بارگذاری پیش‌نویس ناموفق بود."));
@@ -555,27 +427,14 @@ export default function OnboardingView() {
     const isRejected = pendingConflict.kind === "rejected";
     const canResume = (isDraft || isRejected) && !!pendingConflict.publicId;
     return (
-      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
+      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
-        <div
-          className={cn(
-            "rounded-[24px] p-6 text-center",
-            isRejected ? "bg-critical/10 border border-critical/30" : "bg-surface"
-          )}
-        >
+        <div className={cn("rounded-[24px] p-6 text-center", isRejected ? "border border-critical/30 bg-critical/10" : "bg-surface")}>
           <p className="text-base font-bold text-foreground">
-            {isDraft
-              ? "یک سالن پیش‌نویس دارید"
-              : isRejected
-                ? "درخواست ثبت سالن شما رد شده است"
-                : "درخواست ثبت سالن شما در حال بررسی است"}
+            {isDraft ? "ثبت سالن نیمه‌کاره دارید" : isRejected ? "درخواست ثبت سالن شما رد شده است" : "درخواست شما در حال بررسی است"}
           </p>
-          <p className="mt-2 text-sm text-foreground-muted">
-            {pendingConflict.message}
-          </p>
-          {resumeError && (
-            <p className="mt-2 text-xs text-error">{resumeError}</p>
-          )}
+          <p className="mt-2 text-sm leading-6 text-foreground-muted">{pendingConflict.message}</p>
+          {resumeError && <p className="mt-2 text-xs text-error">{resumeError}</p>}
           <div className="mt-6 flex flex-col gap-2">
             {canResume && (
               <button
@@ -584,17 +443,10 @@ export default function OnboardingView() {
                 onClick={() => resumeDraft(pendingConflict.publicId!)}
                 className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {resuming
-                  ? "در حال بارگذاری…"
-                  : isRejected
-                    ? "ویرایش و ارسال مجدد"
-                    : "ادامه پیش‌نویس"}
+                {resuming ? "در حال بارگذاری…" : isRejected ? "اصلاح و ارسال دوباره" : "ادامه‌ی ثبت سالن"}
               </button>
             )}
-            <Link
-              href={RouteAddress.HOME.BASE}
-              className="inline-flex justify-center rounded-full bg-background-secondary px-6 py-3 text-sm font-bold text-foreground"
-            >
+            <Link href={RouteAddress.HOME.BASE} className="inline-flex justify-center rounded-full bg-background-secondary px-6 py-3 text-sm font-bold text-foreground">
               بازگشت به خانه
             </Link>
           </div>
@@ -605,21 +457,18 @@ export default function OnboardingView() {
 
   if (gateBlocked) {
     return (
-      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
+      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
         <div className="rounded-[24px] bg-surface p-6 text-center">
-          <p className="text-base font-bold text-foreground">
-            برای ایجاد سالن جدید اشتراک لازم است
-          </p>
-          <p className="mt-2 text-sm text-foreground-muted">
-            یا اشتراک ندارید یا به سقف تعداد سالن طرح رسیده‌اید. ابتدا طرح
-            آزمایشی/خرید را فعال کنید.
+          <p className="text-base font-bold text-foreground">برای ثبت سالن، اول اشتراک را فعال کنید</p>
+          <p className="mt-2 text-sm leading-6 text-foreground-muted">
+            اشتراک فعالی ندارید یا به سقف تعداد سالن‌های طرحتان رسیده‌اید. می‌توانید طرح آزمایشی را فعال کنید.
           </p>
           <Link
             href={`${RouteAddress.SUBSCRIPTIONS.BASE}?from=onboarding`}
             className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
           >
-            مشاهده اشتراک‌ها
+            مشاهده‌ی اشتراک‌ها
           </Link>
         </div>
       </div>
@@ -628,565 +477,66 @@ export default function OnboardingView() {
 
   if (draft.submitted) {
     return (
-      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-6">
+      <div className="flex flex-col gap-4 px-safe-area pb-24 pt-4">
         <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
-        <div className="rounded-[24px] bg-surface p-6 text-center">
-          <p className="text-lg font-bold text-foreground">
-            در انتظار تأیید ادمین
+        <div className="flex flex-col items-center rounded-[24px] bg-surface p-6 text-center">
+          <CheckCircleIcon size={48} weight="duotone" className="text-primary" />
+          <p className="mt-3 text-lg font-bold text-foreground">سالن برای بررسی ارسال شد</p>
+          <p className="mt-2 text-sm leading-6 text-foreground-muted">
+            تیم صفا اطلاعات را بررسی می‌کند. بعد از تأیید به شما پیامک می‌دهیم، سالن در صفا دیده می‌شود و «پنل سالن» از
+            پروفایل شما باز می‌شود. اگر چیزی نیاز به اصلاح داشته باشد، دلیلش را همین‌جا می‌بینید.
           </p>
-          <p className="mt-2 text-sm text-foreground-muted">
-            سالن شما برای بررسی ارسال شد. پس از تأیید، در کاتالوگ عمومی نمایش
-            داده می‌شود.
-          </p>
-          <div className="mt-6 flex flex-col gap-2">
-            <Link
-              href={RouteAddress.HOME.BASE}
-              className="rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground"
-              onClick={() => draft.reset()}
-            >
-              بازگشت به خانه
-            </Link>
-            <button
-              type="button"
-              onClick={() => draft.reset()}
-              className="text-sm text-foreground-muted"
-            >
-              شروع ثبت سالن جدید
-            </button>
-          </div>
+          <Link
+            href={RouteAddress.HOME.BASE}
+            className="mt-6 w-full rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground"
+            onClick={() => draft.reset()}
+          >
+            بازگشت به خانه
+          </Link>
         </div>
       </div>
     );
   }
 
   if (!tokenReady || !isLoggedIn || (entitlementLoading && !hasDraft)) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-foreground-muted">
-        در حال بارگذاری…
-      </div>
-    );
+    return <div className="flex min-h-[40vh] items-center justify-center text-sm text-foreground-muted">در حال بارگذاری…</div>;
   }
 
   return (
-    <div className="flex flex-col pb-28">
+    <div className="flex flex-col pb-36">
       <TopNavigation fallbackHref={RouteAddress.HOME.BASE}>ثبت سالن</TopNavigation>
-      <Stepper
-        steps={STEPS.map((s) => ({ ...s, complete: s.id < step }))}
-        activeStep={step}
-        onStepClick={(id) => {
-          if (id < step || draft.salonPublicId) draft.setStep(id);
-        }}
-      />
+      <Progress step={step} canJump={!!draft.salonPublicId} onJump={goTo} />
 
       <div className="flex flex-col gap-4 px-safe-area">
-        {error && (
-          <p className="rounded-2xl bg-error/10 px-4 py-3 text-xs text-error">
-            {error}
-          </p>
-        )}
-
-        {/* Step 1 — Basic info */}
         {step === 1 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold">اطلاعات پایه</h2>
-            {(
-              [
-                ["name", "نام سالن *"],
-                ["username", ""],
-                ["description", "توضیحات"],
-                ["instagramHandle", "اینستاگرام"],
-                ["whatsappNumber", "واتساپ"],
-                ["websiteUrl", "وبسایت"],
-              ] as const
-            ).map(([key, label]) => key === "whatsappNumber" ? (
-              <label key={key} className="flex flex-col gap-1 text-sm">
-                <span className="text-foreground-muted">{label}</span>
-                <PhoneInput
-                  placeholder="09xxxxxxxxx"
-                  value={draft.basicInfo.whatsappNumber}
-                  onValueChange={(whatsappNumber) => draft.setBasicInfo({ whatsappNumber })}
-                  inputWrapperClassname="rounded-2xl"
-                />
-              </label>
-            ) : key === "username" ? (
-              <SalonUsernameField
-                key={key}
-                value={draft.basicInfo.username ?? ""}
-                onChange={(username) => {
-                  setUsernameError("");
-                  draft.setBasicInfo({ username });
-                }}
-                salonPublicId={draft.salonPublicId}
-                error={usernameError || undefined}
-              />
-            ) : (
-              <label key={key} className="flex flex-col gap-1 text-sm">
-                <span className="text-foreground-muted">{label}</span>
-                {key === "description" ? (
-                  <textarea
-                    rows={3}
-                    value={draft.basicInfo[key] ?? ""}
-                    onChange={(e) =>
-                      draft.setBasicInfo({ [key]: e.target.value })
-                    }
-                    className={fieldClass}
-                  />
-                ) : (
-                  <input
-                    value={draft.basicInfo[key] ?? ""}
-                    onChange={(e) =>
-                      draft.setBasicInfo({ [key]: e.target.value })
-                    }
-                    className={fieldClass}
-                  />
-                )}
-              </label>
-            ))}
-          </section>
+          <StepSalon usernameError={usernameError} onUsernameErrorClear={() => setUsernameError("")} showErrors={showErrors} />
         )}
-
-        {/* Step 2 — Branches */}
-        {step === 2 && (
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">شعبه‌ها</h2>
-              <button
-                type="button"
-                onClick={addBranch}
-                disabled={!canAddBranch}
-                className={cn(
-                  "text-sm font-bold text-primary",
-                  !canAddBranch && "cursor-not-allowed opacity-40"
-                )}
-              >
-                + افزودن
-              </button>
-            </div>
-            {draft.branches.map((b, idx) => (
-              <div
-                key={b.publicId ?? idx}
-                className={cardClass}
-              >
-                <input
-                  placeholder="نام شعبه"
-                  value={b.name}
-                  onChange={(e) => {
-                    const next = [...draft.branches];
-                    next[idx] = { ...b, name: e.target.value };
-                    draft.setBranches(next);
-                  }}
-                  className={fieldClass}
-                />
-                <input
-                  placeholder="شهر"
-                  value={b.city}
-                  onChange={(e) => {
-                    const next = [...draft.branches];
-                    next[idx] = { ...b, city: e.target.value };
-                    draft.setBranches(next);
-                  }}
-                  className={fieldClass}
-                />
-                <input
-                  placeholder="آدرس"
-                  value={b.address}
-                  onChange={(e) => {
-                    const next = [...draft.branches];
-                    next[idx] = { ...b, address: e.target.value };
-                    draft.setBranches(next);
-                  }}
-                  className={fieldClass}
-                />
-                <PhoneInput
-                  kind="landline"
-                  placeholder="تلفن شعبه"
-                  value={b.phone}
-                  onValueChange={(phone) => {
-                    const next = [...draft.branches];
-                    next[idx] = { ...b, phone };
-                    draft.setBranches(next);
-                  }}
-                  inputWrapperClassname="rounded-2xl"
-                />
-                <select
-                  value={b.genderType}
-                  onChange={(e) => {
-                    const next = [...draft.branches];
-                    next[idx] = {
-                      ...b,
-                      genderType: Number(e.target.value) as GenderType,
-                    };
-                    draft.setBranches(next);
-                  }}
-                  className={fieldClass}
-                >
-                  {GENDER_TYPE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() =>
-                    draft.setBranches(draft.branches.filter((_, i) => i !== idx))
-                  }
-                  className="text-xs text-error"
-                >
-                  حذف شعبه
-                </button>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* Step 3 — Services */}
-        {step === 3 && (
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">خدمات</h2>
-              <button
-                type="button"
-                onClick={addService}
-                className="text-sm font-bold text-primary"
-              >
-                + افزودن
-              </button>
-            </div>
-            {draft.services.map((s, idx) => (
-              <div
-                key={s.publicId ?? idx}
-                className={cardClass}
-              >
-                <select
-                  value={s.serviceTypePublicId}
-                  onChange={(e) => {
-                    const next = [...draft.services];
-                    next[idx] = {
-                      ...s,
-                      serviceTypePublicId: e.target.value,
-                    };
-                    draft.setServices(next);
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">نوع خدمت</option>
-                  {serviceTypes.map((t) => (
-                    <option key={String(t.id)} value={String(t.id)}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <MoneyInput
-                  placeholder="قیمت"
-                  value={s.basePrice || null}
-                  onValueChange={(price) => {
-                    const next = [...draft.services];
-                    next[idx] = { ...s, basePrice: price ?? 0 };
-                    draft.setServices(next);
-                  }}
-                  inputWrapperClassname="rounded-2xl"
-                />
-                <DurationPicker
-                  label="مدت خدمت"
-                  value={s.durationMinutes || null}
-                  onChange={(minutes) => {
-                    const next = [...draft.services];
-                    next[idx] = { ...s, durationMinutes: minutes ?? 45 };
-                    draft.setServices(next);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    draft.setServices(draft.services.filter((_, i) => i !== idx))
-                  }
-                  className="text-xs text-error"
-                >
-                  حذف خدمت
-                </button>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* Step 4 — Staff */}
-        {step === 4 && (
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">پرسنل</h2>
-              <button
-                type="button"
-                onClick={addStaff}
-                className="text-sm font-bold text-primary"
-              >
-                + افزودن
-              </button>
-            </div>
-            {draft.staff.map((s, idx) => (
-              <div
-                key={s.publicId ?? idx}
-                className={cardClass}
-              >
-                <select
-                  value={s.branchPublicId}
-                  onChange={(e) => {
-                    const next = [...draft.staff];
-                    next[idx] = { ...s, branchPublicId: e.target.value };
-                    draft.setStaff(next);
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">انتخاب شعبه</option>
-                  {draft.branches.map((b) => (
-                    <option key={String(b.publicId)} value={String(b.publicId)}>
-                      {b.name || "شعبه بدون نام"}
-                    </option>
-                  ))}
-                </select>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={s.isCreator}
-                    onChange={(e) => {
-                      const next = [...draft.staff];
-                      next[idx] = {
-                        ...s,
-                        isCreator: e.target.checked,
-                        phoneNumber: e.target.checked ? null : s.phoneNumber,
-                      };
-                      draft.setStaff(next);
-                    }}
-                  />
-                  مالک / سازنده
-                </label>
-                {!s.isCreator && (
-                  <PhoneInput
-                    placeholder="موبایل پرسنل"
-                    value={s.phoneNumber}
-                    onValueChange={(phoneNumber) => {
-                      const next = [...draft.staff];
-                      next[idx] = { ...s, phoneNumber };
-                      draft.setStaff(next);
-                    }}
-                    inputWrapperClassname="rounded-2xl"
-                  />
-                )}
-                <div className="flex flex-col gap-2 border-t border-border pt-2">
-                  <p className="text-sm font-bold">خدمات این پرسنل</p>
-                  <p className="text-xs text-foreground-muted">حداقل یک خدمت</p>
-                  {offeringIdsFromServices(draft.services).length === 0 ? (
-                    <p className="text-xs text-error">
-                      ابتدا در مرحله خدمات، خدمات را ذخیره کنید.
-                    </p>
-                  ) : (
-                    draft.services
-                      .filter((svc) => Boolean(svc.publicId))
-                      .map((svc) => {
-                        const oid = String(svc.publicId);
-                        const typeName =
-                          serviceTypes.find(
-                            (t) =>
-                              String(t.id) === String(svc.serviceTypePublicId)
-                          )?.name ?? "خدمت";
-                        return (
-                          <label
-                            key={oid}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              className="mt-0.5"
-                              checked={s.offeringPublicIds
-                                .map(String)
-                                .includes(oid)}
-                              onChange={() => toggleStaffOffering(idx, oid)}
-                            />
-                            <span>
-                              <span className="block text-foreground">
-                                {typeName}
-                              </span>
-                              <span className="block text-xs text-foreground-muted">
-                                {formatToman(svc.basePrice)} تومان ·{" "}
-                                {svc.durationMinutes} دقیقه
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    draft.setStaff(draft.staff.filter((_, i) => i !== idx))
-                  }
-                  className="text-xs text-error"
-                >
-                  حذف
-                </button>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* Step 5 — Media */}
-        {step === 5 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold">رسانه (اختیاری)</h2>
-            <p className="text-xs text-foreground-muted">
-              فقط تصویر، حداکثر {SALON_GALLERY_LIMIT} عکس و هر کدام حداکثر {IMAGE_UPLOAD_MAX_MB} مگابایت. می‌توانید رد شوید.
-            </p>
-            <div className={cardClass}>
-              <input
-                id="onboarding-media-input"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const picked = Array.from(e.target.files ?? []);
-                  e.target.value = "";
-                  const firstInvalid = picked
-                    .map(validateImageUpload)
-                    .find((msg): msg is string => !!msg);
-                  const valid = picked.filter((f) => !validateImageUpload(f));
-                  setMediaError(
-                    firstInvalid ??
-                      (valid.length > SALON_GALLERY_LIMIT
-                        ? `فقط ${SALON_GALLERY_LIMIT} عکس اول نگه داشته شد.`
-                        : "")
-                  );
-                  setMediaFiles(valid.slice(0, SALON_GALLERY_LIMIT));
-                }}
-                className="sr-only"
-              />
-              <label
-                htmlFor="onboarding-media-input"
-                className={cn(fieldClass, "cursor-pointer text-center")}
-              >
-                انتخاب تصویر
-              </label>
-              {mediaError && <p className="text-xs text-error">{mediaError}</p>}
-              {mediaFiles.length > 0 && (
-                <ul className="text-xs text-foreground-muted">
-                  {mediaFiles.map((f) => (
-                    <li key={f.name + f.size}>{f.name}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Step 6 — Schedule */}
-        {step === 6 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-bold">برنامه کاری مالک</h2>
-            {draft.schedule.map((day, idx) => (
-              <div key={day.dayOfWeek} className={cardClass}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">
-                    {DAY_LABELS[day.dayOfWeek]}
-                  </span>
-                  <label className="flex items-center gap-2 text-xs text-foreground-muted">
-                    <input
-                      type="checkbox"
-                      checked={day.isOffDay}
-                      onChange={(e) => {
-                        const next = [...draft.schedule];
-                        next[idx] = {
-                          ...day,
-                          isOffDay: e.target.checked,
-                          startTime: e.target.checked ? null : "09:00:00",
-                          endTime: e.target.checked ? null : "18:00:00",
-                        };
-                        draft.setSchedule(next);
-                      }}
-                    />
-                    تعطیل
-                  </label>
-                </div>
-                {!day.isOffDay && (
-                  <div className="flex gap-2">
-                    <input
-                      type="time"
-                      value={(day.startTime ?? "09:00:00").slice(0, 5)}
-                      onChange={(e) => {
-                        const next = [...draft.schedule];
-                        next[idx] = {
-                          ...day,
-                          startTime: `${e.target.value}:00`,
-                        };
-                        draft.setSchedule(next);
-                      }}
-                      className={cn(fieldClass, "flex-1")}
-                    />
-                    <input
-                      type="time"
-                      value={(day.endTime ?? "18:00:00").slice(0, 5)}
-                      onChange={(e) => {
-                        const next = [...draft.schedule];
-                        next[idx] = {
-                          ...day,
-                          endTime: `${e.target.value}:00`,
-                        };
-                        draft.setSchedule(next);
-                      }}
-                      className={cn(fieldClass, "flex-1")}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* Step 7 — Submit */}
-        {step === 7 && (
-          <section className="flex flex-col gap-3 rounded-[24px] bg-surface p-5">
-            <h2 className="text-base font-bold">ارسال برای بررسی</h2>
-            <p className="text-sm text-foreground-muted">
-              با تأیید، سالن «{draft.basicInfo.name}» برای تأیید ادمین ارسال
-              می‌شود و تا زمان Approve در کاتالوگ عمومی دیده نمی‌شود.
-            </p>
-            <ul className="text-xs text-foreground-muted list-disc pe-5">
-              <li>{draft.branches.length} شعبه</li>
-              <li>{draft.services.length} خدمت</li>
-              <li>{draft.staff.length} پرسنل</li>
-            </ul>
-          </section>
-        )}
+        {step === 2 && <StepBranches showErrors={showErrors} />}
+        {step === 3 && <StepServices serviceTypes={serviceTypes} />}
+        {step === 4 && <StepTeam serviceTypes={serviceTypes} showErrors={showErrors} />}
+        {step === 5 && <StepPhotosSubmit serviceTypes={serviceTypes} onEdit={goTo} />}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
-        <div className="flex w-full max-w-[600px] gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setError("");
-              if (step === 1) router.push(RouteAddress.HOME.BASE);
-              else draft.setStep(Math.max(1, step - 1));
-            }}
-            className="flex-1 rounded-full bg-surface py-4 text-sm font-bold"
-          >
-            بازگشت
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={saveStep}
-            className={cn(
-              "flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
-            )}
-          >
-            {saving
-              ? "در حال ذخیره…"
-              : step === 7
-                ? "ارسال برای بررسی"
-                : step === 5 && mediaFiles.length === 0
-                  ? "رد شدن / ادامه"
-                  : "ذخیره و ادامه"}
-          </button>
+      <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center border-t border-border bg-background/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="flex w-full max-w-[600px] flex-col gap-2">
+          {error ? <p className="rounded-[12px] bg-error/10 px-3 py-2 text-xs text-error">{error}</p> : null}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => (step === 1 ? router.push(RouteAddress.HOME.BASE) : goTo(step - 1))}
+              className="flex-1 rounded-full bg-surface py-4 text-sm font-bold text-foreground"
+            >
+              {step === 1 ? "بعداً" : "قبلی"}
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void saveStep()}
+              className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+            >
+              {saving ? "در حال ذخیره…" : step === 5 ? "ارسال برای بررسی" : "ذخیره و ادامه"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
