@@ -5,8 +5,7 @@ const STEPS = [
   { id: 1, label: "خدمات" },
   { id: 2, label: "پرسنل" },
   { id: 3, label: "تاریخ و ساعت" },
-  { id: 4, label: "پیش‌فاکتور" },
-  { id: 5, label: "تأیید" },
+  { id: 4, label: "تأیید و ثبت" },
 ] as const;
 
 export const BOOK_TOTAL_STEPS = STEPS.length;

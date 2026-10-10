@@ -3,10 +3,10 @@ import {
   IStaffAvailability,
 } from "@/services/domains/salons/types/booking-browse.type";
 
-// v3: 5-step flow (services → staff → date+time → invoice → confirm). Older drafts used the
-// 7-step order, so their step numbers would land on the wrong screen — they're discarded.
-const DRAFT_VERSION = 3;
-const LAST_STEP = 5;
+// v4: 4-step flow (services → staff → date+time → confirm with the invoice). Older drafts
+// used other step orders, so their step numbers would land on the wrong screen — discarded.
+const DRAFT_VERSION = 4;
+const LAST_STEP = 4;
 
 export interface IBookWizardDraft {
   version: number;

@@ -33,6 +33,9 @@ interface BookConfirmStepProps {
   /** Small tag next to the staff name, e.g. «اولین نوبت». */
   staffTag?: string | null;
   price?: ICalculatePriceResult | null;
+  priceLoading?: boolean;
+  priceError?: boolean;
+  onRetryPrice?: () => void;
   notes: string;
   onNotesChange: (value: string) => void;
   isLoggedIn: boolean;
@@ -59,6 +62,9 @@ export default function BookConfirmStep({
   staffLabel,
   staffTag,
   price,
+  priceLoading = false,
+  priceError = false,
+  onRetryPrice,
   notes,
   onNotesChange,
   isLoggedIn,
@@ -77,14 +83,6 @@ export default function BookConfirmStep({
       <div className="rounded-[24px] bg-surface px-4 py-2 divide-y divide-border">
         <ReviewRow label="سالن" value={salonName} />
         <ReviewRow label="شعبه" value={branchName || "—"} />
-        <ReviewRow
-          label="خدمات"
-          value={
-            services.length > 0
-              ? services.map((s) => s.name).join("، ")
-              : "—"
-          }
-        />
         <ReviewRow
           label="تاریخ"
           value={date ? formatFaDate(date) : "—"}
@@ -105,8 +103,36 @@ export default function BookConfirmStep({
         />
       </div>
 
-      {price ? (
+      {priceLoading ? (
+        <div className="space-y-3 rounded-[24px] bg-surface p-5">
+          <div className="h-4 w-2/3 animate-pulse rounded bg-surface-hover" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-surface-hover" />
+          <div className="h-10 animate-pulse rounded-2xl bg-surface-hover" />
+        </div>
+      ) : priceError ? (
+        <div className="rounded-[24px] bg-surface px-4 py-6 text-center">
+          <p className="text-sm text-error">محاسبه‌ی قیمت ناموفق بود.</p>
+          {onRetryPrice ? (
+            <button
+              type="button"
+              onClick={onRetryPrice}
+              className="mt-3 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+            >
+              تلاش مجدد
+            </button>
+          ) : null}
+        </div>
+      ) : price ? (
         <div className="rounded-[24px] bg-surface p-5">
+          <ul className="flex flex-col gap-2.5">
+            {(price.services.length ? price.services : services.map((s) => ({ serviceTypePublicId: s.servicePublicId, serviceName: s.name, price: s.price }))).map((line) => (
+              <li key={line.serviceTypePublicId || line.serviceName} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-foreground">{line.serviceName}</span>
+                <span className="shrink-0 font-semibold text-foreground">{formatToman(line.price)} تومان</span>
+              </li>
+            ))}
+          </ul>
+          <div className="my-4 h-px bg-border" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-foreground-muted">جمع کل</span>
             <span className="font-bold text-foreground">
@@ -129,12 +155,14 @@ export default function BookConfirmStep({
               بیعانه‌ی {formatToman(price.totalDepositAmount)} تومان در سالن پرداخت می‌شود.
             </p>
           ) : null}
-          <div className="mt-3 flex items-center justify-between text-sm">
-            <span className="text-foreground-muted">باقی‌مانده در سالن</span>
-            <span className="font-bold text-foreground">
-              {formatToman(price.remainingAfterDeposit)} تومان
-            </span>
-          </div>
+          {price.totalDepositAmount > 0 || price.amountDueNow > 0 ? (
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="text-foreground-muted">باقی‌مانده در سالن</span>
+              <span className="font-bold text-foreground">
+                {formatToman(price.remainingAfterDeposit)} تومان
+              </span>
+            </div>
+          ) : null}
           <p className="mt-3 text-xs text-foreground-muted">
             لغو رایگان تا{" "}
             {price.freeCancellationWindowHours.toLocaleString(APP_LOCALE)} ساعت

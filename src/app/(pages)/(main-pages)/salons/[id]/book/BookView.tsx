@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
@@ -27,7 +27,6 @@ import BookBranchStep from "./components/BookBranchStep";
 import BookServicesStep from "./components/BookServicesStep";
 import BookDateStep from "./components/BookDateStep";
 import BookStaffStep from "./components/BookStaffStep";
-import BookPriceStep from "./components/BookPriceStep";
 import BookSlotsStep from "./components/BookSlotsStep";
 import BookConfirmStep from "./components/BookConfirmStep";
 import BookSuccessPanel from "./components/BookSuccessPanel";
@@ -40,7 +39,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 /**
  * Customer booking wizard:
  * 1 services (+ branch picker for multi-branch salons) → 2 staff or «اولین نوبت» →
- * 3 date with its free times underneath → 4 invoice → 5 confirm & book.
+ * 3 date with its free times underneath → 4 confirm & book (the invoice is on the same step).
  *
  * «اولین نوبت» asks GET /api/booking/first-available once and prefills date, time and staff; the
  * date step then only loads that staff member's times. If the lookup fails, the date step falls
@@ -49,6 +48,11 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 export default function BookView() {
   const params = useParams<{ id: string }>();
   const salonPublicId = params?.id;
+  // ?service=&branch= from the salon page's service rows: start with that service picked.
+  const searchParams = useSearchParams();
+  const preselectService = searchParams.get("service");
+  const preselectBranch = searchParams.get("branch");
+  const preselectApplied = useRef(false);
   const queryClient = useQueryClient();
 
   const { data: salonRes, isLoading: salonLoading } = useQuerySalonById(salonPublicId);
@@ -192,7 +196,7 @@ export default function BookView() {
     enabled: step === 3 && !!date,
   });
 
-  // Step 4 — invoice for the staff actually doing the booking.
+  // Step 4 — invoice (on the confirm step) for the staff actually doing the booking.
   const {
     data: priceRes,
     isLoading: priceLoading,
@@ -201,7 +205,15 @@ export default function BookView() {
   } = useQueryCalculatePrice(branchPublicId, serviceTypePublicIds, resolvedStaffPublicId, step >= 4);
 
   const price = priceRes?.data;
-  const dates = datesRes?.data ?? [];
+  const dates = useMemo(() => datesRes?.data ?? [], [datesRes?.data]);
+
+  // Opening the date step with nothing picked: take the first bookable day, so its free times
+  // show right away instead of an empty page waiting for a tap.
+  useEffect(() => {
+    if (step !== 3 || date || datesLoading) return;
+    const first = dates.find((d) => d.isAvailable && !!d.date);
+    if (first?.date) setDate(first.date);
+  }, [step, date, dates, datesLoading]);
   const slotsData = slotsRes?.data;
   const slots = slotsData?.slots ?? [];
 
@@ -300,6 +312,27 @@ export default function BookView() {
     setCreatedId,
     setStep,
   });
+
+  useEffect(() => {
+    if (preselectApplied.current || !preselectService || !draftReadyRef.current) return;
+    if (preselectBranch && branchPublicId !== preselectBranch) {
+      const b = branches.find((x) => x.publicId === preselectBranch);
+      if (b) {
+        setBranchPublicId(b.publicId);
+        setBranchName(b.name);
+        return;
+      }
+    }
+    if (!branchPublicId || servicesLoading) return;
+    preselectApplied.current = true;
+    const svc = branchServices.find((x) => x.offeringPublicId === preselectService);
+    if (!svc) return;
+    // A link from the salon page wins over an older draft of this salon.
+    setStep(1);
+    setSelectedServices([svc]);
+    resetFromStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectService, preselectBranch, branchPublicId, branches, branchServices, servicesLoading]);
 
   const selectBranch = (branch: ISalonBranch) => {
     setBranchPublicId(branch.publicId);
@@ -466,17 +499,6 @@ export default function BookView() {
         )}
 
         {step === 4 && (
-          <BookPriceStep
-            price={price}
-            isLoading={priceLoading}
-            isError={priceError}
-            onRetry={() => {
-              void refetchPrice();
-            }}
-          />
-        )}
-
-        {step === 5 && (
           <BookConfirmStep
             salonName={salon.name}
             branchName={branchName}
@@ -487,6 +509,11 @@ export default function BookView() {
             staffLabel={staffLabel}
             staffTag={useFirstAvailable ? "اولین نوبت" : null}
             price={price}
+            priceLoading={priceLoading}
+            priceError={priceError}
+            onRetryPrice={() => {
+              void refetchPrice();
+            }}
             notes={notes}
             onNotesChange={setNotes}
             isLoggedIn={isLoggedIn}

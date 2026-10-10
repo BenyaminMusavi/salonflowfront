@@ -73,7 +73,9 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
   }
 
   const location =
-    [salon.city, salon.address].filter(Boolean).join("، ") || null;
+    (salon.city && salon.address?.includes(salon.city)
+      ? salon.address
+      : [salon.city, salon.address].filter(Boolean).join("، ")) || null;
   const openStatus = getOpenStatusLabel(salon.workingHours);
 
   return (
@@ -98,7 +100,7 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
           whatsappNumber={salon.whatsappNumber}
           websiteUrl={salon.websiteUrl}
         />
-        <SalonsDetailServices services={salon.services} />
+        <SalonsDetailServices salonId={salon.id} branches={salon.branches} services={salon.services} />
         <SalonsDetailHours workingHours={salon.workingHours} />
 
         <SalonReviewsSection salonId={numericSalonId} />

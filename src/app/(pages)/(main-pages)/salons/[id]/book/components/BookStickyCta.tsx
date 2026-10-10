@@ -51,7 +51,7 @@ export default function BookStickyCta({
             <button
               type="button"
               onClick={onConfirm}
-              disabled={isCreating}
+              disabled={!canContinue || isCreating}
               className="flex-[2] rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
             >
               {isCreating

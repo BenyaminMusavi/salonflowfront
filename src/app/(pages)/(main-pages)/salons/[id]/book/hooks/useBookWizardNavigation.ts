@@ -11,7 +11,7 @@ import { BOOK_TOTAL_STEPS } from "../components/BookProgressHeader";
 /**
  * Booking wizard steps:
  * 1 services (+ branch picker when the salon has several) · 2 staff or «اولین نوبت» ·
- * 3 date + free times · 4 invoice (pre-factor) · 5 confirm & book.
+ * 3 date + free times · 4 confirm & book (with the invoice; booking waits for the price).
  */
 interface UseBookWizardNavigationParams {
   salonPublicId: string | undefined;

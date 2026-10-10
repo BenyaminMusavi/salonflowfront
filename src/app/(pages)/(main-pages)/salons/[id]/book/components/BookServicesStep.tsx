@@ -81,7 +81,7 @@ export default function BookServicesStep({
                         {svc.name}
                       </p>
                       <p className="shrink-0 text-sm font-bold text-foreground">
-                        {formatToman(svc.price)}
+                        {formatToman(svc.price)} <span className="text-xs font-medium text-foreground-muted">تومان</span>
                       </p>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -91,7 +91,7 @@ export default function BookServicesStep({
                       {svc.requiresDeposit ? (
                         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
                           بیعانه{" "}
-                          {formatToman(svc.depositAmount ?? 0)}
+                          {formatToman(svc.depositAmount ?? 0)} تومان
                         </span>
                       ) : null}
                     </div>
