@@ -462,7 +462,7 @@ export default function OnboardingView() {
         <div className="rounded-[24px] bg-surface p-6 text-center">
           <p className="text-base font-bold text-foreground">برای ثبت سالن، اول اشتراک را فعال کنید</p>
           <p className="mt-2 text-sm leading-6 text-foreground-muted">
-            اشتراک فعالی ندارید یا به سقف تعداد سالن‌های طرحتان رسیده‌اید. می‌توانید طرح آزمایشی را فعال کنید.
+            برای ساخت سالن به اشتراک معتبر نیاز دارید. طرح را بخرید، سپس سالن را ثبت کنید.
           </p>
           <Link
             href={`${RouteAddress.SUBSCRIPTIONS.BASE}?from=onboarding`}

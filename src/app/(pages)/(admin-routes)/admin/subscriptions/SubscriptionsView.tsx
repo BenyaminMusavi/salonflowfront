@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/shared/utils/className";
 import { SubscriptionsListTab } from "./components/SubscriptionsListTab";
 import { InvoicesListTab } from "./components/InvoicesListTab";
@@ -17,7 +18,9 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default function SubscriptionsView() {
-  const [tab, setTab] = useState<TabId>("plans");
+  // `?view=resume` (from the «درخواست برگرداندن لغو اشتراک» notification) opens the requests.
+  const openResume = useSearchParams().get("view") === "resume";
+  const [tab, setTab] = useState<TabId>(openResume ? "subscriptions" : "plans");
 
   return (
     <div className="flex flex-col gap-5">
@@ -49,7 +52,7 @@ export default function SubscriptionsView() {
       {tab === "plans" ? (
         <PlansListTab />
       ) : tab === "subscriptions" ? (
-        <SubscriptionsListTab />
+        <SubscriptionsListTab initialResumeOnly={openResume} />
       ) : tab === "invoices" ? (
         <InvoicesListTab />
       ) : (

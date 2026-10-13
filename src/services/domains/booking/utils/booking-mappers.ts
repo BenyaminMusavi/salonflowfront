@@ -18,7 +18,7 @@ export function toBookingStartTime(date: string, time: string): string {
 }
 
 export const SUBSCRIPTION_OWNER_LOCK_MESSAGE =
-  "برای ثبت نوبت باید اشتراک فعال (آزمایشی، فعال یا مهلت پرداخت) داشته باشید.";
+  "برای ثبت نوبت به اشتراک فعال نیاز دارید.";
 
 export const SUBSCRIPTION_CUSTOMER_LOCK_MESSAGE =
   "این سالن فعلاً رزرو نمی‌پذیرد.";

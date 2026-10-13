@@ -171,7 +171,8 @@ export const API_ADDRESS = {
     ME: "/api/subscriptions/me",
     ENTITLEMENT: "/api/subscriptions/me/entitlement",
     ENTITLEMENT_BY_SALON: "/api/subscriptions/entitlement/salon",
-    TRIAL: "/api/subscriptions/trial",
+    CANCEL: "/api/subscriptions/cancel",
+    RESUME_REQUEST: "/api/subscriptions/resume-request",
     CHECKOUT: "/api/subscriptions/checkout",
     CHECKOUT_PREVIEW: "/api/subscriptions/checkout/preview",
     INVOICES_ME: "/api/subscriptions/invoices/me",
@@ -309,6 +310,8 @@ export const API_ADDRESS = {
     USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
     SUBSCRIPTIONS: "/api/admin/subscriptions",
     SUBSCRIPTION_INVOICES: "/api/admin/subscriptions/invoices",
+    SUBSCRIPTION_APPROVE_RESUME: (subscriptionPublicId: string) =>
+      `/api/admin/subscriptions/${subscriptionPublicId}/approve-resume`,
     SUBSCRIPTION_PLANS: "/api/admin/subscription-plans",
     SUBSCRIPTION_PLAN_BY_ID: (planPublicId: string) =>
       `/api/admin/subscription-plans/${planPublicId}`,

@@ -77,6 +77,8 @@ export enum SubscriptionStatus {
   Canceled = 5,
   Expired = 6,
   Suspended = 7,
+  /** Bought before the salon was approved: starts (and gets its dates) on approval. */
+  PendingStart = 8,
 }
 
 export enum PlatformInvoiceStatus {

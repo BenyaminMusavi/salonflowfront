@@ -15,6 +15,8 @@ export interface INotification {
 }
 
 export const NOTIFICATION_ENTITY_APPOINTMENT = 7;
+/** Admin-only: an owner asked to undo a cancelled subscription. */
+export const NOTIFICATION_ENTITY_SUBSCRIPTION = 13;
 
 export type TNotificationsEntity = TResponse<TPagedResult<INotification>>;
 

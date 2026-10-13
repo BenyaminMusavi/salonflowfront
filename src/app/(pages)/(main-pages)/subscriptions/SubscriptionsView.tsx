@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CaretDownIcon,
@@ -19,12 +19,18 @@ import {
 } from "@/services/domains/subscriptions/hooks/useMutateSubscriptions";
 import {
   ICheckoutPreviewResult,
+  IPlatformInvoice,
   ISubscriptionPlan,
 } from "@/services/domains/subscriptions/types/subscriptions.type";
+import { useQuerySubscriptionMe } from "@/services/domains/subscriptions/hooks/useQuerySubscriptionMe";
+import { useSubscriptionEntitlement } from "@/services/domains/subscriptions/hooks/useSubscriptionEntitlement";
 import {
+  LAUNCH_FREE_LABEL,
+  canPurchaseSubscription,
   effectivePlanPrice,
   formatRialAsToman,
 } from "@/services/domains/subscriptions/utils/subscription-display";
+import MySubscriptionCard from "./MySubscriptionCard";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -48,14 +54,9 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
       "امکانات همه‌ی طرح‌ها کاملاً یکسان است؛ تنها تفاوت، مدت زمان اشتراک است — هرچه طرح طولانی‌تری انتخاب کنید، هزینه‌ی ماهانه‌ی شما کمتر می‌شود.",
   },
   {
-    question: "قبل از خرید می‌توانم صفا را امتحان کنم؟",
+    question: "اگر اشتراکم را لغو کنم چه می‌شود؟",
     answer:
-      "بله. می‌توانید پیش از پرداخت نهایی محیط پنل را ببینید و با امکاناتش آشنا شوید تا مطمئن شوید برای کسب‌وکار شما مناسب است.",
-  },
-  {
-    question: "اگر از اشتراک راضی نبودم، چه می‌شود؟",
-    answer:
-      "از بخش پشتیبانی می‌توانید درخواست لغو اشتراک ثبت کنید؛ طبق قوانین بازگشت وجه بررسی می‌شود و در صورت تأیید، مبلغ به حساب شما برمی‌گردد.",
+      "همین صفحه می‌توانید اشتراک را لغو کنید. اشتراک تا پایان دوره‌ی پرداخت‌شده فعال می‌ماند و تمدید نمی‌شود؛ مبلغ پرداخت‌شده برگردانده نمی‌شود. اگر پشیمان شدید، «درخواست برگرداندن لغو» را بزنید تا تیم صفا بررسی کند.",
   },
   {
     question: "برای استفاده از صفا نیاز به دانش حسابداری یا فنی دارم؟",
@@ -92,6 +93,55 @@ function planDiscountLabel(plan: ISubscriptionPlan): string {
   return title + remaining;
 }
 
+/** originalPrice → campaign / code / launch discounts → tax → finalPrice, all from the preview. */
+function PriceBreakdown({ preview }: { preview: ICheckoutPreviewResult }) {
+  const rows: { label: string; value: string; accent?: boolean }[] = [
+    { label: "قیمت طرح", value: `${formatRialAsToman(preview.originalPrice)} تومان` },
+  ];
+  if ((preview.campaignDiscount ?? 0) > 0) {
+    rows.push({
+      label: preview.campaignName ? `تخفیف ${preview.campaignName}` : "تخفیف طرح",
+      value: `−${formatRialAsToman(preview.campaignDiscount)} تومان`,
+      accent: true,
+    });
+  }
+  if ((preview.promoDiscount ?? 0) > 0) {
+    rows.push({
+      label: "تخفیف کد",
+      value: `−${formatRialAsToman(preview.promoDiscount)} تومان`,
+      accent: true,
+    });
+  }
+  if ((preview.launchDiscount ?? 0) > 0) {
+    rows.push({
+      label: "تخفیف راه‌اندازی",
+      value: `−${formatRialAsToman(preview.launchDiscount)} تومان`,
+      accent: true,
+    });
+  }
+  if (preview.taxAmount != null) {
+    rows.push({
+      label: `مالیات${preview.taxRatePercent != null ? ` (${preview.taxRatePercent}٪)` : ""}`,
+      value: `${formatRialAsToman(preview.taxAmount)} تومان`,
+    });
+  }
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl bg-surface-tertiary px-4 py-3 text-xs">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center justify-between gap-3">
+          <span className="text-foreground-muted">{row.label}</span>
+          <span className={row.accent ? "font-semibold text-primary" : "text-foreground"}>
+            {row.value}
+          </span>
+        </div>
+      ))}
+      {preview.finalPrice === 0 && (preview.launchDiscount ?? 0) > 0 ? (
+        <p className="mt-1 text-center font-bold text-primary">{LAUNCH_FREE_LABEL}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function SubscriptionsView() {
   const router = useRouter();
   const isLoggedIn = useTokenStore((s) => s.isLoggedIn);
@@ -111,12 +161,19 @@ export default function SubscriptionsView() {
   const [promoCode, setPromoCode] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [invoiceId, setInvoiceId] = useState<number | null>(null);
-  const [invoiceAmount, setInvoiceAmount] = useState<number | null>(null);
+  const [invoice, setInvoice] = useState<IPlatformInvoice | null>(null);
 
-  // The last successfully-validated code, tied to the plan+text it was checked against —
-  // editing either one invalidates it until "ثبت" is pressed again.
-  const [appliedPromo, setAppliedPromo] = useState<{
+  const { data: meRes } = useQuerySubscriptionMe();
+  const subscription = meRes?.data ?? null;
+  // Status 8 (waiting for salon approval) can't buy again.
+  const purchaseBlocked =
+    !!subscription && !canPurchaseSubscription(Number(subscription.status));
+  const { ownedSalonCount } = useSubscriptionEntitlement();
+
+  // The price breakdown for the selected plan (+ the code applied with "ثبت"), always from the
+  // server. Plan or code changes re-run it; a code that fails falls back to the no-code preview.
+  const [appliedCode, setAppliedCode] = useState("");
+  const [preview, setPreview] = useState<{
     planId: number;
     code: string;
     result: ICheckoutPreviewResult;
@@ -125,63 +182,69 @@ export default function SubscriptionsView() {
 
   const selectedPlan =
     displayPlans.find((p) => p.id === selectedPlanId) ?? displayPlans[0] ?? null;
+  const selectedPlanKey = selectedPlan?.id ?? null;
+
+  useEffect(() => {
+    if (!isLoggedIn || selectedPlanKey == null) return;
+    let stale = false;
+    const failed = (message: string) => {
+      if (appliedCode) {
+        setPromoError(message);
+        setAppliedCode("");
+      } else {
+        setPreview(null);
+      }
+    };
+    previewCheckout({ planId: selectedPlanKey, promoCode: appliedCode || null })
+      .then((res) => {
+        if (stale) return;
+        if (!res.data?.valid) return failed("کد وارد شده معتبر نیست.");
+        setPreview({ planId: selectedPlanKey, code: appliedCode, result: res.data });
+      })
+      .catch((e) => {
+        if (!stale) failed(getApiErrorMessage(e, "کد وارد شده معتبر نیست."));
+      });
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, selectedPlanKey, appliedCode]);
 
   const trimmedPromoCode = promoCode.trim();
-  const appliedPromoMatchesSelection =
-    !!appliedPromo &&
-    !!selectedPlan &&
-    appliedPromo.planId === selectedPlan.id &&
-    appliedPromo.code === trimmedPromoCode;
+  const currentPreview =
+    preview && preview.planId === selectedPlanKey && preview.code === appliedCode
+      ? preview.result
+      : null;
 
-  // Discounts are never guessed client-side: outside of a matching preview, this is just
-  // the plan's own price (with any campaign the backend already put on it).
+  // Never guessed client-side: the previewed `finalPrice` (tax included), or the plan's own
+  // price until the preview arrives.
   const totalPrice = selectedPlan
-    ? appliedPromoMatchesSelection
-      ? appliedPromo.result.finalPrice
-      : effectivePlanPrice(selectedPlan)
+    ? currentPreview
+      ? currentPreview.finalPrice
+      : previewPending
+        ? null
+        : effectivePlanPrice(selectedPlan)
     : null;
 
   const selectPlan = (planId: number) => {
     setSelectedPlanId(planId);
-    setAppliedPromo(null);
+    setAppliedCode("");
     setPromoError("");
   };
 
   const handlePromoCodeChange = (value: string) => {
     setPromoCode(value);
-    setAppliedPromo(null);
+    setAppliedCode("");
     setPromoError("");
   };
 
-  const handleApplyPromoCode = async () => {
+  const handleApplyPromoCode = () => {
     setPromoError("");
     if (!selectedPlan) {
       setPromoError("ابتدا یک طرح اشتراک را انتخاب کنید.");
       return;
     }
-    if (!trimmedPromoCode) {
-      setAppliedPromo(null);
-      return;
-    }
-    try {
-      const res = await previewCheckout({
-        planId: selectedPlan.id,
-        promoCode: trimmedPromoCode,
-      });
-      if (!res.data?.valid) {
-        setAppliedPromo(null);
-        setPromoError("کد وارد شده معتبر نیست.");
-        return;
-      }
-      setAppliedPromo({
-        planId: selectedPlan.id,
-        code: trimmedPromoCode,
-        result: res.data,
-      });
-    } catch (e) {
-      setAppliedPromo(null);
-      setPromoError(getApiErrorMessage(e, "کد وارد شده معتبر نیست."));
-    }
+    setAppliedCode(trimmedPromoCode);
   };
 
   const handlePurchase = async () => {
@@ -199,8 +262,7 @@ export default function SubscriptionsView() {
         planId: selectedPlan.id,
         promoCode: promoCode.trim() || null,
       });
-      setInvoiceId(res.data?.id ?? null);
-      setInvoiceAmount(res.data?.amount ?? null);
+      setInvoice(res.data ?? null);
     } catch (e) {
       setError(getApiErrorMessage(e, "ثبت سفارش اشتراک ناموفق بود."));
     }
@@ -210,31 +272,50 @@ export default function SubscriptionsView() {
     <div className="flex flex-col gap-6 px-safe-area pb-40 pt-5">
       <BackHeader title="خرید اشتراک" fallbackHref={RouteAddress.PROFILE.BASE} />
 
-      {invoiceId != null ? (
-        <section className="rounded-[24px] bg-primary/10 p-5 text-center">
-          <p className="text-sm font-bold text-foreground">
-            اشتراک شما همین الان فعال شد.
-          </p>
-          <p className="mt-2 text-xs text-foreground-muted">
-            شماره فاکتور: {invoiceId}
-            {invoiceAmount != null
-              ? ` — مبلغ: ${formatRialAsToman(invoiceAmount)} تومان`
-              : ""}
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push(RouteAddress.ONBOARDING.BASE)}
-            className="mt-4 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-          >
-            رفتن به ثبت سالن
-          </button>
-        </section>
+      {invoice != null ? (
+        <>
+          <section className="rounded-[24px] bg-primary/10 p-5 text-center">
+            <p className="text-sm font-bold text-foreground">
+              {subscription && !canPurchaseSubscription(Number(subscription.status))
+                ? "خرید اشتراک انجام شد."
+                : "اشتراک شما فعال شد."}
+            </p>
+            <p className="mt-2 text-xs text-foreground-muted">
+              شماره فاکتور: {invoice.id}
+              {invoice.grandTotal != null
+                ? ` — مبلغ: ${
+                    invoice.grandTotal === 0 ? "رایگان" : `${formatRialAsToman(invoice.grandTotal)} تومان`
+                  }`
+                : ""}
+            </p>
+            {ownedSalonCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => router.push(RouteAddress.DASHBOARD.BASE)}
+                className="mt-4 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+              >
+                رفتن به پنل سالن
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push(RouteAddress.ONBOARDING.BASE)}
+                className="mt-4 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+              >
+                رفتن به ثبت سالن
+              </button>
+            )}
+          </section>
+          {subscription ? <MySubscriptionCard subscription={subscription} /> : null}
+        </>
       ) : (
         <>
+          {subscription ? <MySubscriptionCard subscription={subscription} /> : null}
+
           {/* Plans */}
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-foreground">
-              انتخاب طرح اشتراک
+              {subscription ? "تمدید یا خرید طرح جدید" : "انتخاب طرح اشتراک"}
             </h2>
 
             {plansLoading && (
@@ -363,7 +444,7 @@ export default function SubscriptionsView() {
                   />
                   <button
                     type="button"
-                    disabled={previewPending || !trimmedPromoCode}
+                    disabled={previewPending || !trimmedPromoCode || !isLoggedIn}
                     onClick={handleApplyPromoCode}
                     className="shrink-0 rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
                   >
@@ -373,14 +454,12 @@ export default function SubscriptionsView() {
                 {promoError && (
                   <p className="text-xs text-error">{promoError}</p>
                 )}
-                {appliedPromoMatchesSelection && appliedPromo && (
+                {currentPreview && appliedCode && (
                   <p className="text-xs text-primary">
                     کد تخفیف معتبر است
-                    {appliedPromo.result.campaignName
-                      ? ` (${appliedPromo.result.campaignName})`
-                      : ""}
-                    — {formatRialAsToman(appliedPromo.result.discountAmount)} تومان
-                    تخفیف اعمال شد.
+                    {(currentPreview.promoDiscount ?? 0) > 0
+                      ? ` — ${formatRialAsToman(currentPreview.promoDiscount)} تومان تخفیف کد اعمال شد.`
+                      : "."}
                   </p>
                 )}
               </div>
@@ -456,7 +535,7 @@ export default function SubscriptionsView() {
         </>
       )}
 
-      {invoiceId == null && (
+      {invoice == null && (
         <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
           <div className="flex w-full max-w-[600px] flex-col gap-2">
             {error && (
@@ -464,15 +543,27 @@ export default function SubscriptionsView() {
                 {error}
               </p>
             )}
+            {purchaseBlocked && (
+              <p className="rounded-2xl bg-primary/10 px-4 py-3 text-xs text-foreground">
+                تا شروع اشتراک (پس از تأیید سالن) خرید دوباره ممکن نیست.
+              </p>
+            )}
+            {currentPreview && (
+              <PriceBreakdown preview={currentPreview} />
+            )}
             <p className="text-center text-xs text-foreground-muted">
               مبلغ قابل پرداخت:{" "}
               <span className="font-bold text-foreground">
-                {totalPrice != null ? `${formatRialAsToman(totalPrice)} تومان` : "—"}
+                {totalPrice == null
+                  ? "—"
+                  : totalPrice === 0
+                    ? "0 تومان"
+                    : `${formatRialAsToman(totalPrice)} تومان`}
               </span>
             </p>
             <button
               type="button"
-              disabled={checkoutPending || !selectedPlan}
+              disabled={checkoutPending || !selectedPlan || purchaseBlocked}
               onClick={handlePurchase}
               className="rounded-full bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
             >

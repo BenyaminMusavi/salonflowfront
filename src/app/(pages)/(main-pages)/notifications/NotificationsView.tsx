@@ -9,7 +9,10 @@ import { getLoginHref } from "@/shared/utils/authRedirect";
 import BackHeader from "@/shared/components/composites/layout/back-header/BackHeader";
 import { formatSalonDayTime } from "@/shared/utils/salonTime";
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import { NOTIFICATION_ENTITY_APPOINTMENT } from "@/services/domains/notifications/types/notifications.type";
+import {
+  NOTIFICATION_ENTITY_APPOINTMENT,
+  NOTIFICATION_ENTITY_SUBSCRIPTION,
+} from "@/services/domains/notifications/types/notifications.type";
 
 interface IProps {
   title: string;
@@ -80,10 +83,16 @@ export default function NotificationsView({ title }: IProps) {
               n.relatedEntityType === NOTIFICATION_ENTITY_APPOINTMENT && n.relatedEntityPublicId
                 ? RouteAddress.RESERVATION.DETAILS(n.relatedEntityPublicId)
                 : null;
-            const open = appointmentHref
+            // Admin: an owner asked to undo a cancelled subscription → the requests list.
+            const resumeHref =
+              n.relatedEntityType === NOTIFICATION_ENTITY_SUBSCRIPTION
+                ? `${RouteAddress.ADMIN.BASE}/subscriptions?view=resume`
+                : null;
+            const targetHref = appointmentHref ?? resumeHref;
+            const open = targetHref
               ? () => {
                   if (unread) mutate.read.mutate(n.id);
-                  router.push(appointmentHref);
+                  router.push(targetHref);
                 }
               : undefined;
             return (
@@ -112,7 +121,11 @@ export default function NotificationsView({ title }: IProps) {
                     <p className="mt-1 text-xs text-foreground-muted">
                       {n.body || "—"}
                     </p>
-                    {open ? <p className="mt-1.5 text-[11px] font-semibold text-primary">مشاهده‌ی نوبت</p> : null}
+                    {open ? (
+                      <p className="mt-1.5 text-[11px] font-semibold text-primary">
+                        {resumeHref ? "مشاهده‌ی درخواست" : "مشاهده‌ی نوبت"}
+                      </p>
+                    ) : null}
                   </div>
                   {open ? <CaretLeftIcon size={16} className="mt-1 shrink-0 text-foreground-muted" /> : null}
                 </div>

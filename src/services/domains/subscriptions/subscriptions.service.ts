@@ -7,7 +7,6 @@ import {
   ICheckoutRequest,
   ICreatePromoCodeRequest,
   IMarkInvoicePaidRequest,
-  IStartTrialRequest,
   IUpdatePromoCodeRequest,
   TAdminSubscriptionPlanEntity,
   TAdminSubscriptionPlansEntity,
@@ -52,10 +51,20 @@ class SubscriptionsService {
     );
   }
 
-  async startTrial(body: IStartTrialRequest) {
-    return await axiosInstance.post<unknown, TSubscriptionEntity>(
-      API_ADDRESS.SUBSCRIPTIONS.TRIAL,
-      body
+  /** 204. Stays active until `endDate`; no refund. */
+  async cancel() {
+    return await axiosInstance.post<unknown, void>(API_ADDRESS.SUBSCRIPTIONS.CANCEL);
+  }
+
+  /** 204. Asks the admin to undo a cancellation (`cancelAtPeriodEnd` → false on approval). */
+  async requestResume() {
+    return await axiosInstance.post<unknown, void>(API_ADDRESS.SUBSCRIPTIONS.RESUME_REQUEST);
+  }
+
+  /** Admin-only, 204. `subscriptionPublicId` is the subscription's Guid, not its numeric id. */
+  async approveResume(subscriptionPublicId: string) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_APPROVE_RESUME(subscriptionPublicId)
     );
   }
 

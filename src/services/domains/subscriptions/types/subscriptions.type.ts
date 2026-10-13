@@ -15,8 +15,6 @@ export interface ISubscriptionPlan {
   /** RIALS */
   price: number;
   currency?: string;
-  maxSalons: number;
-  trialDays?: number;
   sortOrder?: number;
   /** Price after the plan discount, in RIALS — what checkout charges. null = no discount. */
   campaignPrice?: number | null;
@@ -28,31 +26,29 @@ export interface ISubscriptionPlan {
   discountRemainingDays?: number | null;
 }
 
+/** `GET /api/subscriptions/me` (204 = none). Status 8: `startDate` / `endDate` are null. */
 export interface ISubscription {
   id?: number;
   planId?: number;
   planName?: string;
   status: SubscriptionStatus | number;
-  startsAt?: string | null;
+  startDate?: string | null;
   endDate?: string | null;
-  trialEndsAt?: string | null;
-  maxSalons?: number;
+  gracePeriodEndDate?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  resumeRequestedAt?: string | null;
+  /** Length of the bought plan while the subscription waits for salon approval (status 8). */
+  pendingDurationMonths?: number | null;
 }
 
 export interface ISubscriptionEntitlement {
   isEntitled: boolean;
-  maxSalons: number;
   ownedSalonCount: number;
   status?: SubscriptionStatus | number | null;
-  startsAt?: string | null;
   endDate?: string | null;
-  trialEndsAt?: string | null;
+  gracePeriodEndDate?: string | null;
   planId?: number | null;
   planName?: string | null;
-}
-
-export interface IStartTrialRequest {
-  planId: number;
 }
 
 export interface ICheckoutRequest {
@@ -65,25 +61,39 @@ export interface ICheckoutPreviewRequest {
   promoCode?: string | null;
 }
 
-/** Pure calculation — no invoice is created. `discountAmount` is campaign + code combined. */
+/** Pure calculation — no invoice is created. `finalPrice` is what is paid, tax included. */
 export interface ICheckoutPreviewResult {
   planId: number;
   valid: boolean;
   originalPrice: number;
   finalPrice: number;
+  /** Campaign + code combined. */
   discountAmount: number;
   campaignDiscount?: number;
   promoDiscount?: number;
+  /** Free-launch discount: while purchases are free it equals the whole price. */
+  launchDiscount?: number;
+  taxRatePercent?: number;
+  taxAmount?: number;
   campaignName?: string | null;
   promoCode?: string | null;
   currency?: string;
 }
 
+/** A purchase document. All amounts in RIALS. */
 export interface IPlatformInvoice {
   id: number;
   planId?: number;
   planName?: string;
+  /** @deprecated use `grandTotal` */
   amount?: number;
+  listPrice?: number;
+  campaignDiscount?: number;
+  promoDiscount?: number;
+  launchDiscount?: number;
+  taxRatePercent?: number;
+  taxAmount?: number;
+  grandTotal?: number;
   status: PlatformInvoiceStatus | number;
   createdAt?: string;
   promoCode?: string | null;
@@ -100,14 +110,23 @@ export type TPlatformInvoicesEntity = TResponse<IPlatformInvoice[]>;
  * per-salon, so `salonName` is best-effort from the owner's salons and may be null if
  * they haven't created one yet. */
 export interface IAdminSubscriptionListItem {
+  /** Numeric id — what a notification's `relatedEntityId` points to. */
+  id: number;
+  /** What `approve-resume` takes. */
+  publicId: string;
+  ownerUserId?: number;
   ownerName: string;
   ownerPhone: string;
   salonName: string | null;
   planName: string;
   status: SubscriptionStatus;
-  startDate: string;
+  /** null while status is PendingStart. */
+  startDate: string | null;
   endDate: string | null;
   isTrial: boolean;
+  cancelAtPeriodEnd: boolean;
+  /** Set while an owner waits for the admin to undo a cancellation. */
+  resumeRequestedAt: string | null;
 }
 
 export interface IAdminSubscriptionsParams {
@@ -169,8 +188,6 @@ export interface IAdminSubscriptionPlan {
   /** RIALS */
   price: number;
   currency: string;
-  maxSalons: number;
-  trialDays: number;
   sortOrder: number;
   isActive: boolean;
   activeSubscriberCount: number;
@@ -183,8 +200,6 @@ export interface IAdminSaveSubscriptionPlanRequest {
   description?: string | null;
   durationMonths: number;
   price: number;
-  maxSalons?: number;
-  trialDays?: number;
   sortOrder?: number;
 }
 

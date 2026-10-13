@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { Input } from "@/shared/components/primitives/input/Input";
 import { Badge } from "@/shared/components/primitives/badge/Badge";
+import { Button } from "@/shared/components/primitives/button/Button";
+import { cn } from "@/shared/utils/className";
+import { useMutateApproveResume } from "@/services/domains/subscriptions/hooks/useMutateSubscriptions";
+import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useQueryAdminSubscriptions } from "@/services/domains/admin/hooks/useQueryAdminSubscriptions";
 import { SubscriptionStatus } from "@/services/common/enums/domain-enums";
 import {
@@ -17,20 +21,26 @@ import { AdminSelectFilter } from "../../_components/AdminSelectFilter";
 
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "", label: "همهٔ وضعیت‌ها" },
-  { value: String(SubscriptionStatus.Trialing), label: "دوره آزمایشی" },
   { value: String(SubscriptionStatus.Active), label: "فعال" },
+  { value: String(SubscriptionStatus.PendingStart), label: "در انتظار شروع" },
   { value: String(SubscriptionStatus.Grace), label: "مهلت پرداخت" },
-  { value: String(SubscriptionStatus.PastDue), label: "معوق" },
   { value: String(SubscriptionStatus.Canceled), label: "لغو شده" },
   { value: String(SubscriptionStatus.Expired), label: "منقضی" },
   { value: String(SubscriptionStatus.Suspended), label: "معلق" },
 ];
 
-export function SubscriptionsListTab() {
+/** The API has no filter for resume requests, so this view reads a bigger page and filters here. */
+const RESUME_PAGE_SIZE = 100;
+
+export function SubscriptionsListTab({ initialResumeOnly = false }: { initialResumeOnly?: boolean }) {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SubscriptionStatus | undefined>();
+  const [resumeOnly, setResumeOnly] = useState(initialResumeOnly);
+  const [approveError, setApproveError] = useState("");
+  const { mutateAsync: approveResume, isPending: approving, variables: approvingId } =
+    useMutateApproveResume();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -41,14 +51,23 @@ export function SubscriptionsListTab() {
   }, [searchInput]);
 
   const { data, isLoading, isError } = useQueryAdminSubscriptions({
-    page,
-    pageSize: 20,
+    page: resumeOnly ? 1 : page,
+    pageSize: resumeOnly ? RESUME_PAGE_SIZE : 20,
     status,
     search: search || undefined,
   });
 
   const result = data?.data;
-  const items = result?.items ?? [];
+  const items = (result?.items ?? []).filter((sub) => !resumeOnly || !!sub.resumeRequestedAt);
+
+  const onApprove = async (publicId: string) => {
+    setApproveError("");
+    try {
+      await approveResume(publicId);
+    } catch (e) {
+      setApproveError(getApiErrorMessage(e, "تأیید برگرداندن لغو ناموفق بود."));
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -74,11 +93,23 @@ export function SubscriptionsListTab() {
             </option>
           ))}
         </AdminSelectFilter>
+        <button
+          type="button"
+          onClick={() => setResumeOnly((v) => !v)}
+          className={cn(
+            "rounded-lg border px-3 py-2 text-xs font-semibold transition-colors",
+            resumeOnly
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-surface text-foreground-muted hover:text-foreground"
+          )}
+        >
+          درخواست‌های برگرداندن لغو
+        </button>
       </div>
 
-      {isError ? (
+      {isError || approveError ? (
         <p className="rounded-xl border border-error-border bg-error-background px-4 py-3 text-xs font-medium text-error">
-          دریافت لیست اشتراک‌ها با خطا مواجه شد.
+          {approveError || "دریافت لیست اشتراک‌ها با خطا مواجه شد."}
         </p>
       ) : null}
 
@@ -92,30 +123,31 @@ export function SubscriptionsListTab() {
                 <th className="px-4 py-3 font-semibold">پلن</th>
                 <th className="px-4 py-3 font-semibold">وضعیت</th>
                 <th className="px-4 py-3 font-semibold">پایان دوره</th>
+                <th className="px-4 py-3 font-semibold"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={idx} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3" colSpan={5}>
+                    <td className="px-4 py-3" colSpan={6}>
                       <div className="h-4 w-full animate-pulse rounded bg-background-secondary" />
                     </td>
                   </tr>
                 ))
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8">
+                  <td colSpan={6} className="px-4 py-8">
                     <AdminEmptyState
-                      title="اشتراکی با این فیلترها پیدا نشد"
+                      title={resumeOnly ? "درخواستی برای برگرداندن لغو نیست" : "اشتراکی با این فیلترها پیدا نشد"}
                       description="فیلترها یا عبارت جستجو را تغییر دهید."
                     />
                   </td>
                 </tr>
               ) : (
-                items.map((sub, idx) => (
+                items.map((sub) => (
                   <tr
-                    key={idx}
+                    key={sub.publicId}
                     className="border-b border-border text-foreground last:border-0 hover:bg-background-secondary"
                   >
                     <td className="px-4 py-3">
@@ -129,15 +161,28 @@ export function SubscriptionsListTab() {
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
                       {sub.planName}
-                      {sub.isTrial ? " (آزمایشی)" : ""}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={subscriptionStatusVariant(sub.status)}>
-                        {subscriptionStatusLabel(sub.status)}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant={subscriptionStatusVariant(sub.status)}>
+                          {subscriptionStatusLabel(sub.status)}
+                        </Badge>
+                        {sub.cancelAtPeriodEnd ? <Badge variant="warning">لغو در پایان دوره</Badge> : null}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-foreground-muted">
                       {sub.endDate ? formatAdminDate(sub.endDate) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {sub.resumeRequestedAt ? (
+                        <Button
+                          size="sm"
+                          isLoading={approving && approvingId === sub.publicId}
+                          onClick={() => void onApprove(sub.publicId)}
+                        >
+                          تأیید برگرداندن لغو
+                        </Button>
+                      ) : null}
                     </td>
                   </tr>
                 ))
@@ -146,7 +191,7 @@ export function SubscriptionsListTab() {
           </table>
         </div>
 
-        {result ? (
+        {result && !resumeOnly ? (
           <AdminPagination
             page={result.page}
             totalPages={result.totalPages}

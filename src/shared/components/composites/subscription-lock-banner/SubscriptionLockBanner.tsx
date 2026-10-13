@@ -28,7 +28,7 @@ export default function SubscriptionLockBanner({
           />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">
-              اشتراک سالن قفل است
+              اشتراک شما تمام شده؛ تمدید کنید
             </p>
             <p className="mt-1 text-xs text-foreground-muted">
               {SUBSCRIPTION_OWNER_LOCK_MESSAGE} ثبت نوبت جدید ممکن نیست؛ لغو و
@@ -38,7 +38,7 @@ export default function SubscriptionLockBanner({
               href={RouteAddress.SUBSCRIPTIONS.BASE}
               className="mt-3 inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground"
             >
-              شروع آزمایش رایگان / خرید اشتراک
+              تمدید اشتراک
             </Link>
           </div>
         </div>

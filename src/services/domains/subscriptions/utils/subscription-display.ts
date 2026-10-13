@@ -23,6 +23,8 @@ export function subscriptionStatusLabel(status: number | null | undefined): stri
       return "منقضی";
     case SubscriptionStatus.Suspended:
       return "معلق";
+    case SubscriptionStatus.PendingStart:
+      return "در انتظار شروع";
     default:
       return "بدون اشتراک";
   }
@@ -35,6 +37,7 @@ export function subscriptionStatusVariant(
     case SubscriptionStatus.Active:
       return "success";
     case SubscriptionStatus.Trialing:
+    case SubscriptionStatus.PendingStart:
       return "brand";
     case SubscriptionStatus.Grace:
     case SubscriptionStatus.PastDue:
@@ -117,6 +120,22 @@ export function formatDiscountValue(discountType: PromoDiscountType, value: numb
     return `${value.toLocaleString(APP_LOCALE)}٪`;
   }
   return `${formatRialAsToman(value)} تومان`;
+}
+
+/** Free launch: the whole price is waived and `finalPrice` is 0. */
+export const LAUNCH_FREE_LABEL = "رایگان در دوران راه‌اندازی";
+
+/** Buying again is blocked only while the first purchase waits for salon approval. */
+export function canPurchaseSubscription(status: number | null | undefined): boolean {
+  return status !== SubscriptionStatus.PendingStart;
+}
+
+/** «لغو شده ولی هنوز فعال» — cancelled, but the paid period has not ended yet. */
+export function isCancelScheduled(sub: {
+  status: number;
+  cancelAtPeriodEnd?: boolean;
+}): boolean {
+  return !!sub.cancelAtPeriodEnd && sub.status === SubscriptionStatus.Active;
 }
 
 /** Whole days left until `endDate`, or null if there is no end date to count down to. */
