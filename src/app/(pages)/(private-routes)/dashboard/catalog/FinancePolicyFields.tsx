@@ -56,7 +56,7 @@ function PercentInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(cleanNumber(e.target.value))}
-        className="rounded-[12px] pe-8"
+        className="rounded-[12px] ps-3 pe-9"
       />
       <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-sm text-foreground-muted">٪</span>
     </div>
@@ -141,29 +141,31 @@ export function CancellationFields({
             بدون جریمه است. بدون پله، لغو همیشه رایگان است.
           </p>
           {value.tiers.map((t, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="shrink-0 text-xs text-foreground-muted">کمتر از</span>
-              <Input
-                inputMode="numeric"
-                dir="ltr"
-                aria-label="ساعت مانده"
-                placeholder="24"
-                value={t.hours}
-                onChange={(e) => setTier(i, { hours: cleanNumber(e.target.value).replace(/\./g, "") })}
-                className="w-16 rounded-[12px] text-center"
-              />
-              <span className="shrink-0 text-xs text-foreground-muted">ساعت مانده ←</span>
-              <PercentInput
-                placeholder="50"
-                value={t.percent}
-                onChange={(percent) => setTier(i, { percent })}
-                className="w-24"
-              />
+            <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className="text-[11px] text-foreground-muted">کمتر از (ساعت مانده)</span>
+                <Input
+                  inputMode="numeric"
+                  dir="ltr"
+                  placeholder="24"
+                  value={t.hours}
+                  onChange={(e) => setTier(i, { hours: cleanNumber(e.target.value).replace(/\./g, "") })}
+                  className="rounded-[12px] px-3 text-center"
+                />
+              </label>
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className="text-[11px] text-foreground-muted">جریمه</span>
+                <PercentInput
+                  placeholder="50"
+                  value={t.percent}
+                  onChange={(percent) => setTier(i, { percent })}
+                />
+              </label>
               <button
                 type="button"
                 aria-label="حذف پله"
                 onClick={() => onChange({ ...value, tiers: value.tiers.filter((_, j) => j !== i) })}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-foreground-muted hover:bg-surface-hover"
+                className="mb-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground-muted hover:bg-surface-hover"
               >
                 <TrashIcon size={16} />
               </button>

@@ -30,6 +30,7 @@ import {
   effectivePlanPrice,
   formatRialAsToman,
 } from "@/services/domains/subscriptions/utils/subscription-display";
+import { formatPercent } from "@/shared/utils/percent";
 import MySubscriptionCard from "./MySubscriptionCard";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -83,7 +84,7 @@ function sortPlansForDisplay(plans: ISubscriptionPlan[]) {
 /** «20٪ تخفیف افتتاحیه — 10 روز باقی مانده»; the discounted price itself always comes from the server. */
 function planDiscountLabel(plan: ISubscriptionPlan): string {
   const title = [
-    plan.discountPercent != null ? `${plan.discountPercent}٪ تخفیف` : "تخفیف",
+    plan.discountPercent != null ? `${formatPercent(plan.discountPercent)} تخفیف` : "تخفیف",
     plan.campaignName ?? "",
   ]
     .filter(Boolean)
@@ -121,7 +122,7 @@ function PriceBreakdown({ preview }: { preview: ICheckoutPreviewResult }) {
   }
   if (preview.taxAmount != null) {
     rows.push({
-      label: `مالیات${preview.taxRatePercent != null ? ` (${preview.taxRatePercent}٪)` : ""}`,
+      label: `مالیات${preview.taxRatePercent != null ? ` (${formatPercent(preview.taxRatePercent)})` : ""}`,
       value: `${formatRialAsToman(preview.taxAmount)} تومان`,
     });
   }

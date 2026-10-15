@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ICalculatePriceResult } from "../types/booking-browse.type";
+import { formatPercent } from "@/shared/utils/percent";
 import { cancellationSummary } from "./cancellationPolicy";
 
 const quote = (over: Partial<ICalculatePriceResult>): ICalculatePriceResult => ({
@@ -43,8 +44,8 @@ describe("cancellationSummary", () => {
     expect(s.lines).toEqual([
       {
         serviceName: "رنگ",
-        tiers: ["کمتر از 48 ساعت مانده: 20٪", "کمتر از 6 ساعت مانده: 100٪"],
-        noShow: "مراجعه‌نکردن: 100٪",
+        tiers: [`کمتر از 48 ساعت مانده: ${formatPercent(20)}`, `کمتر از 6 ساعت مانده: ${formatPercent(100)}`],
+        noShow: `مراجعه‌نکردن: ${formatPercent(100)}`,
       },
     ]);
   });

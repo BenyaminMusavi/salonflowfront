@@ -1,3 +1,4 @@
+import { formatPercent } from "@/shared/utils/percent";
 import type { ICalculatePriceResult } from "../types/booking-browse.type";
 
 export interface CancellationServiceLines {
@@ -25,8 +26,8 @@ export function cancellationSummary(price: ICalculatePriceResult): CancellationS
       serviceName: s.serviceName,
       tiers: [...(s.cancellationTiers ?? [])]
         .sort((a, b) => b.hoursBefore - a.hoursBefore)
-        .map((t) => `کمتر از ${t.hoursBefore} ساعت مانده: ${t.penaltyPercent}٪`),
-      noShow: (s.noShowPenaltyPercent ?? 0) > 0 ? `مراجعه‌نکردن: ${s.noShowPenaltyPercent}٪` : null,
+        .map((t) => `کمتر از ${t.hoursBefore} ساعت مانده: ${formatPercent(t.penaltyPercent)}`),
+      noShow: (s.noShowPenaltyPercent ?? 0) > 0 ? `مراجعه‌نکردن: ${formatPercent(s.noShowPenaltyPercent ?? 0)}` : null,
     }))
     .filter((l) => l.tiers.length > 0 || l.noShow);
 

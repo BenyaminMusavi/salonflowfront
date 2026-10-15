@@ -1,3 +1,4 @@
+import { formatPercent } from "@/shared/utils/percent";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import type { IMyAppointmentService } from "../types/appointments.type";
 
@@ -69,7 +70,7 @@ export function cancelTermsNote(est: CancelEstimate | null): { text: string; cos
     return { text: `اگر الان لغو کنید، حدود ${money(est.penalty)} از بیعانه ضبط می‌شود${back}.`, costly: true };
   }
   if (est.penalty == null && est.percent > 0) {
-    return { text: `اگر الان لغو کنید، ${est.percent}٪ از بیعانه ضبط می‌شود.`, costly: true };
+    return { text: `اگر الان لغو کنید، ${formatPercent(est.percent)} از بیعانه ضبط می‌شود.`, costly: true };
   }
   if (est.windowHours > 0 && est.hoursLeft >= est.windowHours) {
     return { text: `لغو رایگان تا ${est.windowHours} ساعت قبل از نوبت.`, costly: false };

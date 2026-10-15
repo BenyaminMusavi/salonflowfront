@@ -1,3 +1,4 @@
+import { formatPercent } from "@/shared/utils/percent";
 import { DepositMode } from "@/services/common/enums/domain-enums";
 import type { ICancellationTier, IServiceOffering } from "../types/catalog.type";
 
@@ -110,7 +111,7 @@ export function depositSummary(
 ): string | null {
   switch (o.depositMode) {
     case DepositMode.Percent:
-      return o.depositPercent ? `بیعانه ${o.depositPercent}٪` : null;
+      return o.depositPercent ? `بیعانه ${formatPercent(o.depositPercent)}` : null;
     case DepositMode.FullPrepayment:
       return "پیش‌پرداخت کامل";
     case DepositMode.FixedAmount:
