@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import appointmentsService from "../appointments.service";
-import type { ICheckoutRequest, IGuidRescheduleRequest, ISalonAvailabilityParams } from "../types/appointments.type";
+import type {
+  ICheckoutRequest,
+  IGuidRescheduleRequest,
+  IRecordDepositRequest,
+  ISalonAvailabilityParams,
+} from "../types/appointments.type";
 import { AGENDA_QUERY_KEY } from "./useQueryAgenda";
 import { SALON_APPOINTMENTS_QUERY_KEY } from "./useQuerySalonAppointments";
 import { BRANCH_DAY_BOARD_QUERY_KEY } from "./useQueryBranchDayBoard";
@@ -22,10 +27,12 @@ import { useSalonContextStore } from "@/services/salon-context-store/useSalonCon
 
 export const SALON_APPOINTMENT_DETAILS_QUERY_KEY = "SALON_APPOINTMENT_DETAILS_QUERY_KEY";
 export const SALON_AVAILABILITY_QUERY_KEY = "SALON_AVAILABILITY_QUERY_KEY";
+export const APPOINTMENT_DEPOSIT_QUERY_KEY = "APPOINTMENT_DEPOSIT_QUERY_KEY";
 
 /** Every list an appointment appears in, plus money views a checkout moves. */
 const APPOINTMENT_KEYS = [
   SALON_APPOINTMENT_DETAILS_QUERY_KEY,
+  APPOINTMENT_DEPOSIT_QUERY_KEY,
   AGENDA_QUERY_KEY,
   SALON_APPOINTMENTS_QUERY_KEY,
   BRANCH_DAY_BOARD_QUERY_KEY,
@@ -44,6 +51,16 @@ export const useQuerySalonAppointmentDetails = (publicId: string | null | undefi
     queryKey: [SALON_APPOINTMENT_DETAILS_QUERY_KEY, salonId, publicId],
     queryFn: () => appointmentsService.getSalonDetails(publicId!),
     enabled: !!salonId && !!publicId,
+  });
+};
+
+/** Deposit status of one appointment (owner side: money). `enabled` keeps Staff views from calling it. */
+export const useQueryAppointmentDeposit = (publicId: string | null | undefined, enabled: boolean) => {
+  const salonId = useSalonContextStore((s) => s.salonId);
+  return useQuery({
+    queryKey: [APPOINTMENT_DEPOSIT_QUERY_KEY, salonId, publicId],
+    queryFn: () => appointmentsService.getDeposit(publicId!),
+    enabled: enabled && !!salonId && !!publicId,
   });
 };
 
@@ -101,6 +118,11 @@ export const useMutateSalonAppointment = () => {
     checkout: useMutation({
       mutationFn: ({ publicId, body }: { publicId: string; body: ICheckoutRequest }) =>
         appointmentsService.checkout(publicId, body),
+      onSuccess: () => refresh(true),
+    }),
+    recordDeposit: useMutation({
+      mutationFn: ({ publicId, body }: { publicId: string; body: IRecordDepositRequest }) =>
+        appointmentsService.recordDeposit(publicId, body),
       onSuccess: () => refresh(true),
     }),
     internalNote: useMutation({

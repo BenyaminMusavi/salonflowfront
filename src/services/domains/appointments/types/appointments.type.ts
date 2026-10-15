@@ -335,5 +335,32 @@ export interface IGuidRescheduleRequest {
 
 export type TAgendaEntity = TResponse<{ days: IAgendaDayDto[] }>;
 export type TSalonAppointmentDetailsEntity = TResponse<ISalonAppointmentDetails>;
+
+/** GET/POST `api/appointments/{publicId}/deposit` — all amounts in Toman. */
+export interface IAppointmentDeposit {
+  appointmentPublicId: string;
+  /** Sum of the booked lines' deposits (snapshot at booking). */
+  depositDue: number;
+  /** Net held by the salon (received − refunded − forfeited). */
+  depositPaid: number;
+  depositRemaining: number;
+  /** After a cancel / no-show: what goes back to the customer. */
+  settledRefundAmount: number;
+  /** After a cancel / no-show: what the salon keeps. */
+  settledPenaltyAmount: number;
+  /** POST only. */
+  paymentPublicId?: string | null;
+  isDuplicate?: boolean;
+}
+
+export interface IRecordDepositRequest {
+  /** Empty = the whole remaining deposit. */
+  amount?: number | null;
+  /** 1 Cash, 2 Card, 4 Transfer. */
+  paymentMethod: number;
+  idempotencyKey: string;
+}
+
+export type TAppointmentDepositEntity = TResponse<IAppointmentDeposit>;
 export type TSalonAvailabilityEntity = TResponse<{ days: ISalonAvailabilityDay[] }>;
 export type TCheckoutEntity = TResponse<ICheckoutResult>;

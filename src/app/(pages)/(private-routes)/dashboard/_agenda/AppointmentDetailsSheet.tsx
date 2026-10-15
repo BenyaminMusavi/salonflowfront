@@ -21,6 +21,7 @@ import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import type { IAgendaItem, ISalonAppointmentDetails } from "@/services/domains/appointments/types/appointments.type";
 import {
   useMutateSalonAppointment,
+  useQueryAppointmentDeposit,
   useQuerySalonAppointmentDetails,
 } from "@/services/domains/appointments/hooks";
 import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
@@ -42,9 +43,10 @@ import { StatusMark, formatClock } from "./AgendaRow";
 import { durationMinutes } from "./agendaUtils";
 import { dayLabel } from "./DayTimePicker";
 import { CheckoutStep } from "./CheckoutStep";
+import { DepositBlock, DepositStep } from "./DepositBlock";
 import { RescheduleStep } from "./RescheduleStep";
 
-type Step = "details" | "reschedule" | "checkout" | "complete-checkout";
+type Step = "details" | "reschedule" | "checkout" | "complete-checkout" | "deposit";
 
 const roundAction =
   "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-surface-hover text-sm font-semibold text-foreground";
@@ -220,6 +222,15 @@ export function AppointmentDetailsSheet({
   const canSeePhone = capabilities?.canSeeCustomerPhone ?? true;
   const money = details?.money;
   const showMoney = !!money && !!(capabilities?.canCollectPayment || capabilities?.canViewFinance);
+  // Deposit status is money: owner views only, and only while it can still change or has settled.
+  const depositQuery = useQueryAppointmentDeposit(
+    item?.publicId,
+    showMoney &&
+      (status === AppointmentStatus.Scheduled ||
+        status === AppointmentStatus.Cancelled ||
+        status === AppointmentStatus.NoShow)
+  );
+  const deposit = depositQuery.data?.data;
   const subject = item
     ? `${item.customerName || "مشتری"} · ${dayLabel(utcToSalonYmd(item.startTime))} ${formatClock(item.startTime)}`
     : undefined;
@@ -275,6 +286,14 @@ export function AppointmentDetailsSheet({
               <DrawerDescription className="sr-only">{subject}</DrawerDescription>
               {details && step === "reschedule" ? (
                 <RescheduleStep details={details} onBack={() => setStep("details")} onDone={() => setStep("details")} onToast={onToast} />
+              ) : details && deposit && step === "deposit" ? (
+                <DepositStep
+                  details={details}
+                  deposit={deposit}
+                  onBack={() => setStep("details")}
+                  onDone={() => setStep("details")}
+                  onToast={onToast}
+                />
               ) : details && (step === "checkout" || step === "complete-checkout") ? (
                 <CheckoutStep
                   details={details}
@@ -350,6 +369,15 @@ export function AppointmentDetailsSheet({
                       </div>
                     ) : null}
                   </div>
+
+                  {showMoney ? (
+                    <DepositBlock
+                      deposit={deposit}
+                      status={status}
+                      canReceive={can("collectPayment")}
+                      onReceive={() => setStep("deposit")}
+                    />
+                  ) : null}
 
                   {details ? (
                     <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">

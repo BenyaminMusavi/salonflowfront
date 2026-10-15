@@ -146,6 +146,8 @@ export const API_ADDRESS = {
     ACTION: (publicId: string, action: "check-in" | "complete" | "no-show" | "cancel" | "reschedule" | "undo-status" | "checkout") =>
       `/api/appointments/${publicId}/${action}`,
     INTERNAL_NOTE: (publicId: string) => `/api/appointments/${publicId}/internal-note`,
+    /** GET status / POST record a deposit the salon received (owner side). */
+    DEPOSIT: (publicId: string) => `/api/appointments/${publicId}/deposit`,
   },
 
   REVIEWS: {

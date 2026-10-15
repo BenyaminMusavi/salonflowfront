@@ -15,5 +15,6 @@ export { useQueryAgenda, historyToAgendaItem, agendaDtoToItem, AGENDA_QUERY_KEY 
 export {
   useQuerySalonAppointmentDetails,
   useQuerySalonAvailability,
+  useQueryAppointmentDeposit,
   useMutateSalonAppointment,
 } from "./useSalonAppointment";

@@ -21,6 +21,8 @@ import {
   IGuidRescheduleRequest,
   TAgendaEntity,
   TSalonAppointmentDetailsEntity,
+  TAppointmentDepositEntity,
+  IRecordDepositRequest,
   TSalonAvailabilityEntity,
   TCheckoutEntity,
 } from "./types/appointments.type";
@@ -173,6 +175,20 @@ class AppointmentsService {
         branchPublicId: params.branchPublicId,
       },
     });
+  }
+
+  async getDeposit(publicId: string) {
+    return await axiosInstance.get<unknown, TAppointmentDepositEntity>(
+      API_ADDRESS.APPOINTMENTS.DEPOSIT(publicId)
+    );
+  }
+
+  /** Scheduled appointments only; the same idempotencyKey never records the money twice. */
+  async recordDeposit(publicId: string, body: IRecordDepositRequest) {
+    return await axiosInstance.post<unknown, TAppointmentDepositEntity>(
+      API_ADDRESS.APPOINTMENTS.DEPOSIT(publicId),
+      body
+    );
   }
 
   async getSalonDetails(publicId: string) {
