@@ -11,8 +11,8 @@ import {
   appointmentStatusLabel,
   canCustomerCancel,
   formatAppointmentDateTime,
-  isWithinFreeCancellationWindow,
 } from "@/services/domains/appointments/utils/appointment-display";
+import { cancelTermsNote, estimateCancelPenalty } from "@/services/domains/appointments/utils/cancelPenalty";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
@@ -88,7 +88,7 @@ export default function ReservationDetailView() {
   }
 
   const status = cancelled ? 3 : appointment.status;
-  const freeCancel = isWithinFreeCancellationWindow(appointment.startTime);
+  const cancelNote = cancelTermsNote(estimateCancelPenalty(appointment.services ?? [], appointment.startTime));
   const canCancel = canCustomerCancel(appointment.status) && !cancelled;
 
   const handleCancel = async () => {
@@ -196,11 +196,9 @@ export default function ReservationDetailView() {
 
       {canCancel && !showCancelForm && (
         <div className="flex flex-col gap-2">
-          <p className={cn("text-xs", freeCancel ? "text-foreground-muted" : "text-warning")}>
-            {freeCancel
-              ? "لغو رایگان تا 24 ساعت قبل از نوبت."
-              : "کمتر از 24 ساعت مانده؛ با لغو، بیعانه ممکن است برنگردد."}
-          </p>
+          {cancelNote ? (
+            <p className={cn("text-xs", cancelNote.costly ? "text-warning" : "text-foreground-muted")}>{cancelNote.text}</p>
+          ) : null}
           <button
             type="button"
             onClick={() => setShowCancelForm(true)}
@@ -213,6 +211,9 @@ export default function ReservationDetailView() {
 
       {canCancel && showCancelForm && (
         <div className="flex flex-col gap-3 rounded-[20px] bg-surface-tertiary p-4">
+          {cancelNote ? (
+            <p className={cn("text-xs", cancelNote.costly ? "text-warning" : "text-foreground-muted")}>{cancelNote.text}</p>
+          ) : null}
           <label className="flex flex-col gap-2 text-sm">
             <span className="text-foreground-muted">دلیل لغو</span>
             <textarea

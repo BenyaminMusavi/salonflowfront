@@ -36,6 +36,10 @@ export interface IMyAppointmentService {
   durationMinutes: number;
   price: number;
   staffName?: string | null;
+  /** Ladder booked on this line («کمتر از N ساعت مانده ← X٪») — requested from the backend. */
+  cancellationTiers?: { hoursBefore: number; penaltyPercent: number }[] | null;
+  /** This line's net deposit held by the salon, Toman — requested from the backend. */
+  depositPaid?: number | null;
 }
 
 export interface IMyAppointmentDetail {

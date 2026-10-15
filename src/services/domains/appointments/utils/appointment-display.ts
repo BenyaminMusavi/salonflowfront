@@ -1,8 +1,6 @@
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import { formatSalonDayTime } from "@/shared/utils/salonTime";
 
-const DEFAULT_FREE_CANCEL_HOURS = 24;
-
 export function appointmentStatusLabel(status: number): string {
   switch (status) {
     case AppointmentStatus.Scheduled:
@@ -49,13 +47,6 @@ export function formatAppointmentDateTime(iso: string): string {
 export function hoursUntilStart(startTime: string): number {
   const start = new Date(startTime).getTime();
   return (start - Date.now()) / (1000 * 60 * 60);
-}
-
-export function isWithinFreeCancellationWindow(
-  startTime: string,
-  windowHours = DEFAULT_FREE_CANCEL_HOURS
-): boolean {
-  return hoursUntilStart(startTime) >= windowHours;
 }
 
 export function canCustomerCancel(status: number): boolean {
