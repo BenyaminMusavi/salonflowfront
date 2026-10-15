@@ -3,7 +3,7 @@
 import { IBranchService } from "@/services/domains/salons/types/booking-browse.type";
 import { ICalculatePriceResult } from "@/services/domains/salons/types/booking-browse.type";
 import { formatToman } from "@/shared/utils/salonDisplay";
-import { APP_LOCALE } from "@/shared/utils/locale";
+import { cancellationSummary } from "@/services/domains/salons/utils/cancellationPolicy";
 import { formatSalonDate, ymdToDate } from "@/shared/utils/salonTime";
 
 function formatFaDate(date: string) {
@@ -16,6 +16,29 @@ function formatFaDate(date: string) {
   } catch {
     return date;
   }
+}
+
+/** «لغو رایگان تا N ساعت قبل» + each service's own penalty steps (from the quote, never a fixed 24 h). */
+function CancellationTerms({ price }: { price: ICalculatePriceResult }) {
+  const { freeText, lines } = cancellationSummary(price);
+  return (
+    <div className="mt-3 text-xs text-foreground-muted">
+      <p>{freeText}</p>
+      {lines.length > 0 ? (
+        <div className="mt-2 flex flex-col gap-1.5 rounded-2xl bg-surface-hover px-3 py-2.5">
+          <p>لغو دیرتر از آن، درصدی از بیعانه نزد سالن می‌ماند:</p>
+          {lines.map((l) => (
+            <p key={l.serviceName}>
+              {price.services.length > 1 ? (
+                <span className="font-semibold text-foreground">{l.serviceName}: </span>
+              ) : null}
+              {[...l.tiers, ...(l.noShow ? [l.noShow] : [])].join(" · ")}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function formatTime(time: string) {
@@ -125,10 +148,17 @@ export default function BookConfirmStep({
       ) : price ? (
         <div className="rounded-[24px] bg-surface p-5">
           <ul className="flex flex-col gap-2.5">
-            {(price.services.length ? price.services : services.map((s) => ({ serviceTypePublicId: s.servicePublicId, serviceName: s.name, price: s.price }))).map((line) => (
+            {(price.services.length ? price.services : services.map((s) => ({ serviceTypePublicId: s.servicePublicId, serviceName: s.name, price: s.price, basePrice: s.basePrice }))).map((line) => (
               <li key={line.serviceTypePublicId || line.serviceName} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-foreground">{line.serviceName}</span>
-                <span className="shrink-0 font-semibold text-foreground">{formatToman(line.price)} تومان</span>
+                <span className="shrink-0 text-end font-semibold text-foreground">
+                  {line.basePrice != null && line.basePrice > line.price ? (
+                    <span className="block text-xs font-medium text-foreground-muted line-through">
+                      {formatToman(line.basePrice)}
+                    </span>
+                  ) : null}
+                  {formatToman(line.price)} تومان
+                </span>
               </li>
             ))}
           </ul>
@@ -163,11 +193,7 @@ export default function BookConfirmStep({
               </span>
             </div>
           ) : null}
-          <p className="mt-3 text-xs text-foreground-muted">
-            لغو رایگان تا{" "}
-            {price.freeCancellationWindowHours.toLocaleString(APP_LOCALE)} ساعت
-            قبل از نوبت
-          </p>
+          <CancellationTerms price={price} />
         </div>
       ) : null}
 

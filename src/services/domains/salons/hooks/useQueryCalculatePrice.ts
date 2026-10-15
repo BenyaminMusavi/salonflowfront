@@ -7,7 +7,8 @@ export const useQueryCalculatePrice = (
   branchPublicId: string | null,
   serviceTypePublicIds: string[],
   staffPublicId?: string | null,
-  enabled = true
+  enabled = true,
+  startTime?: string | null
 ) => {
   const ids = [...serviceTypePublicIds].filter(Boolean).sort();
 
@@ -17,9 +18,10 @@ export const useQueryCalculatePrice = (
       branchPublicId,
       ids,
       staffPublicId ?? null,
+      startTime ?? null,
     ],
     queryFn: () =>
-      salonService.calculatePrice(branchPublicId!, ids, staffPublicId),
+      salonService.calculatePrice(branchPublicId!, ids, staffPublicId, startTime),
     enabled: enabled && !!branchPublicId && ids.length > 0,
   });
 };

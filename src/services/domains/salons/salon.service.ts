@@ -145,7 +145,9 @@ class SalonService {
   async calculatePrice(
     branchPublicId: string,
     serviceTypePublicIds: string[],
-    staffPublicId?: string | null
+    staffPublicId?: string | null,
+    /** UTC instant of the planned start: a special price valid at that moment is used. */
+    startTime?: string | null
   ) {
     return await axiosInstance.get<unknown, TCalculatePriceEntity>(
       API_ADDRESS.SALON.BRANCH_CALCULATE_PRICE(branchPublicId),
@@ -153,6 +155,7 @@ class SalonService {
         params: {
           serviceTypePublicIds,
           staffPublicId: staffPublicId || undefined,
+          startTime: startTime || undefined,
         },
         paramsSerializer: { indexes: null },
       }

@@ -8,7 +8,7 @@ import { ISalonServiceSummary } from "@/services/domains/salons/types/salon.type
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getServiceTypeIcon } from "@/shared/data/serviceTypeIcons";
 import { APP_LOCALE } from "@/shared/utils/locale";
-import { formatToman } from "@/shared/utils/salonDisplay";
+import ServicePrice from "@/shared/components/composites/service-price/ServicePrice";
 
 interface SalonsDetailServicesProps {
   salonId: string;
@@ -65,9 +65,12 @@ export default function SalonsDetailServices({ salonId, branches, services }: Sa
                     {svc.durationMinutes.toLocaleString(APP_LOCALE)} دقیقه
                   </span>
                 </span>
-                <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                  {formatToman(svc.price)} <span className="text-xs font-medium text-foreground-muted">تومان</span>
-                </span>
+                <ServicePrice
+                  className="shrink-0"
+                  price={svc.price}
+                  basePrice={svc.basePrice}
+                  validTo={svc.specialPriceValidTo}
+                />
                 <CaretLeftIcon size={16} className="shrink-0 text-foreground-muted" />
               </Link>
             );

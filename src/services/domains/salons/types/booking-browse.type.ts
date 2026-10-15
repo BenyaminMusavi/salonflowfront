@@ -1,3 +1,5 @@
+import type { DepositMode, PriceSource } from "@/services/common/enums/domain-enums";
+import type { ICancellationTier } from "@/services/domains/catalog/types/catalog.type";
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 
 /** Salon branch from public detail — identify by publicId (Guid). */
@@ -25,7 +27,14 @@ export interface IBranchService {
   description?: string | null;
   imageUrl?: string | null;
   durationMinutes: number;
+  /** Effective price (special price / staff price already applied). */
   price: number;
+  /** List price — struck through when higher than `price`. */
+  basePrice?: number | null;
+  priceSource?: PriceSource;
+  /** UTC ISO, end of a timed special price. */
+  specialPriceValidTo?: string | null;
+  hasStaffPrices?: boolean;
   requiresDeposit: boolean;
   depositAmount?: number | null;
 }
@@ -50,8 +59,16 @@ export interface IPriceLine {
   serviceTypePublicId: string;
   serviceName: string;
   price: number;
+  basePrice?: number | null;
+  priceSource?: PriceSource;
+  specialPriceValidTo?: string | null;
   requiresDeposit: boolean;
   depositAmount?: number | null;
+  depositMode?: DepositMode;
+  /** This line's deposit; the quote's totalDepositAmount is the sum of these. */
+  depositDue?: number | null;
+  cancellationTiers?: ICancellationTier[] | null;
+  noShowPenaltyPercent?: number | null;
   /** @deprecated Prefer serviceTypePublicId */
   serviceTypeId?: number | null;
 }
@@ -62,6 +79,7 @@ export interface ICalculatePriceResult {
   totalDepositAmount: number;
   amountDueNow: number;
   remainingAfterDeposit: number;
+  /** Biggest tier threshold across the services; 0 = cancelling is always free. */
   freeCancellationWindowHours: number;
 }
 

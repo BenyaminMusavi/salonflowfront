@@ -82,6 +82,13 @@ export enum SubscriptionStatus {
 }
 
 /** Per-service deposit rule (backend `DepositMode`). */
+/** Where a quoted price came from (backend `PriceSourceType`). */
+export enum PriceSource {
+  Base = 0,
+  StaffOverride = 1,
+  SpecialPrice = 2,
+}
+
 export enum DepositMode {
   None = 0,
   FixedAmount = 1,

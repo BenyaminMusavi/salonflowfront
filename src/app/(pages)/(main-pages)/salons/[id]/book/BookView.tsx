@@ -6,6 +6,7 @@ import TopNavigation from "@/shared/components/composites/layout/top-navigation/
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQueryBranchServices } from "@/services/domains/salons/hooks/useQueryBranchServices";
 import { useQueryAvailableDates } from "@/services/domains/salons/hooks/useQueryAvailableDates";
+import { toBookingStartTime } from "@/services/domains/booking/utils/booking-mappers";
 import { useQueryCalculatePrice } from "@/services/domains/salons/hooks/useQueryCalculatePrice";
 import { useQuerySalonAvailableSlots } from "@/services/domains/salons/hooks/useQuerySalonAvailableSlots";
 import {
@@ -203,7 +204,14 @@ export default function BookView() {
     isLoading: priceLoading,
     isError: priceError,
     refetch: refetchPrice,
-  } = useQueryCalculatePrice(branchPublicId, serviceTypePublicIds, resolvedStaffPublicId, step >= 4);
+  } = useQueryCalculatePrice(
+    branchPublicId,
+    serviceTypePublicIds,
+    resolvedStaffPublicId,
+    step >= 4,
+    // The chosen start, so a special price valid at that moment is the one quoted.
+    date && slotTime ? toBookingStartTime(date, slotTime) : null
+  );
 
   const price = priceRes?.data;
   const dates = useMemo(() => datesRes?.data ?? [], [datesRes?.data]);

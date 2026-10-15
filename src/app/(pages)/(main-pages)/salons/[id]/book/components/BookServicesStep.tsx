@@ -3,6 +3,7 @@
 import { CheckIcon } from "@phosphor-icons/react";
 import { IBranchService } from "@/services/domains/salons/types/booking-browse.type";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import ServicePrice from "@/shared/components/composites/service-price/ServicePrice";
 import { cn } from "@/shared/utils/className";
 import { APP_LOCALE } from "@/shared/utils/locale";
 
@@ -80,9 +81,12 @@ export default function BookServicesStep({
                       <p className="text-sm font-bold text-foreground">
                         {svc.name}
                       </p>
-                      <p className="shrink-0 text-sm font-bold text-foreground">
-                        {formatToman(svc.price)} <span className="text-xs font-medium text-foreground-muted">تومان</span>
-                      </p>
+                      <ServicePrice
+                        className="shrink-0"
+                        price={svc.price}
+                        basePrice={svc.basePrice}
+                        validTo={svc.specialPriceValidTo}
+                      />
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
                       <span className="text-xs text-foreground-muted">
@@ -90,8 +94,9 @@ export default function BookServicesStep({
                       </span>
                       {svc.requiresDeposit ? (
                         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
-                          بیعانه{" "}
-                          {formatToman(svc.depositAmount ?? 0)} تومان
+                          {(svc.depositAmount ?? 0) > 0
+                            ? `بیعانه ${formatToman(svc.depositAmount ?? 0)} تومان`
+                            : "بیعانه دارد"}
                         </span>
                       ) : null}
                     </div>
