@@ -67,7 +67,7 @@ export default function MySubscriptionCard({ subscription }: { subscription: ISu
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-[24px] bg-surface-tertiary p-5">
+    <section className="flex flex-col gap-3 rounded-[20px] bg-surface-tertiary p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">اشتراک من</h2>
         <Badge variant={cancelScheduled ? "warning" : subscriptionStatusVariant(status)}>
@@ -108,12 +108,12 @@ export default function MySubscriptionCard({ subscription }: { subscription: ISu
       {canRequestResume || canCancel ? (
         <div className="flex flex-wrap gap-2">
           {canRequestResume ? (
-            <Button size="sm" isLoading={resumePending} onClick={() => void onRequestResume()}>
+            <Button size="sm" shape="rounded" isLoading={resumePending} onClick={() => void onRequestResume()}>
               درخواست برگرداندن لغو
             </Button>
           ) : null}
           {canCancel ? (
-            <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)}>
+            <Button size="sm" shape="rounded" variant="outline" onClick={() => setCancelOpen(true)}>
               لغو اشتراک
             </Button>
           ) : null}
