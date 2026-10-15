@@ -15,7 +15,9 @@ export interface ISalonCard {
   bannerImageUrl?: string | null;
   genderType?: string | null;
   services?: string | null;
+  /** null = no approved review yet («بدون امتیاز»), not zero. */
   rating?: number | null;
+  reviewCount?: number | null;
   distanceKm?: number | null;
   minPrice?: number | null;
   /** Numeric long id when API includes it (reviews / reports). */

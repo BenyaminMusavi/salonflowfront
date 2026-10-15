@@ -63,6 +63,8 @@ export interface IMyAppointmentDetail {
   totalPrice: number;
   totalDurationMinutes: number;
   staffNames?: string | null;
+  /** The customer's own booking note (read-only; the salon's internal note never reaches here). */
+  notes?: string | null;
 }
 
 export interface ICancelAppointmentRequest {

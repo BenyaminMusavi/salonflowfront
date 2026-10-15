@@ -168,6 +168,7 @@ export default function AppointmentReviewSection({
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
+        maxLength={1000}
         placeholder="نظر شما (اختیاری)"
         className="mt-4 w-full rounded-2xl bg-background-secondary px-4 py-3 text-sm text-foreground outline-none"
       />

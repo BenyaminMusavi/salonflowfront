@@ -173,6 +173,15 @@ export default function ReservationDetailView() {
         </div>
       </div>
 
+      {appointment.notes?.trim() ? (
+        <div className="rounded-[20px] bg-surface-tertiary p-4 text-sm">
+          <p className="mb-2 font-bold text-foreground">یادداشت شما</p>
+          <p className="whitespace-pre-wrap break-words text-foreground-muted">
+            {appointment.notes}
+          </p>
+        </div>
+      ) : null}
+
       {(status === AppointmentStatus.Completed ||
         appointment.status === AppointmentStatus.Completed) &&
         !cancelled && (

@@ -8,7 +8,9 @@ export interface IFavoriteSalon {
   salonName: string;
   imageUrl?: string | null;
   city?: string | null;
+  /** null = no approved review yet («بدون امتیاز»), not zero. */
   averageRating?: number | null;
+  reviewCount?: number | null;
   createdAt: string;
 }
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
+import { ArrowUpLeftIcon } from "@phosphor-icons/react";
+import RatingValue from "@/shared/components/composites/rating/RatingValue";
 import { ISalonCard } from "@/services/domains/salons/types/salons.type";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -45,10 +46,11 @@ function SearchSalonCard({ salon }: { salon: ISalonCard }) {
       />
 
       <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-overlay/60 px-2.5 py-1 backdrop-blur-sm">
-        <StarIcon size={12} weight="fill" className="text-rating" />
-        <span className="text-[11px] font-semibold text-on-media">
-          {(salon.rating ?? 0).toFixed(1)}
-        </span>
+        <RatingValue
+          rating={salon.rating}
+          reviewCount={salon.reviewCount}
+          textClassName="text-[11px] font-semibold text-on-media"
+        />
         {salon.distanceKm != null && (
           <>
             <span className="h-1 w-1 rounded-full bg-on-media/50" />

@@ -203,6 +203,7 @@ export default function BookConfirmStep({
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={3}
+          maxLength={1000}
           className="rounded-2xl border border-input-border bg-input px-4 py-3 text-foreground outline-none placeholder:text-input-placeholder"
           placeholder="توضیحات برای سالن…"
         />

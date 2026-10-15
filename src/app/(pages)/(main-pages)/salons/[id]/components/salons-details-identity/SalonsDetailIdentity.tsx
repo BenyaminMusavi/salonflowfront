@@ -1,6 +1,6 @@
 "use client";
 
-import { StarIcon } from "@phosphor-icons/react";
+import RatingValue from "@/shared/components/composites/rating/RatingValue";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
 import SalonShareButton from "@/shared/components/composites/salon-share/SalonShareButton";
 import { salonImageSrc } from "@/shared/utils/salonDisplay";
@@ -12,6 +12,7 @@ interface SalonsDetailIdentityProps {
   /** MediaUsageType.Profile — shown here as the salon's logo badge. */
   logoUrl?: string | null;
   rating?: number | null;
+  reviewCount?: number | null;
   isFavorite?: boolean;
   canFavorite?: boolean;
   favoritePending?: boolean;
@@ -41,6 +42,7 @@ export default function SalonsDetailIdentity({
   username,
   logoUrl,
   rating,
+  reviewCount,
   isFavorite = false,
   canFavorite = false,
   favoritePending = false,
@@ -68,10 +70,13 @@ export default function SalonsDetailIdentity({
           iconClassName={isFavorite ? "text-error" : "text-foreground"}
         />
         <div className="flex items-center gap-1 rounded-full bg-surface px-3 py-1.5">
-          <StarIcon size={16} className="text-orange-400" weight="fill" />
-          <span className="text-sm font-medium text-foreground">
-            {(rating ?? 0).toFixed(1)}
-          </span>
+          <RatingValue
+            rating={rating}
+            reviewCount={reviewCount}
+            iconSize={16}
+            iconClassName="text-orange-400"
+            textClassName="text-sm font-medium text-foreground"
+          />
         </div>
       </div>
     </div>

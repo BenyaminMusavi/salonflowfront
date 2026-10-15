@@ -5,7 +5,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
+import { ArrowUpLeftIcon } from "@phosphor-icons/react";
+import RatingValue from "@/shared/components/composites/rating/RatingValue";
 import { ISalonCard } from "@/services/domains/salons/types/salons.type";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -68,10 +69,12 @@ function SearchHeroSlide({ slide }: { slide: ISalonCard }) {
       </div>
 
       <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-overlay/60 px-3 py-1.5 backdrop-blur-sm">
-        <StarIcon size={14} className="text-rating" weight="fill" />
-        <span className="text-[12px] font-semibold text-on-media">
-          {(slide.rating ?? 0).toFixed(1)}
-        </span>
+        <RatingValue
+          rating={slide.rating}
+          reviewCount={slide.reviewCount}
+          iconSize={14}
+          textClassName="text-[12px] font-semibold text-on-media"
+        />
       </div>
     </div>
   );

@@ -88,6 +88,7 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
           username={salon.username}
           logoUrl={salon.imageUrl}
           rating={salon.rating}
+          reviewCount={salon.reviewCount}
           isFavorite={isFavorite}
           canFavorite={canToggle}
           favoritePending={isPending}

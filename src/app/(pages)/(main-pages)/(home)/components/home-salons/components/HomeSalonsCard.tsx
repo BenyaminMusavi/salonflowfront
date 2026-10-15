@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpLeftIcon, StarIcon } from "@phosphor-icons/react";
+import { ArrowUpLeftIcon } from "@phosphor-icons/react";
+import RatingValue from "@/shared/components/composites/rating/RatingValue";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
 
 interface HomeSalonsCardProps {
@@ -10,7 +11,8 @@ interface HomeSalonsCardProps {
   image: string;
   name: string;
   address: string;
-  rating: number;
+  rating?: number | null;
+  reviewCount?: number | null;
   saved?: boolean;
   canFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -23,6 +25,7 @@ export default function HomeSalonsCard({
   name,
   address,
   rating,
+  reviewCount,
   saved = false,
   canFavorite = false,
   onToggleFavorite,
@@ -42,10 +45,13 @@ export default function HomeSalonsCard({
 
       <div className="absolute left-4 top-4">
         <div className="flex h-8 items-center gap-2 rounded-full bg-overlay/40 px-3 backdrop-blur-xl">
-          <span className="text-sm font-medium text-on-media">
-            {rating.toFixed(1)}
-          </span>
-          <StarIcon weight="fill" size={18} className="text-primary" />
+          <RatingValue
+            rating={rating}
+            reviewCount={reviewCount}
+            iconSize={18}
+            iconClassName="text-primary"
+            textClassName="text-sm font-medium text-on-media"
+          />
         </div>
       </div>
 

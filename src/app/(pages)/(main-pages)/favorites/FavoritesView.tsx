@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowUpLeftIcon, MapPinIcon, StarIcon } from "@phosphor-icons/react";
+import { ArrowUpLeftIcon, MapPinIcon } from "@phosphor-icons/react";
+import RatingValue from "@/shared/components/composites/rating/RatingValue";
 import { useQueryFavorites } from "@/services/domains/favorites/hooks/useQueryFavorites";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { IFavoriteSalon } from "@/services/domains/favorites/types/favorites.type";
@@ -47,10 +48,11 @@ function FavoriteSalonCard({ salon }: { salon: IFavoriteSalon }) {
         />
 
         <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-overlay/60 px-2.5 py-1 backdrop-blur-sm">
-          <StarIcon size={12} weight="fill" className="text-rating" />
-          <span className="text-[11px] font-semibold text-on-media">
-            {(salon.averageRating ?? 0).toFixed(1)}
-          </span>
+          <RatingValue
+            rating={salon.averageRating}
+            reviewCount={salon.reviewCount}
+            textClassName="text-[11px] font-semibold text-on-media"
+          />
         </div>
       </div>
 

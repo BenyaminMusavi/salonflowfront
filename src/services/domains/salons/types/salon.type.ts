@@ -55,6 +55,7 @@ export interface ISalon {
   whatsappNumber?: string | null;
   websiteUrl?: string | null;
   rating?: number | null;
+  reviewCount?: number | null;
   minPrice?: number | null;
   genderType?: string | null;
   latitude?: number | null;

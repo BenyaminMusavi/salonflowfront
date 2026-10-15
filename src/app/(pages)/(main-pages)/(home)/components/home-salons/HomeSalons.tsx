@@ -20,12 +20,14 @@ function HomeSalonSlide({
   address,
   imageUrl,
   rating,
+  reviewCount,
 }: {
   id: string;
   name: string;
   address: string;
   imageUrl?: string | null;
-  rating: number;
+  rating?: number | null;
+  reviewCount?: number | null;
 }) {
   const { isFavorite, canToggle, isPending, toggle } = useToggleFavorite(id);
 
@@ -36,6 +38,7 @@ function HomeSalonSlide({
       address={address}
       image={salonImageSrc(imageUrl, barbershop.src)}
       rating={rating}
+      reviewCount={reviewCount}
       saved={isFavorite}
       canFavorite={canToggle}
       onToggleFavorite={toggle}
@@ -93,7 +96,8 @@ function HomeSalons() {
                       .join(" · ") || "—"
                   }
                   imageUrl={salon.bannerImageUrl ?? salon.coverImageUrl ?? salon.imageUrl}
-                  rating={salon.rating ?? 0}
+                  rating={salon.rating}
+                  reviewCount={salon.reviewCount}
                 />
               </SwiperSlide>
             ))}
