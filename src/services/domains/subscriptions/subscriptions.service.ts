@@ -68,6 +68,13 @@ class SubscriptionsService {
     );
   }
 
+  /** Admin-only, 204. The owner stays cancelled and may ask again. */
+  async rejectResume(subscriptionPublicId: string) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.ADMIN.SUBSCRIPTION_REJECT_RESUME(subscriptionPublicId)
+    );
+  }
+
   async checkout(body: ICheckoutRequest) {
     return await axiosInstance.post<unknown, TCheckoutEntity>(
       API_ADDRESS.SUBSCRIPTIONS.CHECKOUT,

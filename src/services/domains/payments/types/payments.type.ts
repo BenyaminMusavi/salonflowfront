@@ -4,7 +4,8 @@ export interface ICreatePaymentRequest {
   invoiceId: number;
   amount: number;
   paymentMethod: number;
-  paymentType?: number;
+  /** 1 = Appointment, 3 = Full — deposits and penalties are recorded by the system. */
+  paymentType?: 1 | 3;
   idempotencyKey: string;
   gatewayName?: string | null;
   gatewayRef?: string | null;
@@ -21,10 +22,12 @@ export interface IPaymentResult {
   isDuplicate?: boolean;
 }
 
+/** Owner only. Both `reason` and `idempotencyKey` are required — send a new GUID per button press. */
 export interface IRefundPaymentRequest {
   paymentId: number;
   amount: number;
-  reason?: string | null;
+  reason: string;
+  idempotencyKey: string;
 }
 
 export interface IPaymentListItem {

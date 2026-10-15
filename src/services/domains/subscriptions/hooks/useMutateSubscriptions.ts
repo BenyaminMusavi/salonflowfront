@@ -65,3 +65,16 @@ export const useMutateApproveResume = () => {
     },
   });
 };
+
+/** Admin: turn down an owner's request to undo a cancellation (they may ask again). */
+export const useMutateRejectResume = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (subscriptionPublicId: string) =>
+      subscriptionsService.rejectResume(subscriptionPublicId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ADMIN_SUBSCRIPTIONS_QUERY_KEY] });
+    },
+  });
+};

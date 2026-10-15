@@ -7,6 +7,7 @@ export {
   useMutateCancelSubscription,
   useMutateRequestResume,
   useMutateApproveResume,
+  useMutateRejectResume,
 } from "./useMutateSubscriptions";
 export { useMutateMarkInvoicePaid } from "./useMutateMarkInvoicePaid";
 export {

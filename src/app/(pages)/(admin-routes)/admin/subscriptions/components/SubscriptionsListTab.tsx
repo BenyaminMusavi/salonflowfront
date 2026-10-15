@@ -6,7 +6,7 @@ import { Input } from "@/shared/components/primitives/input/Input";
 import { Badge } from "@/shared/components/primitives/badge/Badge";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { cn } from "@/shared/utils/className";
-import { useMutateApproveResume } from "@/services/domains/subscriptions/hooks/useMutateSubscriptions";
+import { useMutateApproveResume, useMutateRejectResume } from "@/services/domains/subscriptions/hooks/useMutateSubscriptions";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useQueryAdminSubscriptions } from "@/services/domains/admin/hooks/useQueryAdminSubscriptions";
 import { SubscriptionStatus } from "@/services/common/enums/domain-enums";
@@ -41,6 +41,8 @@ export function SubscriptionsListTab({ initialResumeOnly = false }: { initialRes
   const [approveError, setApproveError] = useState("");
   const { mutateAsync: approveResume, isPending: approving, variables: approvingId } =
     useMutateApproveResume();
+  const { mutateAsync: rejectResume, isPending: rejecting, variables: rejectingId } =
+    useMutateRejectResume();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -66,6 +68,15 @@ export function SubscriptionsListTab({ initialResumeOnly = false }: { initialRes
       await approveResume(publicId);
     } catch (e) {
       setApproveError(getApiErrorMessage(e, "تأیید برگرداندن لغو ناموفق بود."));
+    }
+  };
+
+  const onReject = async (publicId: string) => {
+    setApproveError("");
+    try {
+      await rejectResume(publicId);
+    } catch (e) {
+      setApproveError(getApiErrorMessage(e, "رد درخواست ناموفق بود."));
     }
   };
 
@@ -175,13 +186,25 @@ export function SubscriptionsListTab({ initialResumeOnly = false }: { initialRes
                     </td>
                     <td className="px-4 py-3">
                       {sub.resumeRequestedAt ? (
-                        <Button
-                          size="sm"
-                          isLoading={approving && approvingId === sub.publicId}
-                          onClick={() => void onApprove(sub.publicId)}
-                        >
-                          تأیید برگرداندن لغو
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            isLoading={approving && approvingId === sub.publicId}
+                            disabled={rejecting}
+                            onClick={() => void onApprove(sub.publicId)}
+                          >
+                            تأیید برگرداندن لغو
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            isLoading={rejecting && rejectingId === sub.publicId}
+                            disabled={approving}
+                            onClick={() => void onReject(sub.publicId)}
+                          >
+                            رد درخواست
+                          </Button>
+                        </div>
                       ) : null}
                     </td>
                   </tr>

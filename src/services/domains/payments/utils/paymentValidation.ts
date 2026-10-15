@@ -5,7 +5,8 @@ const recordPaymentSchema = z.object({
   invoiceId: z.number().int().positive("فاکتور را انتخاب کنید"),
   amount: z.number().positive("مبلغ پرداخت باید بزرگ‌تر از صفر باشد"),
   paymentMethod: z.number().int().min(1).max(5, "روش پرداخت نامعتبر است"),
-  paymentType: z.number().int().min(1).max(5, "نوع پرداخت نامعتبر است"),
+  // Only Appointment (1) or Full (3); deposits and penalties are recorded by the system.
+  paymentType: z.number().int().refine((v) => v === 1 || v === 3, "نوع پرداخت نامعتبر است"),
 });
 
 export type TPaymentFieldErrors = {

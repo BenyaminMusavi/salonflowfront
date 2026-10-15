@@ -310,6 +310,8 @@ export const API_ADDRESS = {
     USER_UNBLOCK: (userPublicId: string) => `/api/admin/users/${userPublicId}/unblock`,
     SUBSCRIPTIONS: "/api/admin/subscriptions",
     SUBSCRIPTION_INVOICES: "/api/admin/subscriptions/invoices",
+    SUBSCRIPTION_REJECT_RESUME: (subscriptionPublicId: string) =>
+      `/api/admin/subscriptions/${subscriptionPublicId}/reject-resume`,
     SUBSCRIPTION_APPROVE_RESUME: (subscriptionPublicId: string) =>
       `/api/admin/subscriptions/${subscriptionPublicId}/approve-resume`,
     SUBSCRIPTION_PLANS: "/api/admin/subscription-plans",

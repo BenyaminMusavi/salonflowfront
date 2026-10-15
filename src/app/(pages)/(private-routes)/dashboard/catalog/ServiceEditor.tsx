@@ -29,7 +29,7 @@ import type { IServiceType } from "@/services/domains/service-type/types/service
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useMediaQuery } from "@/shared/hooks";
 import { formatToman } from "@/shared/utils/salonDisplay";
-import { formatSalonDate, salonWallClockToUtcIso } from "@/shared/utils/salonTime";
+import { formatSalonDate, salonWallClockToUtcIso, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { cn } from "@/shared/utils/className";
 import { InlineDateField } from "../_agenda/DayTimePicker";
@@ -174,7 +174,7 @@ function Providers({
   );
 }
 
-/** «قیمت ویژه»: a different price in one branch, or for a limited period (e.g. a discount). */
+/** «قیمت ویژه»: a different price for a period (e.g. a discount), whole salon, at least one date. */
 function SpecialPrices({
   offering,
   branches,
@@ -191,18 +191,16 @@ function SpecialPrices({
   );
   const mutate = useMutatePricingRules();
   const [adding, setAdding] = useState(false);
-  const multiBranch = branches.length > 1;
-  const [kind, setKind] = useState<"period" | "branch">("period");
-  const [branchId, setBranchId] = useState<number | "">("");
   const [price, setPrice] = useState<number | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // Older branch-specific rules are no longer accepted by the backend; they stay listed so they can be removed.
   const describe = (r: (typeof rules)[number]) => {
     const where =
       r.scopeType === PricingRuleScopeType.BranchSpecific
         ? `شعبه ${branches.find((b) => b.branchId === r.branchId)?.name ?? ""}`
-        : "همه‌ی شعبه‌ها";
+        : "";
     const dates = [r.validFrom, r.validTo]
       .map((d) => (d ? formatSalonDate(d, { day: "numeric", month: "long" }) : null))
       .filter(Boolean)
@@ -210,16 +208,27 @@ function SpecialPrices({
     return [where, dates].filter(Boolean).join(" · ");
   };
 
+  // Two active special prices of one service can't overlap (an open end counts as unbounded).
+  const overlapsExisting = () =>
+    rules.some((r) => {
+      if (!r.isActive || r.scopeType !== PricingRuleScopeType.Standard) return false;
+      const rFrom = r.validFrom ? utcToSalonYmd(r.validFrom) : "0000-01-01";
+      const rTo = r.validTo ? utcToSalonYmd(r.validTo) : "9999-12-31";
+      return (from || "0000-01-01") <= rTo && rFrom <= (to || "9999-12-31");
+    });
+
   const add = async () => {
-    if (price == null || price < 0) return onToast({ type: "error", message: "قیمت را وارد کنید." });
-    if (kind === "branch" && !branchId) return onToast({ type: "error", message: "شعبه را انتخاب کنید." });
-    if (kind === "period" && !from && !to) return onToast({ type: "error", message: "حداقل یکی از تاریخ‌ها را انتخاب کنید." });
+    if (price == null || price <= 0) return onToast({ type: "error", message: "قیمت ویژه باید بیشتر از صفر باشد." });
+    if (!from && !to) return onToast({ type: "error", message: "حداقل یکی از تاریخ‌ها را انتخاب کنید." });
+    if (from && to && from > to) return onToast({ type: "error", message: "تاریخ «از» نباید بعد از «تا» باشد." });
+    if (overlapsExisting()) {
+      return onToast({ type: "error", message: "در این بازه قیمت ویژه‌ی فعال دیگری دارید؛ اول آن را حذف کنید." });
+    }
     try {
       await mutate.create.mutateAsync({
         serviceTypeId: offering.serviceTypeId,
         serviceOfferingId: offering.id,
-        scopeType: kind === "branch" ? PricingRuleScopeType.BranchSpecific : PricingRuleScopeType.Standard,
-        branchId: kind === "branch" ? Number(branchId) : null,
+        scopeType: PricingRuleScopeType.Standard,
         price,
         validFrom: from ? salonWallClockToUtcIso(from, "00:00") : null,
         validTo: to ? salonWallClockToUtcIso(to, "23:59") : null,
@@ -260,26 +269,6 @@ function SpecialPrices({
       ) : null}
       {adding ? (
         <div className="flex flex-col gap-3 rounded-[16px] bg-background-secondary p-4">
-          {multiBranch ? (
-            <div className="flex gap-2">
-              <button type="button" className={chip(kind === "period")} onClick={() => setKind("period")}>
-                بازه‌ی زمانی
-              </button>
-              <button type="button" className={chip(kind === "branch")} onClick={() => setKind("branch")}>
-                یک شعبه
-              </button>
-            </div>
-          ) : null}
-          {kind === "branch" ? (
-            <DashboardSelect value={branchId} onChange={(e) => setBranchId(Number(e.target.value) || "")}>
-              <option value="">انتخاب شعبه</option>
-              {branches.map((b) => (
-                <option key={b.publicId} value={b.branchId}>
-                  {b.name}
-                </option>
-              ))}
-            </DashboardSelect>
-          ) : null}
           <MoneyInput placeholder="قیمت ویژه" value={price} onValueChange={setPrice} className="rounded-[12px]" />
           {/* Stacked: each field opens a full-width calendar under itself. */}
           <div className="flex flex-col gap-2">
