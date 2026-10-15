@@ -1,4 +1,11 @@
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
+import type { DepositMode } from "@/services/common/enums/domain-enums";
+
+/** «کمتر از `hoursBefore` ساعت مانده ← `penaltyPercent`٪ از مبلغ پرداخت‌شده ضبط می‌شود». */
+export interface ICancellationTier {
+  hoursBefore: number;
+  penaltyPercent: number;
+}
 
 export interface IServiceOffering {
   id: number;
@@ -17,6 +24,13 @@ export interface IServiceOffering {
   isOnlineBookable: boolean;
   requiresDeposit: boolean;
   color?: string | null;
+  depositMode?: DepositMode;
+  /** Only for Percent. */
+  depositPercent?: number | null;
+  cancellationTiers?: ICancellationTier[] | null;
+  /** null = same as the hardest tier — see effectiveNoShowPenaltyPercent. */
+  noShowPenaltyPercent?: number | null;
+  effectiveNoShowPenaltyPercent?: number | null;
 }
 
 interface IOfferingRequestCommon {
@@ -29,6 +43,11 @@ interface IOfferingRequestCommon {
   requiresDeposit?: boolean;
   depositAmount?: number | null;
   color?: string | null;
+  depositMode?: DepositMode;
+  depositPercent?: number | null;
+  /** On update: undefined/null = unchanged, [] = remove the ladder. */
+  cancellationTiers?: ICancellationTier[] | null;
+  noShowPenaltyPercent?: number | null;
 }
 
 /**

@@ -22,6 +22,7 @@ import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-map
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { getServiceTypeIcon } from "@/shared/data/serviceTypeIcons";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import { depositSummary } from "@/services/domains/catalog/utils/financePolicy";
 import { APP_LOCALE } from "@/shared/utils/locale";
 import { cn } from "@/shared/utils/className";
 import {
@@ -137,6 +138,7 @@ export default function CatalogView() {
                   <span className="block truncate text-xs tabular-nums text-foreground-muted">
                     {o.durationMinutes} دقیقه · {formatToman(o.basePrice)} تومان ·{" "}
                     {count ? `${count.toLocaleString(APP_LOCALE)} نفر` : "بدون پرسنل"}
+                    {depositSummary(o) ? ` · ${depositSummary(o)}` : ""}
                     {o.isActive ? "" : " · غیرفعال"}
                   </span>
                 </span>

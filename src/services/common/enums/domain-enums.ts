@@ -81,6 +81,14 @@ export enum SubscriptionStatus {
   PendingStart = 8,
 }
 
+/** Per-service deposit rule (backend `DepositMode`). */
+export enum DepositMode {
+  None = 0,
+  FixedAmount = 1,
+  Percent = 2,
+  FullPrepayment = 3,
+}
+
 export enum PlatformInvoiceStatus {
   Pending = 1,
   Paid = 2,

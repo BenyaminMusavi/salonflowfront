@@ -32,7 +32,15 @@ import { formatToman } from "@/shared/utils/salonDisplay";
 import { formatSalonDate, salonWallClockToUtcIso, utcToSalonYmd } from "@/shared/utils/salonTime";
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { cn } from "@/shared/utils/className";
+import {
+  EMPTY_POLICY,
+  policyFromOffering,
+  policyToRequest,
+  validatePolicy,
+  type PolicyDraft,
+} from "@/services/domains/catalog/utils/financePolicy";
 import { InlineDateField } from "../_agenda/DayTimePicker";
+import { CancellationFields, DepositFields } from "./FinancePolicyFields";
 import { panelSheetClass } from "../_components/panelSheet";
 import { DashboardSelect } from "../_components/DashboardSelect";
 import type { DashboardToastState } from "../_components/DashboardToast";
@@ -328,7 +336,7 @@ export function ServiceEditor({
   const [serviceTypePublicId, setServiceTypePublicId] = useState("");
   const [basePrice, setBasePrice] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(45);
-  const [deposit, setDeposit] = useState<number | null>(null);
+  const [policy, setPolicy] = useState<PolicyDraft>(EMPTY_POLICY);
   const [active, setActive] = useState(true);
   const [branchId, setBranchId] = useState<number | "">("");
   const [color, setColor] = useState("");
@@ -340,7 +348,7 @@ export function ServiceEditor({
     setServiceTypePublicId("");
     setBasePrice(offering?.basePrice ?? null);
     setDuration(offering?.durationMinutes ?? 45);
-    setDeposit(offering?.depositAmount ?? null);
+    setPolicy(policyFromOffering(offering));
     setActive(offering?.isActive ?? true);
     setBranchId(offering?.branchId ?? "");
     setColor(offering?.color ?? "");
@@ -353,6 +361,8 @@ export function ServiceEditor({
     if (!editing && !serviceTypePublicId) return setError("نوع خدمت را انتخاب کنید.");
     if (basePrice == null || basePrice < 0) return setError("قیمت را وارد کنید.");
     if (!isValidServiceDuration(duration)) return setError("مدت باید مضرب 15 دقیقه و حداکثر 12 ساعت باشد.");
+    const policyError = validatePolicy(policy, basePrice);
+    if (policyError) return setError(policyError);
     setError("");
     const body = {
       branchId: branchId ? Number(branchId) : null,
@@ -361,8 +371,7 @@ export function ServiceEditor({
       bufferBeforeMinutes: offering?.bufferBeforeMinutes ?? 0,
       bufferAfterMinutes: offering?.bufferAfterMinutes ?? 0,
       isOnlineBookable: offering?.isOnlineBookable ?? true,
-      requiresDeposit: (deposit ?? 0) > 0,
-      depositAmount: (deposit ?? 0) > 0 ? deposit : null,
+      ...policyToRequest(policy),
       color: color || null,
     };
     try {
@@ -410,7 +419,8 @@ export function ServiceEditor({
               ) : null}
               <MoneyInput placeholder="قیمت پایه" value={basePrice} onValueChange={setBasePrice} className="rounded-[12px]" />
               <DurationPicker label="مدت" value={duration} onChange={setDuration} />
-              <MoneyInput placeholder="بیعانه (اختیاری)" value={deposit} onValueChange={setDeposit} className="rounded-[12px]" />
+              <DepositFields value={policy} onChange={setPolicy} />
+              <CancellationFields key={offering?.id ?? "new"} value={policy} onChange={setPolicy} />
               {editing ? (
                 <label className="flex items-center justify-between gap-3 rounded-[16px] bg-background-secondary px-4 py-3">
                   <span>
