@@ -164,3 +164,59 @@ export type TAdminPromoPerformanceEntity = TResponse<IAdminPromoPerformance>;
 export type TAdminReferralPerformanceEntity = TResponse<IAdminReferralPerformance>;
 
 export type TAdminPlatformReportName = "promo-performance" | "referral-performance";
+
+/* ---------- Appointment no-show correction (admin, backend AdminAppointmentsController) ---------- */
+
+/**
+ * `automatic`: the row carries the no-show stamp, the lines to reopen are fixed by the server.
+ * `explicitLinesRequired`: legacy row without a stamp — the admin must name the lines (nothing is guessed).
+ * `notNoShow`: the appointment is not in the no-show state.
+ */
+export type TNoShowReviewResolution = "automatic" | "explicitLinesRequired" | "notNoShow" | (string & {});
+
+export interface IAdminNoShowReviewLine {
+  servicePublicId: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  price: number;
+  /** AppointmentServiceStatus: 1 Scheduled, 2 InProgress, 3 Completed, 4 Cancelled. */
+  status: number;
+  cancelledAt?: string | null;
+  createdAt?: string | null;
+  /** Stamped rows only: this line is reopened by the correction. */
+  reopensAutomatically: boolean;
+}
+
+export interface IAdminNoShowReviewPayment {
+  paymentPublicId: string;
+  amount: number;
+  forfeited: number;
+  refunded: number;
+  held: number;
+}
+
+export interface IAdminNoShowReview {
+  appointmentPublicId: string;
+  salonId: number;
+  status: number;
+  startTime: string;
+  checkedInBefore: boolean;
+  resolution: TNoShowReviewResolution;
+  noShowRecordedAt?: string | null;
+  noShowHistoryAt?: string | null;
+  noShowByUserId?: number | null;
+  ownerCanUndo: boolean;
+  /** Two cancelled lines overlap in time — the appointment was edited more than once, so picking lines is ambiguous. */
+  cancelledLinesOverlap: boolean;
+  lines: IAdminNoShowReviewLine[];
+  depositPayments: IAdminNoShowReviewPayment[];
+}
+
+export interface IRevertNoShowRequest {
+  reason: string;
+  /** Required for `explicitLinesRequired`; rejected by the server for stamped (`automatic`) rows. */
+  servicePublicIds?: string[] | null;
+}
+
+export type TAdminNoShowReviewEntity = TResponse<IAdminNoShowReview>;

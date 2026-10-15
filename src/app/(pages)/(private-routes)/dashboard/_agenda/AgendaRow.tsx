@@ -2,6 +2,7 @@
 
 import { AppointmentStatus } from "@/services/common/enums/domain-enums";
 import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
+import { emptyServicesLabel } from "@/services/domains/appointments/utils/servicesDisplay";
 import type { IAgendaItem } from "@/services/domains/appointments/types/appointments.type";
 import { formatSalonDate, formatSalonTime } from "@/shared/utils/salonTime";
 import { cn } from "@/shared/utils/className";
@@ -58,7 +59,7 @@ export function AgendaRow({
     status === AppointmentStatus.NoShow;
   const history = variant === "history";
   const meta = [
-    history ? null : serviceNames(item) || "بدون خدمت",
+    history ? null : serviceNames(item) || emptyServicesLabel(status),
     item.staffNames,
     showBranch ? item.branchName : null,
   ]
@@ -99,7 +100,7 @@ export function AgendaRow({
           )}
         >
           {history
-            ? serviceNames(item) || "بدون خدمت"
+            ? serviceNames(item) || emptyServicesLabel(status)
             : item.customerName ||
               (namesLoading ? (
                 <span className="inline-block h-4 w-24 animate-pulse rounded bg-surface-hover align-middle" />

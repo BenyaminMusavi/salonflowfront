@@ -143,7 +143,18 @@ export const API_ADDRESS = {
     SALON_DETAILS: (publicId: string) => `/api/appointments/${publicId}/salon-details`,
     SALON_AVAILABILITY: "/api/appointments/salon-availability",
     /** Guid lifecycle routes (salon side). */
-    ACTION: (publicId: string, action: "check-in" | "complete" | "no-show" | "cancel" | "reschedule" | "undo-status" | "checkout") =>
+    ACTION: (
+      publicId: string,
+      action:
+        | "check-in"
+        | "complete"
+        | "no-show"
+        | "cancel"
+        | "reschedule"
+        | "undo-status"
+        | "undo-no-show"
+        | "checkout"
+    ) =>
       `/api/appointments/${publicId}/${action}`,
     INTERNAL_NOTE: (publicId: string) => `/api/appointments/${publicId}/internal-note`,
     /** GET status / POST record a deposit the salon received (owner side). */
@@ -304,6 +315,12 @@ export const API_ADDRESS = {
     SALON_REJECT: (publicId: string) => `/api/admin/salons/${publicId}/reject`,
     SALON_SUSPEND: (publicId: string) => `/api/admin/salons/${publicId}/suspend`,
     SALON_RESTORE: (publicId: string) => `/api/admin/salons/${publicId}/restore`,
+    /** GET: read-only review before correcting a no-show. */
+    APPOINTMENT_NO_SHOW_REVIEW: (appointmentPublicId: string) =>
+      `/api/admin/appointments/${appointmentPublicId}/no-show-review`,
+    /** POST: correct a no-show without the 24 h limit (reason required; legacy rows also need servicePublicIds). */
+    APPOINTMENT_REVERT_NO_SHOW: (appointmentPublicId: string) =>
+      `/api/admin/appointments/${appointmentPublicId}/revert-no-show`,
     MEDIA_HIDE: (mediaId: number) => `/api/admin/media/${mediaId}/hide`,
     MEDIA_UNHIDE: (mediaId: number) => `/api/admin/media/${mediaId}/unhide`,
     USERS: "/api/admin/users",

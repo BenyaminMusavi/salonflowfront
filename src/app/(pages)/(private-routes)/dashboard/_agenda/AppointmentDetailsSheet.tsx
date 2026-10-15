@@ -25,6 +25,13 @@ import {
   useQuerySalonAppointmentDetails,
 } from "@/services/domains/appointments/hooks";
 import { appointmentStatusLabel } from "@/services/domains/appointments/utils/appointment-display";
+import { historyReasonLabel } from "@/services/domains/appointments/utils/historyReason";
+import {
+  canShowAppointmentTotals,
+  emptyServicesLabel,
+  hasUnknownServices,
+} from "@/services/domains/appointments/utils/servicesDisplay";
+import { getUndoNoShowErrorMessage } from "@/services/domains/appointments/utils/undoNoShow";
 import { useQueryCapabilities } from "@/services/domains/auth/hooks/useQueryCapabilities";
 import { useCustomerPreviewStore } from "@/services/domains/customers/store/useCustomerPreviewStore";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
@@ -36,6 +43,7 @@ import { APP_LOCALE } from "@/shared/utils/locale";
 import { cn } from "@/shared/utils/className";
 import CancelAppointmentDialog from "../CancelAppointmentDialog";
 import NoShowDialog from "../NoShowDialog";
+import UndoNoShowDialog from "../UndoNoShowDialog";
 import type { DashboardToastState } from "../_components/DashboardToast";
 import { dashboardQuietButtonClass } from "../_components/buttonClasses";
 import { panelSheetClass } from "../_components/panelSheet";
@@ -207,12 +215,16 @@ export function AppointmentDetailsSheet({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [noShowOpen, setNoShowOpen] = useState(false);
+  const [undoNoShowOpen, setUndoNoShowOpen] = useState(false);
+  const [undoNoShowError, setUndoNoShowError] = useState<string | null>(null);
 
   const itemKey = item?.publicId;
   useEffect(() => {
     setStep("details");
     setMoreOpen(false);
     setHistoryOpen(false);
+    setUndoNoShowOpen(false);
+    setUndoNoShowError(null);
   }, [itemKey]);
 
   const status = Number(details?.status ?? item?.status);
@@ -265,12 +277,34 @@ export function AppointmentDetailsSheet({
     }
   };
 
+  // Correction of a mistaken no-show. The button exists only when the server lists `undoNoShow` in
+  // allowedActions; a failure keeps the dialog open (with the reason) and re-reads the details so a
+  // closed window removes the button instead of leaving a dead one.
+  const undoNoShow = async (reason: string) => {
+    if (!item?.publicId || mutate.undoNoShow.isPending) return;
+    setUndoNoShowError(null);
+    try {
+      await mutate.undoNoShow.mutateAsync({ publicId: item.publicId, reason });
+      setUndoNoShowOpen(false);
+      onToast({ type: "success", message: "«مراجعه نکرد» اصلاح شد و نوبت دوباره باز است." });
+    } catch (err) {
+      setUndoNoShowError(getUndoNoShowErrorMessage(err));
+      void detailsQuery.refetch();
+    }
+  };
+
+  const services = details?.services ?? item?.services ?? [];
+  const unknownServices = !!item && hasUnknownServices(status, services);
+  const showTotal = canShowAppointmentTotals(status, services);
+
   const paymentLabel =
     money?.paymentStatus === "paid"
       ? "پرداخت شد"
       : money?.paymentStatus === "partial"
         ? `بخشی پرداخت شده · مانده ${formatToman(money.outstanding)} تومان`
         : null;
+  // With no trustworthy total (older cancelled / no-show rows) the block would otherwise be an empty box.
+  const moneyHasRows = !!money && (showTotal || money.deposit > 0 || money.discount > 0 || !!paymentLabel);
 
   return (
     <>
@@ -326,7 +360,7 @@ export function AppointmentDetailsSheet({
                   <CustomerBlock details={details} item={item} canSeePhone={canSeePhone} />
 
                   <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[16px] bg-background-secondary">
-                    {(details?.services ?? item.services).map((s, i) => (
+                    {services.map((s, i) => (
                       <div key={`${s.name}-${i}`} className="flex items-start justify-between gap-3 px-4 py-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground">{s.name}</p>
@@ -337,18 +371,28 @@ export function AppointmentDetailsSheet({
                         <p className="shrink-0 text-sm tabular-nums text-foreground">{formatToman(s.price)}</p>
                       </div>
                     ))}
+                    {unknownServices && !detailsQuery.isLoading ? (
+                      <div className="flex flex-col gap-0.5 px-4 py-3">
+                        <p className="text-sm font-semibold text-foreground">{emptyServicesLabel(status)}</p>
+                        <p className="text-xs text-foreground-muted">
+                          این نوبت قدیمی است و خدمت‌هایش در سامانه ثبت نشده؛ قیمت و مدت آن را نمی‌توان نشان داد.
+                        </p>
+                      </div>
+                    ) : null}
                     {showBranch && (details?.branch?.name || item.branchName) ? (
                       <div className="px-4 py-3 text-xs text-foreground-muted">
                         شعبه {details?.branch?.name || item.branchName}
                         {details?.branch?.address ? ` · ${details.branch.address}` : ""}
                       </div>
                     ) : null}
-                    {showMoney && money ? (
+                    {showMoney && money && moneyHasRows ? (
                       <div className="flex flex-col gap-1 px-4 py-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-foreground-muted">جمع</span>
-                          <span className="font-bold tabular-nums text-foreground">{formatToman(money.total)} تومان</span>
-                        </div>
+                        {showTotal ? (
+                          <div className="flex justify-between">
+                            <span className="text-foreground-muted">جمع</span>
+                            <span className="font-bold tabular-nums text-foreground">{formatToman(money.total)} تومان</span>
+                          </div>
+                        ) : null}
                         {money.deposit > 0 ? (
                           <div className="flex justify-between text-xs text-foreground-muted">
                             <span>بیعانه</span>
@@ -416,7 +460,7 @@ export function AppointmentDetailsSheet({
                               {appointmentStatusLabel(Number(h.status))} ·{" "}
                               {formatSalonDateTime(h.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                               {h.byName ? ` · ${h.byName}` : ""}
-                              {h.reason ? ` · ${h.reason}` : ""}
+                              {historyReasonLabel(h.reason) ? ` · ${historyReasonLabel(h.reason)}` : ""}
                             </li>
                           ))}
                         </ol>
@@ -462,6 +506,21 @@ export function AppointmentDetailsSheet({
                     ) : can("collectPayment") && money && money.outstanding > 0 ? (
                       <Button type="button" className="w-full rounded-[12px]" onClick={() => setStep("checkout")}>
                         دریافت {formatToman(money.outstanding)} تومان
+                      </Button>
+                    ) : null}
+
+                    {can("undoNoShow") ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(dashboardQuietButtonClass, "w-full rounded-[12px]")}
+                        disabled={!details}
+                        onClick={() => {
+                          setUndoNoShowError(null);
+                          setUndoNoShowOpen(true);
+                        }}
+                      >
+                        اصلاح «مراجعه نکرد»
                       </Button>
                     ) : null}
 
@@ -514,6 +573,14 @@ export function AppointmentDetailsSheet({
           setCancelOpen(false);
           setMoreOpen(false);
         }}
+      />
+      <UndoNoShowDialog
+        open={undoNoShowOpen && can("undoNoShow")}
+        subject={subject}
+        isPending={mutate.undoNoShow.isPending}
+        error={undoNoShowError}
+        onClose={() => setUndoNoShowOpen(false)}
+        onConfirm={undoNoShow}
       />
       <NoShowDialog
         appointmentId={noShowOpen ? item?.numericId ?? 0 : null}

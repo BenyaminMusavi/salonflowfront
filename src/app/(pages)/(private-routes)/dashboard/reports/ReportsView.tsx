@@ -321,8 +321,11 @@ export default function ReportsView() {
               {o ? (
                 <>
                   <Line label="پرداخت‌نشده" value={`${formatMoneyOrDash(asNumber(o.outstanding))}`} />
-                  <Line label="بیعانه‌ی در جریان" value={`${formatMoneyOrDash(asNumber(o.depositsInFlight ?? o.depositInProgress))}`} />
-                  <Line label="تخفیف" value={`${formatMoneyOrDash(asNumber(o.discounts))}`} />
+                  <Line label="مبلغ بیعانه نگه‌داری‌شده برای نوبت‌های رزروشده و پذیرش‌شده" value={`${formatMoneyOrDash(asNumber(o.depositsInFlight ?? o.depositInProgress))}`} />
+                  <p className="px-1 text-xs leading-5 text-foreground-muted">
+                    بیعانه‌ی دریافت‌شده برای نوبت‌هایی که هنوز در وضعیت رزروشده یا پذیرش‌شده‌اند (حتی اگر زمانشان گذشته باشد)، پس از کسر مبلغ بازگشتی و ضبط‌شده. این عدد وضعیت همین لحظه است و به بازه‌ی تاریخ بستگی ندارد؛ درآمد یا مانده‌ی فاکتور نیست.
+                  </p>
+                  <Line label="تخفیف" value={`${formatMoneyOrDash(asNumber(o.discountTotal ?? o.discounts))}`} />
                   <Line label="مالیات" value={`${formatMoneyOrDash(asNumber(o.tax ?? o.taxTotal))}`} />
                 </>
               ) : null}

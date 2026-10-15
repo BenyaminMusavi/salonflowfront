@@ -125,6 +125,9 @@ export interface IOutstandingReport {
   depositsInFlight?: number;
   depositInProgress?: number;
   discounts?: number;
+  /** Backend field name: discount total of the range. */
+  discountTotal?: number;
+  openInvoiceCount?: number;
   tax?: number;
   taxTotal?: number;
 }

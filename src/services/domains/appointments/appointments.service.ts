@@ -242,6 +242,17 @@ class AppointmentsService {
     );
   }
 
+  /**
+   * Owner-only correction of a mistaken no-show (the server allows it within 24 h, stamped rows only —
+   * the button is shown from `allowedActions`, never from a client-side clock). Returns fresh details.
+   */
+  async undoNoShow(publicId: string, reason: string) {
+    return await axiosInstance.post<unknown, TSalonAppointmentDetailsEntity>(
+      API_ADDRESS.APPOINTMENTS.ACTION(publicId, "undo-no-show"),
+      { reason }
+    );
+  }
+
   /** Complete (optional) + final invoice + payments + tip in one idempotent request. */
   async checkout(publicId: string, body: ICheckoutRequest) {
     return await axiosInstance.post<unknown, TCheckoutEntity>(

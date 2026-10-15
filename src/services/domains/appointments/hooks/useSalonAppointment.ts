@@ -30,7 +30,7 @@ export const SALON_AVAILABILITY_QUERY_KEY = "SALON_AVAILABILITY_QUERY_KEY";
 export const APPOINTMENT_DEPOSIT_QUERY_KEY = "APPOINTMENT_DEPOSIT_QUERY_KEY";
 
 /** Every list an appointment appears in, plus money views a checkout moves. */
-const APPOINTMENT_KEYS = [
+export const APPOINTMENT_KEYS = [
   SALON_APPOINTMENT_DETAILS_QUERY_KEY,
   APPOINTMENT_DEPOSIT_QUERY_KEY,
   AGENDA_QUERY_KEY,
@@ -42,7 +42,7 @@ const APPOINTMENT_KEYS = [
   CUSTOMER_DETAILS_QUERY_KEY,
   CUSTOMERS_QUERY_KEY,
 ];
-const MONEY_KEYS = [INVOICES_QUERY_KEY, Z_REPORT_QUERY_KEY, DASHBOARD_SUMMARY_QUERY_KEY, REPORTS_QUERY_KEY];
+export const MONEY_KEYS = [INVOICES_QUERY_KEY, Z_REPORT_QUERY_KEY, DASHBOARD_SUMMARY_QUERY_KEY, REPORTS_QUERY_KEY];
 
 /** Salon-side details of one appointment (customer phone, money, notes, allowed actions). */
 export const useQuerySalonAppointmentDetails = (publicId: string | null | undefined) => {
@@ -96,15 +96,22 @@ export const useMutateSalonAppointment = () => {
       mutationFn: (publicId: string) => appointmentsService.completeByPublicId(publicId),
       onSuccess: () => refresh(true),
     }),
+    // A no-show or cancel settles the deposit (refund / forfeit), so reports and the deposit view change too.
     noShow: useMutation({
       mutationFn: ({ publicId, notifyCustomer }: { publicId: string; notifyCustomer: boolean }) =>
         appointmentsService.noShowByPublicId(publicId, notifyCustomer),
-      onSuccess: () => refresh(),
+      onSuccess: () => refresh(true),
+    }),
+    /** Owner-only correction of a mistaken no-show: the server returns the fresh details. */
+    undoNoShow: useMutation({
+      mutationFn: ({ publicId, reason }: { publicId: string; reason: string }) =>
+        appointmentsService.undoNoShow(publicId, reason),
+      onSuccess: () => refresh(true),
     }),
     cancel: useMutation({
       mutationFn: ({ publicId, reason, notifyCustomer }: { publicId: string; reason: string; notifyCustomer: boolean }) =>
         appointmentsService.cancelByPublicId(publicId, { reason, notifyCustomer }),
-      onSuccess: () => refresh(),
+      onSuccess: () => refresh(true),
     }),
     reschedule: useMutation({
       mutationFn: ({ publicId, body }: { publicId: string; body: IGuidRescheduleRequest }) =>

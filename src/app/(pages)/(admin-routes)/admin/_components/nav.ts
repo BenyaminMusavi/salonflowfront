@@ -7,6 +7,7 @@ import {
   UsersIcon,
   CreditCardIcon,
   ChartBarIcon,
+  CalendarCheckIcon,
   type Icon,
 } from "@phosphor-icons/react";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -62,5 +63,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     label: "گزارش‌های پلتفرم",
     href: RouteAddress.ADMIN.PLATFORM_REPORTS,
     icon: ChartBarIcon,
+  },
+  {
+    id: "appointments",
+    label: "اصلاح «مراجعه نکرد»",
+    href: RouteAddress.ADMIN.APPOINTMENTS,
+    icon: CalendarCheckIcon,
   },
 ];

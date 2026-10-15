@@ -7,9 +7,11 @@ import {
   IAdminUsersParams,
   IBlockUserRequest,
   IRejectSalonRequest,
+  IRevertNoShowRequest,
   ISalonReasonRequest,
   TAdminDashboardSummaryEntity,
   TAdminMediaActionEntity,
+  TAdminNoShowReviewEntity,
   TAdminPlatformReportName,
   TAdminPromoPerformanceEntity,
   TAdminReferralPerformanceEntity,
@@ -77,6 +79,21 @@ class AdminService {
   async restoreSalon(publicId: string, data: ISalonReasonRequest) {
     return await axiosInstance.post<unknown, TAdminSalonActionEntity>(
       API_ADDRESS.ADMIN.SALON_RESTORE(publicId),
+      data
+    );
+  }
+
+  /** Read-only: what a no-show correction would touch (lines, deposit money, whether lines must be chosen). */
+  async getNoShowReview(appointmentPublicId: string) {
+    return await axiosInstance.get<unknown, TAdminNoShowReviewEntity>(
+      API_ADDRESS.ADMIN.APPOINTMENT_NO_SHOW_REVIEW(appointmentPublicId)
+    );
+  }
+
+  /** Success: 204 No Content. */
+  async revertNoShow(appointmentPublicId: string, data: IRevertNoShowRequest) {
+    return await axiosInstance.post<unknown, void>(
+      API_ADDRESS.ADMIN.APPOINTMENT_REVERT_NO_SHOW(appointmentPublicId),
       data
     );
   }

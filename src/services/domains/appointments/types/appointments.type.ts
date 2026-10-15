@@ -141,6 +141,11 @@ export interface IRescheduleAppointmentRequest {
   notifyCustomer?: boolean;
 }
 
+/** Body of POST /appointments/{publicId}/undo-no-show — the reason is required (≤ 482 characters after trimming). */
+export interface IUndoNoShowRequest {
+  reason: string;
+}
+
 /** Optional body of POST /appointments/{id}/no-show (backend default: no SMS). */
 export interface INoShowAppointmentRequest {
   notifyCustomer?: boolean;
@@ -219,7 +224,9 @@ export type TAppointmentAction =
   | "cancel"
   | "reschedule"
   | "collectPayment"
-  | "refund";
+  | "refund"
+  /** Owner-only correction of a mistaken no-show; the server decides (≤ 24 h, stamped rows only). */
+  | "undoNoShow";
 
 export interface IAppointmentServiceLine {
   offeringPublicId: string;
@@ -244,11 +251,22 @@ export interface IAgendaItemDto {
   hasNote: boolean;
   totalPrice: number;
   outstanding: number;
+  /** Open appointment two hours past its end — a reminder only, nothing changes automatically. */
+  needsResolution?: boolean;
 }
 
 export interface IAgendaDayDto {
   date: string;
-  counts: { total: number; scheduled: number; checkedIn: number; completed: number; cancelled: number; noShow: number; unpaid: number };
+  counts: {
+    total: number;
+    scheduled: number;
+    checkedIn: number;
+    completed: number;
+    cancelled: number;
+    noShow: number;
+    unpaid: number;
+    needsResolution?: number;
+  };
   items: IAgendaItemDto[];
 }
 

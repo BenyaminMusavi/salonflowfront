@@ -11,6 +11,10 @@ import {
   appointmentStatusLabel,
   formatAppointmentDateTime,
 } from "@/services/domains/appointments/utils/appointment-display";
+import {
+  emptyServicesLabel,
+  hasUnknownServices,
+} from "@/services/domains/appointments/utils/servicesDisplay";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { useRequireLogin } from "@/shared/hooks/useRequireLogin";
@@ -36,6 +40,8 @@ const chip = (active: boolean) =>
 
 function Row({ item }: { item: IAppointmentHistoryItem }) {
   const services = item.services?.map((s) => s.name).filter(Boolean).join("، ");
+  // Older cancelled / no-show bookings can have no service lines: no price or services to claim.
+  const unknownServices = hasUnknownServices(Number(item.status), item.services);
   return (
     <Link
       href={RouteAddress.RESERVATION.DETAILS(item.id)}
@@ -50,9 +56,13 @@ function Row({ item }: { item: IAppointmentHistoryItem }) {
         </span>
         <span className="mt-1 block text-[13px] font-semibold text-foreground">{formatAppointmentDateTime(item.startTime)}</span>
         <span className="mt-0.5 block truncate text-xs text-foreground-muted">
-          {[services, item.staffNames, item.branchName].filter(Boolean).join(" · ")}
+          {[services || (unknownServices ? emptyServicesLabel(Number(item.status)) : null), item.staffNames, item.branchName]
+            .filter(Boolean)
+            .join(" · ")}
         </span>
-        <span className="mt-0.5 block text-xs text-foreground-muted">{formatToman(item.totalPrice)} تومان</span>
+        {unknownServices ? null : (
+          <span className="mt-0.5 block text-xs text-foreground-muted">{formatToman(item.totalPrice)} تومان</span>
+        )}
       </span>
       <CaretLeftIcon size={18} className="shrink-0 text-foreground-muted" />
     </Link>

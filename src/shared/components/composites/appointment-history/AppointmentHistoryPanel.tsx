@@ -17,6 +17,10 @@ import {
   formatAppointmentDateTime,
 } from "@/services/domains/appointments/utils/appointment-display";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
+import {
+  emptyServicesLabel,
+  hasUnknownServices,
+} from "@/services/domains/appointments/utils/servicesDisplay";
 import { formatToman } from "@/shared/utils/salonDisplay";
 import { cn } from "@/shared/utils/className";
 import { APP_LOCALE } from "@/shared/utils/locale";
@@ -206,12 +210,14 @@ function AppointmentHistoryRow({
       ? item.customerName
       : item.services?.map((s) => s.name).join("، ");
   const serviceNames = item.services?.map((s) => s.name).join("، ");
+  // An older cancelled / no-show row can have no service lines: say so instead of showing 0 minutes / 0 Toman.
+  const unknownServices = hasUnknownServices(Number(item.status), item.services);
 
   const body = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className="truncate text-[15px] font-bold text-foreground">
-          {title || "—"}
+          {title || (unknownServices ? emptyServicesLabel(Number(item.status)) : "—")}
         </p>
         <p className="mt-1 text-xs text-foreground-muted">
           {formatAppointmentDateTime(item.startTime)}
@@ -226,10 +232,12 @@ function AppointmentHistoryRow({
         {fields.salon && fields.customer && item.customerName && (
           <p className="mt-1 text-xs text-foreground-muted">مشتری: {item.customerName}</p>
         )}
-        <p className="mt-1 text-xs text-foreground-muted">
-          {item.totalDurationMinutes.toLocaleString(APP_LOCALE)} دقیقه ·{" "}
-          {formatToman(item.totalPrice)} تومان
-        </p>
+        {unknownServices ? null : (
+          <p className="mt-1 text-xs text-foreground-muted">
+            {item.totalDurationMinutes.toLocaleString(APP_LOCALE)} دقیقه ·{" "}
+            {formatToman(item.totalPrice)} تومان
+          </p>
+        )}
       </div>
       <span
         className={cn(

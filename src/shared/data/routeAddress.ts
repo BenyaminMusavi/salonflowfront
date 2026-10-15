@@ -98,5 +98,6 @@ export const RouteAddress = {
     USERS: "/admin/users",
     SUBSCRIPTIONS: "/admin/subscriptions",
     PLATFORM_REPORTS: "/admin/platform-reports",
+    APPOINTMENTS: "/admin/appointments",
   },
 };

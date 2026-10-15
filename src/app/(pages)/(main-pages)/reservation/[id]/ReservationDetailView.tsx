@@ -14,6 +14,10 @@ import {
 } from "@/services/domains/appointments/utils/appointment-display";
 import { cancelTermsNote, estimateCancelPenalty } from "@/services/domains/appointments/utils/cancelPenalty";
 import { formatToman } from "@/shared/utils/salonDisplay";
+import {
+  emptyServicesLabel,
+  hasUnknownServices,
+} from "@/services/domains/appointments/utils/servicesDisplay";
 import { getApiErrorMessage } from "@/services/domains/booking/utils/booking-mappers";
 import { useTokenStore } from "@/services/authentication-store/useTokenStore";
 import { RouteAddress } from "@/shared/data/routeAddress";
@@ -88,6 +92,7 @@ export default function ReservationDetailView() {
   }
 
   const status = cancelled ? 3 : appointment.status;
+  const unknownServices = hasUnknownServices(Number(appointment.status), appointment.services);
   const cancelNote = cancelTermsNote(estimateCancelPenalty(appointment.services ?? [], appointment.startTime));
   const canCancel = canCustomerCancel(appointment.status) && !cancelled;
 
@@ -162,15 +167,21 @@ export default function ReservationDetailView() {
             </li>
           ))}
         </ul>
-        <div className="my-3 h-px bg-border" />
-        <div className="flex justify-between text-sm">
-          <span className="text-foreground-muted">
-            جمع ({appointment.totalDurationMinutes} دقیقه)
-          </span>
-          <span className="font-bold text-foreground">
-            {formatToman(appointment.totalPrice)} تومان
-          </span>
-        </div>
+        {unknownServices ? (
+          <p className="text-sm text-foreground-muted">{emptyServicesLabel(Number(appointment.status))}</p>
+        ) : (
+          <>
+            <div className="my-3 h-px bg-border" />
+            <div className="flex justify-between text-sm">
+              <span className="text-foreground-muted">
+                جمع ({appointment.totalDurationMinutes} دقیقه)
+              </span>
+              <span className="font-bold text-foreground">
+                {formatToman(appointment.totalPrice)} تومان
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {appointment.notes?.trim() ? (
