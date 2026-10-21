@@ -57,6 +57,46 @@ const THEME_INIT_SCRIPT = `(function () {
   }
 })();`;
 
+/**
+ * On-device error panel for phones without a web inspector (old iPhones). Off for everyone
+ * unless the URL has `?debug=1` (remembered for the tab); plain ES5 so it runs on any browser.
+ */
+const DEBUG_PANEL_SCRIPT = `(function () {
+  try {
+    if (/[?&]debug=1/.test(location.search)) sessionStorage.setItem("saffa_debug", "1");
+    if (sessionStorage.getItem("saffa_debug") !== "1") return;
+  } catch (e) { return; }
+  var lines = [];
+  var box;
+  function render() {
+    if (!document.body) { return; }
+    if (!box) {
+      box = document.createElement("pre");
+      box.style.cssText = "position:fixed;left:0;right:0;bottom:0;max-height:45%;overflow:auto;margin:0;padding:8px;background:#400;color:#fff;font:11px/1.4 monospace;z-index:2147483647;white-space:pre-wrap;direction:ltr;text-align:left";
+      document.body.appendChild(box);
+    }
+    box.textContent = lines.slice(-12).join("\\n");
+  }
+  function add(s) { lines.push(s); render(); }
+  window.addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t !== window && (t.src || t.href)) add("LOAD FAIL: " + (t.src || t.href));
+    else add("ERR: " + e.message + " @" + String(e.filename || "").split("/").pop() + ":" + e.lineno + ":" + e.colno);
+  }, true);
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e.reason;
+    add("REJECT: " + (r && (r.message || r.toString()) || r) + (r && r.config ? " [" + r.config.url + "]" : ""));
+  });
+  var open = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (m, u) {
+    var x = this;
+    x.addEventListener("loadend", function () { if (!x.status || x.status >= 400) add("HTTP " + x.status + " " + m + " " + u); });
+    return open.apply(this, arguments);
+  };
+  add("debug on · UA: " + navigator.userAgent);
+  document.addEventListener("DOMContentLoaded", render);
+})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -71,6 +111,7 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: DEBUG_PANEL_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-background">
         {children}
