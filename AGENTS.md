@@ -24,6 +24,7 @@ Salon management SPA (Farsi/RTL, Toman currency, Jalali dates). Next.js 16.3.3 +
 
 - **No `tailwind.config.js`** — Tailwind v4 config is CSS-based, all theme tokens in `src/shared/styles/globals.css` within `@theme inline { ... }`. Tokens are referenced as e.g. `bg-surface-tertiary`, `text-content-primary`.
 - **`@/*`** maps to `src/*`.
+- **Old iPhones (iOS 15, e.g. iPhone 7 Plus):** `package.json` has a `browserslist` (ios_saf >= 14, …) — without it Next 16 ships `class { static {} }` syntax (Safari 16.4+) and the whole app fails to run on iOS 15. With it, SWC transpiles that and lightningcss writes hex fallbacks for every `color-mix()` token. Never remove it. `dvh` has a `vh` fallback in `globals.css` for the few classes that use it (`h-dvh`, `max-h-[88dvh]`, the vaul bottom variants) — add a line there when using `dvh` in a new class. After touching this, verify: `rm -rf .next && npm run build`, then no `static{` in `.next/static/**/*.js`.
 - **`axios-case-converter`** is listed in `package.json` but not referenced anywhere in `src/` — no automatic snake_case↔camelCase conversion (the API already speaks camelCase).
 - **Icon library: `@phosphor-icons/react` only.** Don't use `lucide-react` (not installed) or `@radix-ui/react-icons` (still listed in `package.json` but unused — an earlier `Select.tsx` import from it was a bug; don't reintroduce either).
 - **`useMediaQuery`** — `src/shared/hooks/useMediaQuery.ts`, exported from the `shared/hooks` barrel.

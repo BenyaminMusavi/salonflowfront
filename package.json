@@ -2,6 +2,13 @@
   "name": "saffa",
   "version": "0.1.0",
   "private": true,
+  "browserslist": [
+    "ios_saf >= 14",
+    "chrome >= 80",
+    "edge >= 88",
+    "firefox >= 78",
+    "samsung >= 12"
+  ],
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Saffa",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   other: {
     enamad: "9999723",

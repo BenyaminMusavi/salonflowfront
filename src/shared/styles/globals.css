@@ -262,6 +262,26 @@
     --color-accent-pink: #ff1867;
 }
 
+/* iOS Safari < 15.4 has no dvh units (color-mix() fallbacks are generated at build time from
+   the package.json browserslist). Unlayered, same classes the app uses. */
+@supports not (height: 1dvh) {
+    .h-dvh {
+        height: 100vh;
+    }
+
+    .max-h-\[88dvh\] {
+        max-height: 88vh;
+    }
+
+    .data-\[vaul-drawer-direction\=bottom\]\:h-\[88dvh\][data-vaul-drawer-direction="bottom"] {
+        height: 88vh;
+    }
+
+    .data-\[vaul-drawer-direction\=bottom\]\:max-h-\[88dvh\][data-vaul-drawer-direction="bottom"] {
+        max-height: 88vh;
+    }
+}
+
 /*!* 4. Declare your custom “children” variant *!*/
 @custom-variant children (& > *);
 
