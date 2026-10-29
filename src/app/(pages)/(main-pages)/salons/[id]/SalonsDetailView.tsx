@@ -20,7 +20,7 @@ import { useQuerySalonByUsername } from "@/services/domains/salons/hooks/useQuer
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
 import { RouteAddress } from "@/shared/data/routeAddress";
-import { hasValidCoordinates } from "@/shared/utils/directions";
+import { formatBranchLocation, hasValidCoordinates, pickAddressBranch } from "@/shared/utils/directions";
 
 /** `/salons/{id}` loads by Guid; the public share link `/s/{username}` loads by username. */
 export type SalonDetailSource = { id: string } | { username: string };
@@ -75,14 +75,12 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
     );
   }
 
-  const location =
-    (salon.city && salon.address?.includes(salon.city)
-      ? salon.address
-      : [salon.city, salon.address].filter(Boolean).join("، ")) || null;
+  // The API sends address/city only on the branches (not on the salon), so the address row and the directions destination
+  // both come from the same branch: the first with real coordinates, else the first with an address (no invented coordinates).
+  const addressBranch = pickAddressBranch(salon.branches);
+  const location = formatBranchLocation(addressBranch);
   const openStatus = getOpenStatusLabel(salon.workingHours);
-  // Destination = the first branch that has real coordinates; without one the sheet falls back to the
-  // address text and says the location is approximate (no invented coordinates).
-  const mapBranch = salon.branches?.find((b) => hasValidCoordinates(b.latitude, b.longitude));
+  const mapBranch = addressBranch && hasValidCoordinates(addressBranch.latitude, addressBranch.longitude) ? addressBranch : undefined;
   const directionsTarget = {
     latitude: mapBranch?.latitude,
     longitude: mapBranch?.longitude,

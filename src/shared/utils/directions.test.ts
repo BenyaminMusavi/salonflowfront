@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDirectionOptions,
+  formatBranchLocation,
+  pickAddressBranch,
   googleMapsDirectionsUrl,
   hasValidCoordinates,
 } from "./directions";
@@ -45,5 +47,29 @@ describe("buildDirectionOptions", () => {
 
   it("returns nothing without coordinates and without an address", () => {
     expect(buildDirectionOptions({ label: "سالن", address: "  " }, DESKTOP)).toEqual([]);
+  });
+});
+
+describe("pickAddressBranch / formatBranchLocation (address comes from the branches, the salon-level fields do not exist)", () => {
+  const withCoords = { city: "تهران", address: "ونک، پلاک ۱", latitude: 35.7, longitude: 51.3 };
+  const noCoords = { city: "کرج", address: "گوهردشت", latitude: null, longitude: null };
+
+  it("prefers a branch with real coordinates, then one with an address", () => {
+    expect(pickAddressBranch([noCoords, withCoords])).toBe(withCoords);
+    expect(pickAddressBranch([{ city: "قم" }, noCoords])).toBe(noCoords);
+    expect(pickAddressBranch([{ city: "قم" }])).toEqual({ city: "قم" });
+  });
+
+  it("returns nothing when there are no branches", () => {
+    expect(pickAddressBranch(undefined)).toBeUndefined();
+    expect(pickAddressBranch([])).toBeUndefined();
+    expect(formatBranchLocation(undefined)).toBeNull();
+  });
+
+  it("joins city and address, without repeating a city the address already contains", () => {
+    expect(formatBranchLocation({ city: "تهران", address: "ونک، پلاک ۱" })).toBe("تهران، ونک، پلاک ۱");
+    expect(formatBranchLocation({ city: "تهران", address: "تهران، ونک" })).toBe("تهران، ونک");
+    expect(formatBranchLocation({ city: "تهران", address: null })).toBe("تهران");
+    expect(formatBranchLocation({ city: " ", address: "  " })).toBeNull();
   });
 });

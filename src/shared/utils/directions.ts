@@ -90,3 +90,33 @@ export function buildDirectionOptions(
     ? [{ id: "google", label: "جست‌وجوی آدرس در Google Maps", href: googleMapsSearchUrl(text) }]
     : [];
 }
+
+export interface IAddressBranch {
+  city?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+/**
+ * The branch whose address and coordinates the salon page shows. The salon detail API sends address/city only on the
+ * BRANCHES (never at the salon level), so the page must derive them from here: prefer the first branch with real
+ * coordinates (so the address and the directions destination are the same place), else the first one with an address.
+ */
+export function pickAddressBranch<T extends IAddressBranch>(branches: T[] | null | undefined): T | undefined {
+  const list = branches ?? [];
+  return (
+    list.find((b) => hasValidCoordinates(b.latitude, b.longitude)) ??
+    list.find((b) => !!b.address?.trim()) ??
+    list.find((b) => !!b.city?.trim())
+  );
+}
+
+/** «تهران، خیابان ...»; the city is not repeated when the address already starts with / contains it. */
+export function formatBranchLocation(branch: IAddressBranch | undefined): string | null {
+  if (!branch) return null;
+  const city = branch.city?.trim();
+  const address = branch.address?.trim();
+  if (city && address?.includes(city)) return address;
+  return [city, address].filter(Boolean).join("، ") || null;
+}
