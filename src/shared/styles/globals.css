@@ -307,6 +307,32 @@
     }
 }
 
+/* MarqueeLabel: a one-line title WIDER than its box glides along its reading direction (see shared/utils/marquee.ts).
+   Per cycle: rest at the start (0–25 %) → slow glide (25–65 %) → rest at the end (65–90 %) → glide back (90–100 %).
+   --marquee-shift (signed: + in RTL, − in LTR) and --marquee-duration are measured per label; titles that fit never get this class. */
+@keyframes label-marquee {
+    0%, 25% { transform: translateX(0); }
+    65%, 90% { transform: translateX(var(--marquee-shift)); }
+    100% { transform: translateX(0); }
+}
+
+.label-marquee {
+    animation: label-marquee var(--marquee-duration, 8s) ease-in-out infinite;
+    will-change: transform;
+}
+
+/* Reading the title: stop while the user hovers, focuses or presses the control it sits in (or the label itself). */
+:is(a, button, [role="button"], [data-marquee-frame]):is(:hover, :focus-visible, :focus-within, :active) .label-marquee {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .label-marquee {
+        animation: none;
+        transform: none;
+    }
+}
+
 /* Ravi draws even Latin digits (U+0030–0039) as Persian glyphs, and the product shows English
    digits everywhere. This face covers ONLY 0–9 (unicode-range) with the device's system sans, so
    digits render in English while every letter still comes from Ravi. Pairs with APP_LOCALE

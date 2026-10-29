@@ -2,6 +2,7 @@
 
 import { getServiceTypeIcon } from "@/shared/data/serviceTypeIcons";
 import { useDragScroll } from "@/shared/hooks";
+import MarqueeLabel from "@/shared/components/composites/marquee-label/MarqueeLabel";
 import { IServiceType } from "@/services/domains/service-type/types/service-type.type";
 
 interface SearchCategoriesProps {
@@ -53,9 +54,11 @@ export default function SearchCategories({
               >
                 <CategoryIcon size={22} weight="duotone" />
               </div>
-              <span className={`w-14 truncate text-center text-[11px] ${selected ? "font-bold text-foreground" : "text-foreground-muted"}`}>
-                {cat.name}
-              </span>
+              {/* Same 56px box as before (never two lines). A title that fits stays still and complete; only a really longer one glides. */}
+              <MarqueeLabel
+                text={cat.name}
+                className={`w-14 text-center text-[11px] ${selected ? "font-bold text-foreground" : "text-foreground-muted"}`}
+              />
             </button>
           );
         })}
