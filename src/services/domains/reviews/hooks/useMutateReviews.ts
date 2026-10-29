@@ -5,7 +5,7 @@ import {
   IEditReviewRequest,
 } from "../types/reviews.type";
 import { SALON_REVIEWS_QUERY_KEY } from "./useQuerySalonReviews";
-import { REVIEW_BY_ID_QUERY_KEY } from "./useQueryReviewById";
+import { MY_REVIEW_FOR_APPOINTMENT_QUERY_KEY, REVIEW_BY_ID_QUERY_KEY } from "./useQueryReviewById";
 import { useMyReviewsStore } from "../store/useMyReviewsStore";
 
 export const useMutateCreateReview = () => {
@@ -23,6 +23,8 @@ export const useMutateCreateReview = () => {
       });
       queryClient.invalidateQueries({ queryKey: [SALON_REVIEWS_QUERY_KEY] });
       queryClient.setQueryData([REVIEW_BY_ID_QUERY_KEY, review.id], res);
+      // The appointment page reads the review from the server: show it (Pending) right away.
+      queryClient.setQueryData([MY_REVIEW_FOR_APPOINTMENT_QUERY_KEY, variables.appointmentId], res);
     },
   });
 };
@@ -45,6 +47,7 @@ export const useMutateEditReview = () => {
       const review = res.data;
       queryClient.setQueryData([REVIEW_BY_ID_QUERY_KEY, review.id], res);
       queryClient.invalidateQueries({ queryKey: [SALON_REVIEWS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [MY_REVIEW_FOR_APPOINTMENT_QUERY_KEY] });
       if (variables.appointmentId != null) {
         setForAppointment(String(variables.appointmentId), {
           reviewId: review.id,

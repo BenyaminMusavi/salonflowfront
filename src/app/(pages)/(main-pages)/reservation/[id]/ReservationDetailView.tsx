@@ -197,7 +197,7 @@ export default function ReservationDetailView() {
         appointment.status === AppointmentStatus.Completed) &&
         !cancelled && (
           <AppointmentReviewSection
-            appointmentId={appointment.id}
+            appointmentId={appointment.numericId}
             status={AppointmentStatus.Completed}
           />
         )}

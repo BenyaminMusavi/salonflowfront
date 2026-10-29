@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { StarIcon } from "@phosphor-icons/react";
 import { useQuerySalonReviews } from "@/services/domains/reviews/hooks/useQuerySalonReviews";
 import { IReview } from "@/services/domains/reviews/types/reviews.type";
@@ -55,6 +56,9 @@ function ReviewCard({ review }: { review: IReview }) {
   );
 }
 
+const PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 100;
+
 interface SalonReviewsSectionProps {
   salonId: number | undefined;
 }
@@ -62,12 +66,16 @@ interface SalonReviewsSectionProps {
 export default function SalonReviewsSection({
   salonId,
 }: SalonReviewsSectionProps) {
-  const { data, isLoading, isError } = useQuerySalonReviews(salonId, {
+  // Only the first 10 used to be reachable: «نمایش بیشتر» grows the page size (the API caps it at 100).
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const { data, isLoading, isError, isFetching } = useQuerySalonReviews(salonId, {
     page: 1,
-    pageSize: 10,
+    pageSize,
   });
 
   const reviews = data?.data?.items ?? [];
+  const totalCount = data?.data?.totalCount ?? 0;
+  const canShowMore = reviews.length < totalCount && pageSize < MAX_PAGE_SIZE;
 
   return (
     <section className="mt-8 px-safe-area pb-4">
@@ -96,6 +104,17 @@ export default function SalonReviewsSection({
           <ReviewCard key={r.id} review={r} />
         ))}
       </div>
+
+      {canShowMore && (
+        <button
+          type="button"
+          disabled={isFetching}
+          onClick={() => setPageSize((n) => Math.min(n + PAGE_SIZE, MAX_PAGE_SIZE))}
+          className="mt-3 w-full rounded-full bg-background-secondary py-3 text-sm font-bold text-foreground disabled:opacity-60"
+        >
+          {isFetching ? "در حال بارگذاری…" : "نمایش نظرات بیشتر"}
+        </button>
+      )}
     </section>
   );
 }

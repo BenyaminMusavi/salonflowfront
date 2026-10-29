@@ -4,6 +4,8 @@ import { API_ADDRESS } from "@/services/common/apiAddress";
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
 import {
   IGetApprovedSalonsParams,
+  IGetMapPinsParams,
+  TMapPinsEntity,
   TSalonsEntity,
 } from "@/services/domains/salons/types/salons.type";
 import { TSalonEntity } from "@/services/domains/salons/types/salon.type";
@@ -50,9 +52,31 @@ class SalonService {
           minPrice: params.minPrice,
           maxPrice: params.maxPrice,
           minRating: params.minRating,
+          radiusKm: params.radiusKm,
         },
       }
     );
+  }
+
+  /** Pins for the map view. Pass the abort `signal` so a stale pan/zoom request is cancelled. */
+  async getMapPins(params: IGetMapPinsParams, signal?: AbortSignal) {
+    return await axiosInstance.get<unknown, TMapPinsEntity>(API_ADDRESS.SALON.MAP, {
+      signal,
+      params: {
+        north: params.north,
+        south: params.south,
+        east: params.east,
+        west: params.west,
+        lat: params.lat,
+        lng: params.lng,
+        search: params.search || undefined,
+        genderType: params.genderType,
+        serviceTypePublicId: params.serviceTypePublicId,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+        minRating: params.minRating,
+      },
+    });
   }
 
   async getById(id: string) {

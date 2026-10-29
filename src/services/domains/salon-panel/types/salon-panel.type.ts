@@ -31,6 +31,8 @@ export interface IBranchRequest {
   phone?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /** PATCH only: true removes the stored coordinates (null latitude/longitude means «unchanged» there). */
+  clearCoordinates?: boolean;
   genderType?: number;
   isActive?: boolean;
 }

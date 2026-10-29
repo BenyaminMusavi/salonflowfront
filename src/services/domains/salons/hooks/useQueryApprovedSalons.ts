@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import salonService from "../salon.service";
 import { IGetApprovedSalonsParams } from "../types/salons.type";
 
@@ -8,5 +8,7 @@ export const useQueryApprovedSalons = (params: IGetApprovedSalonsParams = {}) =>
   return useQuery({
     queryKey: [SALON_APPROVED_QUERY_KEY, params],
     queryFn: () => salonService.getApproved(params),
+    // Keep the previous list on screen while a filter / location change loads (no empty flash).
+    placeholderData: keepPreviousData,
   });
 };

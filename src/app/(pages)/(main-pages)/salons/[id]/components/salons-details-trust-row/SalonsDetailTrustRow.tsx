@@ -5,23 +5,41 @@ import { ClockIcon, MapPinIcon } from "@phosphor-icons/react";
 interface SalonsDetailTrustRowProps {
   location?: string | null;
   openStatus?: string | null;
+  /** When set, the address becomes a button that opens the directions sheet. */
+  onOpenDirections?: () => void;
 }
 
 export default function SalonsDetailTrustRow({
   location,
   openStatus,
+  onOpenDirections,
 }: SalonsDetailTrustRowProps) {
   if (!location && !openStatus) return null;
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-safe-area">
       {location ? (
-        <div className="flex min-w-0 items-center gap-2">
-          <MapPinIcon size={16} className="shrink-0 text-foreground-muted" />
-          <span className="truncate text-sm text-foreground-muted">
+        <button
+          type="button"
+          onClick={onOpenDirections}
+          disabled={!onOpenDirections}
+          aria-label={onOpenDirections ? "مسیریابی تا سالن" : undefined}
+          className="flex min-w-0 items-center gap-2 text-right disabled:cursor-default"
+        >
+          <MapPinIcon
+            size={16}
+            className={onOpenDirections ? "shrink-0 text-primary" : "shrink-0 text-foreground-muted"}
+          />
+          <span
+            className={
+              onOpenDirections
+                ? "truncate text-sm text-foreground-muted underline decoration-dotted underline-offset-4"
+                : "truncate text-sm text-foreground-muted"
+            }
+          >
             {location}
           </span>
-        </div>
+        </button>
       ) : null}
       {openStatus ? (
         <div className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1">

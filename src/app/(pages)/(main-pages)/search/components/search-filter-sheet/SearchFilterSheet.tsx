@@ -12,6 +12,8 @@ export interface ISearchFilters {
   maxPrice: string;
   minRating: number | null;
   genderType: GenderType | null;
+  /** Search radius around the reference point; null = no limit (only used while «نزدیک‌ترین به من» is on). */
+  radiusKm: number | null;
 }
 
 export const EMPTY_SEARCH_FILTERS: ISearchFilters = {
@@ -19,7 +21,10 @@ export const EMPTY_SEARCH_FILTERS: ISearchFilters = {
   maxPrice: "",
   minRating: null,
   genderType: null,
+  radiusKm: null,
 };
+
+const RADIUS_OPTIONS = [5, 10, 25, 50];
 
 const GENDER_OPTIONS: { value: GenderType; label: string }[] = [
   { value: GenderType.Female, label: "بانوان" },
@@ -99,6 +104,13 @@ export default function SearchFilterSheet({
               );
             })}
           </div>
+          <p className="text-xs text-foreground-muted">
+            {draft.genderType === GenderType.Mixed
+              ? "فقط سالن‌هایی که برای بانوان و آقایان هر دو خدمت می‌دهند."
+              : draft.genderType != null
+                ? "سالن‌های مختلط و سالن‌هایی که یکی از شعبه‌هایشان این مخاطب را دارد هم نمایش داده می‌شوند."
+                : "بدون انتخاب، همه‌ی سالن‌ها نمایش داده می‌شوند."}
+          </p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -191,6 +203,28 @@ export default function SearchFilterSheet({
           </button>
           {locationError && (
             <p className="text-xs text-error">{locationError}</p>
+          )}
+          {useMyLocation && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-foreground-muted">شعاع جست‌وجو</span>
+              <button
+                type="button"
+                onClick={() => setDraft({ ...draft, radiusKm: null })}
+                className={chipClass(draft.radiusKm == null)}
+              >
+                بدون محدودیت
+              </button>
+              {RADIUS_OPTIONS.map((km) => (
+                <button
+                  key={km}
+                  type="button"
+                  onClick={() => setDraft({ ...draft, radiusKm: km })}
+                  className={chipClass(draft.radiusKm === km)}
+                >
+                  {km} کیلومتر
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

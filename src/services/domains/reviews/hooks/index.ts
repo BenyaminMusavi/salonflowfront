@@ -1,5 +1,5 @@
 export { useQuerySalonReviews } from "./useQuerySalonReviews";
-export { useQueryReviewById } from "./useQueryReviewById";
+export { useQueryReviewById, useQueryMyReviewForAppointment } from "./useQueryReviewById";
 export {
   useMutateCreateReview,
   useMutateEditReview,

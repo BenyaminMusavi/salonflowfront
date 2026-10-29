@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CaretDownIcon, CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
+import { CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
+import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
+import { coordinatesPairError } from "@/shared/utils/coordinates";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { Button } from "@/shared/components/primitives/button/Button";
 import { Input } from "@/shared/components/primitives/input/Input";
@@ -69,6 +71,8 @@ function toBranchRequest(b: BranchEditorValues): IBranchRequest {
     address: b.address.trim(),
     latitude: b.latitude,
     longitude: b.longitude,
+    // PATCH treats a null coordinate as «unchanged»; the explicit flag is how the owner removes a stored location.
+    clearCoordinates: b.latitude == null && b.longitude == null,
     genderType: b.genderType,
     phone: b.phone.trim() || null,
     isActive: b.isActive,
@@ -108,7 +112,6 @@ export default function SalonBranchesView() {
 
   const [draft, setDraft] = useState<BranchEditorValues | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [coordsOpen, setCoordsOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [toast, setToast] = useState<DashboardToastState>(null);
   const impactQuery = useQueryBranchRemovalImpact(removeOpen ? draft?.publicId ?? null : null);
@@ -134,6 +137,8 @@ export default function SalonBranchesView() {
     if (!draft) return;
     setSubmitted(true);
     if (!draft.name.trim() || !draft.city.trim() || !draft.address.trim()) return;
+    // Same «both or none» rule as the API; the field shows the message under itself.
+    if (coordinatesPairError(draft.latitude, draft.longitude)) return;
     try {
       if (isNew) {
         const res = await panel.createBranch.mutateAsync(toBranchRequest(draft));
@@ -165,7 +170,6 @@ export default function SalonBranchesView() {
   const open = (b: BranchEditorValues) => {
     setDraft(b);
     setSubmitted(false);
-    setCoordsOpen(b.latitude != null || b.longitude != null);
   };
 
   return (
@@ -242,22 +246,14 @@ export default function SalonBranchesView() {
               </span>
               <Switch checked={draft.isActive} onCheckedChange={(isActive) => setDraft({ ...draft, isActive })} />
             </label>
-            <button type="button" onClick={() => setCoordsOpen((v) => !v)} className="flex items-center gap-1 self-start text-xs font-semibold text-foreground-muted">
-              موقعیت روی نقشه (اختیاری)
-              <CaretDownIcon size={12} className={cn("transition-transform", coordsOpen && "rotate-180")} />
-            </button>
-            {coordsOpen ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="عرض جغرافیایی">
-                  <Input inputMode="decimal" dir="ltr" value={draft.latitude ?? ""} placeholder="35.7219" className="rounded-[12px]"
-                    onChange={(e) => setDraft({ ...draft, latitude: e.target.value === "" ? null : Number(e.target.value) })} />
-                </Field>
-                <Field label="طول جغرافیایی">
-                  <Input inputMode="decimal" dir="ltr" value={draft.longitude ?? ""} placeholder="51.3347" className="rounded-[12px]"
-                    onChange={(e) => setDraft({ ...draft, longitude: e.target.value === "" ? null : Number(e.target.value) })} />
-                </Field>
-              </div>
-            ) : null}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-foreground-muted">موقعیت روی نقشه (اختیاری)</span>
+              <BranchLocationField
+                latitude={draft.latitude}
+                longitude={draft.longitude}
+                onChange={(latitude, longitude) => setDraft({ ...draft, latitude, longitude })}
+              />
+            </div>
             <Button type="button" className="w-full rounded-[12px]" isLoading={saving} onClick={() => void onSave()}>
               {isNew ? "افزودن شعبه" : "ذخیره"}
             </Button>

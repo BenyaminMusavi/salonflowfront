@@ -30,6 +30,7 @@ export const API_ADDRESS = {
   SALON: {
     BASE: "/api/salons",
     APPROVED: "/api/salons",
+    MAP: "/api/salons/map",
     BY_ID: (id: string | number) => `/api/salons/${id}`,
     BY_USERNAME: (username: string) =>
       `/api/salons/by-username/${encodeURIComponent(username)}`,
@@ -165,6 +166,8 @@ export const API_ADDRESS = {
     BASE: "/api/reviews",
     BY_ID: (id: number) => `/api/reviews/${id}`,
     PENDING: "/api/reviews/pending",
+    /** The caller's own salon review for one of their appointments (numeric id); 204 when there is none yet. */
+    BY_APPOINTMENT: (appointmentId: number) => `/api/reviews/by-appointment/${appointmentId}`,
     APPROVE: (id: number) => `/api/reviews/${id}/approve`,
     REJECT: (id: number) => `/api/reviews/${id}/reject`,
     REPLY_APPROVE: (reviewId: number) => `/api/reviews/${reviewId}/reply/approve`,

@@ -27,8 +27,11 @@ export interface IReview {
 }
 
 export interface ICreateReviewRequest {
-  /** Prefer long when available; Guid may be sent after appointments Guid migration */
-  appointmentId: string | number;
+  /**
+   * The appointment's NUMERIC id (`numericId` of the customer appointment detail). `POST /api/reviews` binds a long;
+   * the appointment's Guid is rejected with 400, which is what used to stop every review from being submitted.
+   */
+  appointmentId: number;
   targetType?: ReviewTargetType | number;
   staffMemberId?: number | null;
   rating: number;
@@ -49,6 +52,8 @@ export interface IGetSalonReviewsParams {
 /** Admin moderation queue item — `GET /api/reviews/pending`. */
 export interface IAdminPendingReview {
   id: number;
+  /** ReviewModerationStatus: only Pending needs a decision; an Approved review is in the queue for its pending reply. */
+  moderationStatus: ReviewModerationStatus | number;
   rating: number;
   comment: string | null;
   customerId: number;

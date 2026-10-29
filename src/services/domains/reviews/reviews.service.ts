@@ -30,6 +30,13 @@ class ReviewsService {
     );
   }
 
+  /** `data` is undefined (204) while the customer has not reviewed this appointment yet. */
+  async getMineForAppointment(appointmentId: number) {
+    return await axiosInstance.get<unknown, TReviewEntity | "">(
+      API_ADDRESS.REVIEWS.BY_APPOINTMENT(appointmentId)
+    );
+  }
+
   async create(body: ICreateReviewRequest) {
     return await axiosInstance.post<unknown, TReviewEntity>(
       API_ADDRESS.REVIEWS.BASE,

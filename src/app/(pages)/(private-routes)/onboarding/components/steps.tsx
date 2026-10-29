@@ -27,6 +27,8 @@ import { cn } from "@/shared/utils/className";
 import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { SalonPhotosEditor } from "../../dashboard/salon/photos/SalonPhotosEditor";
 import { OnboardingWeekEditor, scheduleSummary } from "./OnboardingWeekEditor";
+import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
+import { coordinatesPairError } from "@/shared/utils/coordinates";
 import { Field, RemoveButton, StepTitle, cardClass, chipClass } from "./ui";
 
 const textareaClass =
@@ -35,7 +37,14 @@ const textareaClass =
 export const VALID_GENDERS = [GenderType.Male, GenderType.Female, GenderType.Mixed] as number[];
 
 export function isBranchComplete(b: IOnboardingBranch) {
-  return !!b.name.trim() && !!b.city.trim() && !!b.address.trim() && VALID_GENDERS.includes(Number(b.genderType));
+  return (
+    !!b.name.trim() &&
+    !!b.city.trim() &&
+    !!b.address.trim() &&
+    VALID_GENDERS.includes(Number(b.genderType)) &&
+    // Location is optional, but a half-filled or invalid pair would be rejected by the API.
+    coordinatesPairError(b.latitude, b.longitude) === null
+  );
 }
 
 export const serviceTypeName = (types: IServiceType[], id: string) =>
@@ -173,6 +182,13 @@ export function StepBranches({ showErrors }: { showErrors: boolean }) {
           </Field>
           <Field label="آدرس" error={showErrors && !b.address.trim() ? "آدرس را بنویسید." : null}>
             <Input value={b.address} onChange={(e) => update(idx, { address: e.target.value })} placeholder="خیابان، کوچه، پلاک" className="rounded-[12px]" hasError={showErrors && !b.address.trim()} />
+          </Field>
+          <Field label="موقعیت روی نقشه (اختیاری)">
+            <BranchLocationField
+              latitude={b.latitude}
+              longitude={b.longitude}
+              onChange={(latitude, longitude) => update(idx, { latitude, longitude })}
+            />
           </Field>
           <Field label="تلفن شعبه (اختیاری)">
             <PhoneInput kind="landline" placeholder="021…" value={b.phone ?? ""} onValueChange={(phone) => update(idx, { phone })} inputWrapperClassname="rounded-[12px]" />

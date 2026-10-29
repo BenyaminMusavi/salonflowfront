@@ -13,12 +13,14 @@ import SalonsDetailHours from "./components/salons-details-hours/SalonsDetailHou
 import SalonsDetailStickyCta from "./components/salons-details-sticky-cta/SalonsDetailStickyCta";
 import SalonReviewsSection from "./components/salon-reviews-section/SalonReviewsSection";
 import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
+import SalonsDetailDirectionsSheet from "./components/salons-details-directions/SalonsDetailDirectionsSheet";
 import TopNavigation from "@/shared/components/composites/layout/top-navigation/TopNavigation";
 import { useQuerySalonById } from "@/services/domains/salons/hooks/useQuerySalonById";
 import { useQuerySalonByUsername } from "@/services/domains/salons/hooks/useQuerySalonByUsername";
 import { useToggleFavorite } from "@/services/domains/favorites/hooks/useToggleFavorite";
 import { getOpenStatusLabel } from "./utils/workingHours";
 import { RouteAddress } from "@/shared/data/routeAddress";
+import { hasValidCoordinates } from "@/shared/utils/directions";
 
 /** `/salons/{id}` loads by Guid; the public share link `/s/{username}` loads by username. */
 export type SalonDetailSource = { id: string } | { username: string };
@@ -26,6 +28,7 @@ export type SalonDetailSource = { id: string } | { username: string };
 export default function SalonsDetailView({ source }: { source: SalonDetailSource }) {
   const requestedUsername = "username" in source ? source.username : undefined;
   const [reportOpen, setReportOpen] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const byId = useQuerySalonById("id" in source ? source.id : undefined);
   const byUsername = useQuerySalonByUsername(requestedUsername);
@@ -77,6 +80,15 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
       ? salon.address
       : [salon.city, salon.address].filter(Boolean).join("، ")) || null;
   const openStatus = getOpenStatusLabel(salon.workingHours);
+  // Destination = the first branch that has real coordinates; without one the sheet falls back to the
+  // address text and says the location is approximate (no invented coordinates).
+  const mapBranch = salon.branches?.find((b) => hasValidCoordinates(b.latitude, b.longitude));
+  const directionsTarget = {
+    latitude: mapBranch?.latitude,
+    longitude: mapBranch?.longitude,
+    label: salon.name,
+    address: location,
+  };
 
   return (
     <div className="-mt-20 flex flex-col pb-32">
@@ -94,7 +106,11 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
           favoritePending={isPending}
           onToggleFavorite={toggle}
         />
-        <SalonsDetailTrustRow location={location} openStatus={openStatus} />
+        <SalonsDetailTrustRow
+          location={location}
+          openStatus={openStatus}
+          onOpenDirections={location || mapBranch ? () => setDirectionsOpen(true) : undefined}
+        />
         <SalonsDetailDescription description={salon.description} />
         <SalonsDetailSocialStrip
           instagramHandle={salon.instagramHandle}
@@ -127,6 +143,12 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
           salonId={numericSalonId}
         />
       )}
+
+      <SalonsDetailDirectionsSheet
+        open={directionsOpen}
+        onClose={() => setDirectionsOpen(false)}
+        target={directionsTarget}
+      />
 
       <SalonsDetailStickyCta salonId={salon.id} />
     </div>

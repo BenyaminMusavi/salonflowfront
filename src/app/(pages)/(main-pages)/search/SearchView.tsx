@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchHeader from "./components/search-header/SearchHeader";
 import SearchHero from "./components/search-hero/SearchHero";
@@ -10,10 +11,17 @@ import SearchCardGrid from "./components/search-card-grid/SearchCardGrid";
 import SearchFilterSheet, {
   ISearchFilters,
 } from "./components/search-filter-sheet/SearchFilterSheet";
-import { useQueryApprovedSalons } from "@/services/domains/salons/hooks/useQueryApprovedSalons";
+import { useInfiniteApprovedSalons } from "@/services/domains/salons/hooks/useInfiniteApprovedSalons";
 import { useQueryServiceTypes } from "@/services/domains/service-type/hooks/useQueryServiceTypes";
 import { RouteAddress } from "@/shared/data/routeAddress";
 import { GenderType } from "@/services/common/enums/domain-enums";
+import { isMapConfigured } from "@/shared/map/mapConfig";
+import MapErrorBoundary from "@/shared/map/MapErrorBoundary";
+import SearchViewToggle, { type TSearchView } from "./components/search-view-toggle/SearchViewToggle";
+import type { ISalonCard, ISalonMapPin } from "@/services/domains/salons/types/salons.type";
+
+// The whole map chunk (view + MapLibre + CSS) loads only when the «نقشه» view is shown.
+const SearchMapView = dynamic(() => import("./components/search-map/SearchMapView"), { ssr: false });
 
 export default function SearchView() {
   const router = useRouter();
@@ -24,6 +32,9 @@ export default function SearchView() {
   const urlMaxPrice = searchParams.get("maxPrice") ?? "";
   const urlMinRating = searchParams.get("minRating");
   const urlGenderType = searchParams.get("genderType");
+  const urlRadiusKm = searchParams.get("radiusKm");
+  // `view=map` survives refresh/share; the toggle is hidden (and the param ignored) while no basemap is configured.
+  const view: TSearchView = isMapConfigured && searchParams.get("view") === "map" ? "map" : "list";
 
   const filters: ISearchFilters = useMemo(
     () => ({
@@ -31,15 +42,17 @@ export default function SearchView() {
       maxPrice: urlMaxPrice,
       minRating: urlMinRating ? Number(urlMinRating) : null,
       genderType: urlGenderType ? (Number(urlGenderType) as GenderType) : null,
+      radiusKm: urlRadiusKm ? Number(urlRadiusKm) : null,
     }),
-    [urlMinPrice, urlMaxPrice, urlMinRating, urlGenderType]
+    [urlMinPrice, urlMaxPrice, urlMinRating, urlGenderType, urlRadiusKm]
   );
 
   const hasActiveFilters =
     filters.minPrice !== "" ||
     filters.maxPrice !== "" ||
     filters.minRating != null ||
-    filters.genderType != null;
+    filters.genderType != null ||
+    filters.radiusKm != null;
 
   const [activeTab, setActiveTab] = useState<"new" | "recommended">("new");
   const [draftSearch, setDraftSearch] = useState(urlSearch);
@@ -49,6 +62,10 @@ export default function SearchView() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Branch selected on the map / from a card, and the "fly here" request that goes with it.
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ lat: number; lng: number; key: number } | null>(null);
 
   useEffect(() => {
     setDraftSearch(urlSearch);
@@ -87,6 +104,9 @@ export default function SearchView() {
       if (nextFilters.genderType != null)
         params.set("genderType", String(nextFilters.genderType));
       else params.delete("genderType");
+      if (nextFilters.radiusKm != null)
+        params.set("radiusKm", String(nextFilters.radiusKm));
+      else params.delete("radiusKm");
 
       const qs = params.toString();
       router.replace(
@@ -95,6 +115,25 @@ export default function SearchView() {
     },
     [router, searchParams, urlSearch, urlServiceTypePublicId, filters]
   );
+
+  const setView = (next: TSearchView) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "map") params.set("view", "map");
+    else params.delete("view");
+    const qs = params.toString();
+    router.replace(qs ? `${RouteAddress.SEARCH.BASE}?${qs}` : RouteAddress.SEARCH.BASE);
+  };
+
+  const selectOnMap = (branchPublicId: string, lat: number, lng: number) => {
+    setSelectedBranchId(branchPublicId);
+    setFocus({ lat, lng, key: Date.now() });
+  };
+
+  const handleShowOnMap = (salon: ISalonCard) => {
+    if (!salon.branchPublicId || salon.latitude == null || salon.longitude == null) return;
+    selectOnMap(salon.branchPublicId, salon.latitude, salon.longitude);
+    setView("map");
+  };
 
   const handleToggleMyLocation = (next: boolean) => {
     if (!next) {
@@ -121,8 +160,15 @@ export default function SearchView() {
     );
   };
 
-  const { data: salonsRes, isLoading, isError } = useQueryApprovedSalons({
-    page: 1,
+  const {
+    data: salonsPages,
+    isLoading,
+    isError,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    isPlaceholderData,
+  } = useInfiniteApprovedSalons({
     pageSize: 20,
     search: urlSearch || undefined,
     serviceTypePublicId: urlServiceTypePublicId || undefined,
@@ -132,13 +178,39 @@ export default function SearchView() {
     genderType: filters.genderType ?? undefined,
     lat: coords?.lat,
     lng: coords?.lng,
+    // A radius only makes sense around a reference point; the backend rejects it without lat/lng.
+    radiusKm: coords && filters.radiusKm != null ? filters.radiusKm : undefined,
   });
 
   const { data: serviceTypesRes, isLoading: typesLoading } =
     useQueryServiceTypes();
 
-  const salons = salonsRes?.data?.items ?? [];
+  const salons = useMemo(
+    () => salonsPages?.pages.flatMap((p) => p.data?.items ?? []) ?? [],
+    [salonsPages]
+  );
   const categories = serviceTypesRes?.data ?? [];
+
+  // Same filters as the list (no radius: the visible box is the area). Bounds and GPS are added by the map view.
+  const mapFilters = useMemo(
+    () => ({
+      search: urlSearch || undefined,
+      serviceTypePublicId: urlServiceTypePublicId || undefined,
+      genderType: filters.genderType ?? undefined,
+      minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+      maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
+      minRating: filters.minRating ?? undefined,
+    }),
+    [urlSearch, urlServiceTypePublicId, filters]
+  );
+  const fitPoints = useMemo(
+    () =>
+      salons
+        .filter((s) => s.latitude != null && s.longitude != null)
+        .map((s): [number, number] => [s.longitude as number, s.latitude as number]),
+    [salons]
+  );
+  const handleSelectPin = (pin: ISalonMapPin) => selectOnMap(pin.branchPublicId, pin.latitude, pin.longitude);
 
   return (
     <div className="flex flex-col gap-5 pt-20 pb-32">
@@ -149,7 +221,7 @@ export default function SearchView() {
         onOpenFilters={() => setFiltersOpen(true)}
         hasActiveFilters={hasActiveFilters}
       />
-      <SearchHero salons={salons} />
+      {view === "list" ? <SearchHero salons={salons} /> : null}
       <SearchCategories
         categories={categories}
         selectedId={urlServiceTypePublicId}
@@ -158,12 +230,45 @@ export default function SearchView() {
           syncUrl({ serviceTypePublicId: id != null ? String(id) : null })
         }
       />
-      <SearchSegmentedToggle activeTab={activeTab} onTabChange={setActiveTab} />
-      <SearchCardGrid
-        salons={salons}
-        isLoading={isLoading}
-        isError={isError}
-      />
+      {isMapConfigured ? <SearchViewToggle value={view} onChange={setView} /> : null}
+      {view === "map" ? (
+        // A map chunk that cannot load/parse (offline, iOS < 16.4) stays a local fallback; the list keeps working.
+        <MapErrorBoundary
+          fallback={
+            <div className="mx-4 flex flex-col items-center gap-3 rounded-[20px] bg-background-secondary p-6 text-center">
+              <p className="text-sm text-foreground-muted">نقشه در این دستگاه بارگذاری نشد. می‌توانید فهرست سالن‌ها را ببینید.</p>
+              <button type="button" onClick={() => setView("list")} className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">
+                بازگشت به فهرست
+              </button>
+            </div>
+          }
+        >
+          <SearchMapView
+            filters={mapFilters}
+            reference={coords}
+            fitPoints={fitPoints}
+            selectedBranchId={selectedBranchId}
+            onSelectBranch={handleSelectPin}
+            focus={focus}
+            onBackToList={() => setView("list")}
+          />
+        </MapErrorBoundary>
+      ) : (
+        <>
+          <SearchSegmentedToggle activeTab={activeTab} onTabChange={setActiveTab} />
+          <SearchCardGrid
+            salons={salons}
+            isLoading={isLoading}
+            isError={isError}
+            hasMore={!!hasNextPage}
+            isLoadingMore={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            withinRadius={coords != null && filters.radiusKm != null}
+            isStale={isPlaceholderData}
+            onShowOnMap={isMapConfigured ? handleShowOnMap : undefined}
+          />
+        </>
+      )}
 
       <SearchFilterSheet
         open={filtersOpen}
