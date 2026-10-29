@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+// Each case re-imports the field (vi.resetModules) and with it the large icon barrel; under a busy parallel run that exceeded the
+// default 5 s. The behaviour under test is fast — only the import is slow.
+vi.setConfig({ testTimeout: 30_000 });
+
 // The map is lazy and needs WebGL: replace it with a stub that can "pick" and "fail".
 vi.mock("./LocationPickerMap", () => ({
   default: ({ onPick, onFail }: { onPick: (lat: number, lng: number) => void; onFail: (r: string) => void }) => (

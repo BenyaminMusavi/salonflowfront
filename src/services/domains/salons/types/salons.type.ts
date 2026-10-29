@@ -46,6 +46,8 @@ export interface IGetApprovedSalonsParams {
   minRating?: number;
   /** Only with lat/lng; 1–50 km (backend cap). */
   radiusKm?: number;
+  /** `newest` = most recently registered salon first; omit for the default («پیشنهادی») order. */
+  sort?: "newest";
 }
 
 export type TSalonsEntity = TResponse<TPagedResult<ISalonCard>>;

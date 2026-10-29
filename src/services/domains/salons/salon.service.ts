@@ -53,6 +53,7 @@ class SalonService {
           maxPrice: params.maxPrice,
           minRating: params.minRating,
           radiusKm: params.radiusKm,
+          sort: params.sort,
         },
       }
     );

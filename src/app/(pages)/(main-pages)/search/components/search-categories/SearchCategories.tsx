@@ -31,7 +31,9 @@ export default function SearchCategories({
 
       <div
         ref={scrollRef}
-        className="no-scrollbar flex touch-pan-x select-none gap-4 overflow-x-auto"
+        // overflow-x:auto makes overflow-y clip too, and the selection ring (box-shadow: 2px ring + 2px offset) is painted OUTSIDE the
+        // 56px circle — so it was cut off at the scroller's edges. The padding gives the ring room; the negative margin keeps the layout.
+        className="no-scrollbar -m-2 flex touch-pan-x select-none gap-4 overflow-x-auto p-2"
       >
         {categories.map((cat) => {
           const selected = selectedId != null && String(selectedId) === String(cat.id);
@@ -41,16 +43,17 @@ export default function SearchCategories({
               key={String(cat.id)}
               type="button"
               onClick={() => onSelect(selected ? null : cat.id)}
-              className="flex shrink-0 flex-col items-center gap-2"
+              aria-pressed={selected}
+              className="group flex shrink-0 flex-col items-center gap-2 outline-none"
             >
               <div
-                className={`flex h-14 w-14 items-center justify-center rounded-full bg-surface-brand text-content-brand ${
+                className={`flex h-14 w-14 items-center justify-center rounded-full bg-surface-brand text-content-brand transition-shadow group-hover:ring-2 group-hover:ring-primary/40 group-hover:ring-offset-2 group-hover:ring-offset-background group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background ${
                   selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
                 }`}
               >
                 <CategoryIcon size={22} weight="duotone" />
               </div>
-              <span className="w-14 truncate text-center text-[11px] text-foreground-muted">
+              <span className={`w-14 truncate text-center text-[11px] ${selected ? "font-bold text-foreground" : "text-foreground-muted"}`}>
                 {cat.name}
               </span>
             </button>

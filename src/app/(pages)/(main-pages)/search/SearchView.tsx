@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SearchHeader from "./components/search-header/SearchHeader";
 import SearchHero from "./components/search-hero/SearchHero";
 import SearchCategories from "./components/search-categories/SearchCategories";
-import SearchSegmentedToggle from "./components/search-segmented-toggle/SearchSegmentedToggle";
+import SearchSortControl, { type TSearchSort } from "./components/search-sort-control/SearchSortControl";
 import SearchCardGrid from "./components/search-card-grid/SearchCardGrid";
 import SearchFilterSheet, {
   ISearchFilters,
@@ -33,6 +33,8 @@ export default function SearchView() {
   const urlMinRating = searchParams.get("minRating");
   const urlGenderType = searchParams.get("genderType");
   const urlRadiusKm = searchParams.get("radiusKm");
+  // `sort=newest` is a real API sort and lives in the URL, so it survives category / filter / list-map changes.
+  const sort: TSearchSort = searchParams.get("sort") === "newest" ? "newest" : "recommended";
   // `view=map` survives refresh/share; the toggle is hidden (and the param ignored) while no basemap is configured.
   const view: TSearchView = isMapConfigured && searchParams.get("view") === "map" ? "map" : "list";
 
@@ -54,7 +56,6 @@ export default function SearchView() {
     filters.genderType != null ||
     filters.radiusKm != null;
 
-  const [activeTab, setActiveTab] = useState<"new" | "recommended">("new");
   const [draftSearch, setDraftSearch] = useState(urlSearch);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -124,6 +125,14 @@ export default function SearchView() {
     router.replace(qs ? `${RouteAddress.SEARCH.BASE}?${qs}` : RouteAddress.SEARCH.BASE);
   };
 
+  const setSort = (next: TSearchSort) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "newest") params.set("sort", "newest");
+    else params.delete("sort");
+    const qs = params.toString();
+    router.replace(qs ? `${RouteAddress.SEARCH.BASE}?${qs}` : RouteAddress.SEARCH.BASE);
+  };
+
   const selectOnMap = (branchPublicId: string, lat: number, lng: number) => {
     setSelectedBranchId(branchPublicId);
     setFocus({ lat, lng, key: Date.now() });
@@ -180,6 +189,7 @@ export default function SearchView() {
     lng: coords?.lng,
     // A radius only makes sense around a reference point; the backend rejects it without lat/lng.
     radiusKm: coords && filters.radiusKm != null ? filters.radiusKm : undefined,
+    sort: sort === "newest" ? "newest" : undefined,
   });
 
   const { data: serviceTypesRes, isLoading: typesLoading } =
@@ -230,7 +240,11 @@ export default function SearchView() {
           syncUrl({ serviceTypePublicId: id != null ? String(id) : null })
         }
       />
-      {isMapConfigured ? <SearchViewToggle value={view} onChange={setView} /> : null}
+      {/* One row, one meaning each: how to show (فهرست / نقشه) and, for the list, in which order. */}
+      <div className="flex items-center gap-2 px-safe-area">
+        {isMapConfigured ? <SearchViewToggle value={view} onChange={setView} className={view === "map" ? "flex-1" : "shrink-0"} /> : null}
+        {view === "list" ? <SearchSortControl value={sort} onChange={setSort} className="min-w-0 flex-1" /> : null}
+      </div>
       {view === "map" ? (
         // A map chunk that cannot load/parse (offline, iOS < 16.4) stays a local fallback; the list keeps working.
         <MapErrorBoundary
@@ -255,7 +269,6 @@ export default function SearchView() {
         </MapErrorBoundary>
       ) : (
         <>
-          <SearchSegmentedToggle activeTab={activeTab} onTabChange={setActiveTab} />
           <SearchCardGrid
             salons={salons}
             isLoading={isLoading}
