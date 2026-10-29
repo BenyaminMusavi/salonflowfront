@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Map as MapLibreMap, Marker } from "maplibre-gl";
-import { createMap, maplibregl } from "@/shared/map/createMap";
+import { createMap, maplibregl, type MlMap, type MlMarker } from "@/shared/map/createMap";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, FOCUS_ZOOM } from "@/shared/map/mapConfig";
 import { roundCoordinate } from "@/shared/utils/coordinates";
 
@@ -23,13 +22,13 @@ function primaryColor(): string {
 /** MapLibre canvas for choosing one point: tap to place, drag the pin to adjust. Loaded lazily (see BranchLocationField). */
 export default function LocationPickerMap({ value, onPick, onFail, recenterKey }: ILocationPickerMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
-  const markerRef = useRef<Marker | null>(null);
+  const mapRef = useRef<MlMap | null>(null);
+  const markerRef = useRef<MlMarker | null>(null);
   const propsRef = useRef({ value, onPick, onFail });
   propsRef.current = { value, onPick, onFail };
 
   // Creates the draggable pin once; later moves only call setLngLat.
-  const placeMarker = (map: MapLibreMap, lat: number, lng: number) => {
+  const placeMarker = (map: MlMap, lat: number, lng: number) => {
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
       return;

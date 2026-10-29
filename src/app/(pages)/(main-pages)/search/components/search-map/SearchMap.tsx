@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
-import { createMap, maplibregl } from "@/shared/map/createMap";
+import { createMap, maplibregl, type MlGeoJSONSource, type MlMap, type MlMarker } from "@/shared/map/createMap";
 import { CLUSTER_MAX_ZOOM, DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, FOCUS_ZOOM } from "@/shared/map/mapConfig";
 import {
   applyPinStyle,
@@ -44,7 +43,7 @@ function toFeatureCollection(pins: ISalonMapPin[]): GeoJSON.FeatureCollection<Ge
   };
 }
 
-function clampBounds(map: MapLibreMap): IMapBounds {
+function clampBounds(map: MlMap): IMapBounds {
   const b = map.getBounds();
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   return {
@@ -61,10 +60,10 @@ function clampBounds(map: MapLibreMap): IMapBounds {
  */
 export default function SearchMap(props: ISearchMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+  const mapRef = useRef<MlMap | null>(null);
   const readyRef = useRef(false);
-  const markersRef = useRef(new Map<string, { marker: Marker; el: HTMLElement }>());
-  const userMarkerRef = useRef<Marker | null>(null);
+  const markersRef = useRef(new Map<string, { marker: MlMarker; el: HTMLElement }>());
+  const userMarkerRef = useRef<MlMarker | null>(null);
   // Always-current props for the long-lived map callbacks.
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -98,7 +97,7 @@ export default function SearchMap(props: ISearchMapProps) {
           el = createClusterElement(Number(p.point_count));
           el.addEventListener("click", (e) => {
             e.stopPropagation();
-            const source = map.getSource(SOURCE) as GeoJSONSource;
+            const source = map.getSource(SOURCE) as MlGeoJSONSource;
             void source.getClusterExpansionZoom(Number(p.cluster_id)).then((zoom) => {
               map.easeTo({ center: [lng, lat], zoom: Math.min(zoom + 0.5, FOCUS_ZOOM) });
             });
@@ -125,7 +124,7 @@ export default function SearchMap(props: ISearchMapProps) {
       if (!raf) raf = window.requestAnimationFrame(syncMarkers);
     };
 
-    const emitBounds = (map: MapLibreMap) => {
+    const emitBounds = (map: MlMap) => {
       window.clearTimeout(boundsTimer);
       boundsTimer = window.setTimeout(() => propsRef.current.onBoundsChange(clampBounds(map)), BOUNDS_DEBOUNCE_MS);
     };
@@ -177,7 +176,7 @@ export default function SearchMap(props: ISearchMapProps) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    (map.getSource(SOURCE) as GeoJSONSource | undefined)?.setData(toFeatureCollection(props.pins));
+    (map.getSource(SOURCE) as MlGeoJSONSource | undefined)?.setData(toFeatureCollection(props.pins));
   }, [props.pins]);
 
   // ---- selection highlight ----

@@ -1,12 +1,16 @@
 /**
- * Map basemap config. The style URL is the only knob: a MapLibre style JSON (tiles, glyphs, sprite,
- * attribution live inside it). It is a PUBLIC value (`NEXT_PUBLIC_*`), so it must only ever hold a
- * key that the provider lets you restrict to this site's domains — never a private/secret key.
- * Unset = the map is off everywhere (the list keeps working and the «نقشه» toggle is hidden).
+ * Basemap config (Neshan). Two PUBLIC values, both inlined at build time (`NEXT_PUBLIC_*`):
+ *  - `NEXT_PUBLIC_NESHAN_MAP_KEY` — the Neshan «map» access key from platform.neshan.org. It is sent with every tile request from the
+ *    browser, so it is a quota/access key to restrict to this site's domains in the Neshan panel — never a secret or service key.
+ *  - `NEXT_PUBLIC_MAP_STYLE_URL` — optional; a MapLibre style hosted by Neshan (light.json by default; dark.json, pastel.json…).
+ * Without the key the map is off everywhere (the list keeps working, the «نقشه» toggle is hidden, branch forms use typed coordinates).
  */
-export const MAP_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL?.trim() ?? "";
+export const MAP_API_KEY = process.env.NEXT_PUBLIC_NESHAN_MAP_KEY?.trim() ?? "";
 
-export const isMapConfigured = MAP_STYLE_URL.length > 0;
+export const MAP_STYLE_URL =
+  process.env.NEXT_PUBLIC_MAP_STYLE_URL?.trim() || "https://static.neshan.org/sdk/maplibre/styles/light.json";
+
+export const isMapConfigured = MAP_API_KEY.length > 0;
 
 /** Used only when there is no GPS point and no salon with coordinates to frame (Tehran). */
 export const DEFAULT_MAP_CENTER: [number, number] = [51.389, 35.6892]; // [lng, lat]

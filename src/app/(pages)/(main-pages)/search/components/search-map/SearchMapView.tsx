@@ -150,7 +150,7 @@ export default function SearchMapView({
             {showEmpty ? <StatusChip>در این محدوده سالنی نیست؛ نقشه را جابه‌جا یا فیلترها را کم کنید.</StatusChip> : null}
           </div>
 
-          <div className="pointer-events-none absolute inset-x-2 bottom-2">
+          <div className="pointer-events-none absolute inset-x-2 bottom-9">
             <div className="pointer-events-auto w-fit max-w-full">
               <MapLegend />
             </div>

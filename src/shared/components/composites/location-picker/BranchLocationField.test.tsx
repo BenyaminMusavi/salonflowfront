@@ -12,6 +12,12 @@ vi.mock("./LocationPickerMap", () => ({
   ),
 }));
 
+// next/dynamic would load the (mocked) chunk asynchronously; under a busy parallel run that made these tests time out. Render it directly.
+vi.mock("next/dynamic", async () => {
+  const mod = await import("./LocationPickerMap");
+  return { default: () => mod.default };
+});
+
 const setConfigured = async (configured: boolean) => {
   vi.resetModules();
   vi.doMock("@/shared/map/mapConfig", () => ({ isMapConfigured: configured }));
