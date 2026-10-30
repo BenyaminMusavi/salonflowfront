@@ -24,7 +24,7 @@ export default function BookStickyCta({
   summary,
 }: BookStickyCtaProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 p-4 backdrop-blur">
+    <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-background/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
       <div className="flex w-full max-w-[600px] flex-col gap-2">
         {summary ? (
           <p className="text-center text-xs text-foreground-muted">{summary}</p>

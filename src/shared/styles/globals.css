@@ -218,7 +218,13 @@
    @theme block above is derived from these via color-mix() and adapts
    automatically.
 ========================== */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+
 :root[data-theme="light"] {
+    color-scheme: light;
+
     --color-primary: #185851;
     --color-primary-foreground: #ffffff;
     --color-primary-border: #d6e2df;
@@ -356,7 +362,7 @@
 }
 
 * {
-    font-family: "latin-digits", var(--font-ravi);
+    font-family: "latin-digits", var(--font-ravi), sans-serif;
     box-sizing: border-box;
     -moz-osx-font-smoothing: grayscale; /* Firefox */
     -webkit-font-smoothing: antialiased;
@@ -404,3 +410,90 @@ input:-webkit-autofill:active {
     caret-color: var(--color-foreground) !important;
     transition: background-color 9999s ease-in-out 0s;
 }
+
+/* Browsers without color-mix() (iOS < 16.2, Chrome/Samsung Internet/WebView < 111): the build bakes the
+   DARK hex into every derived token and every `bg-background/95`-style opacity utility, so the light theme
+   would show dark surfaces. This block re-states the LIGHT values (plus the few dark values the build
+   cannot precompute) and, for browsers without `in oklab` gradient interpolation, drops that keyword from
+   Tailwind's bg-gradient-to-* so the gradient is not discarded. Modern browsers never evaluate it.
+   It is checked by src/shared/styles/globalsFallback.test.ts — when that test fails, replace the section
+   between the markers with the block the failure message prints. */
+/* BEGIN generated:color-mix-fallback */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+    :root {
+        --color-surface-active: #052136;
+        --background-image-salon-hero-dots: radial-gradient(circle at 1px 1px, #8d96a18c 1px, transparent 0);
+    }
+
+    :root[data-theme="light"] {
+        --color-primary-hover: #3b716b;
+        --color-primary-active: #134641;
+        --color-background-secondary: #f2f2f3;
+        --color-background-tertiary: #e5e6e7;
+        --color-background-elevated: #d9d9db;
+        --color-foreground-secondary: #4a4d57;
+        --color-foreground-muted: #7b7d84;
+        --color-border-hover: #8e929b;
+        --color-border-strong: #61646e;
+        --color-surface-hover: #e8eeee;
+        --color-surface-active: #f0f4f4;
+        --color-success-hover: #2cb175;
+        --color-error-hover: #ff6874;
+        --color-warning-hover: #f58551;
+        --color-info-hover: #26a5ff;
+        --color-neutral: #8a8c92;
+        --color-neutral-hover: #6e7178;
+        --color-neutral-background: #8a8c921a;
+        --color-input-focus: #dce6e5;
+        --color-button-secondary-hover: #dfe0e1;
+        --color-button-secondary-active: #bfc0c4;
+        --color-surface-brand: #1858511f;
+        --background-image-salon-hero-dots: radial-gradient(circle at 1px 1px, #7b7d848c 1px, transparent 0);
+    }
+
+    @layer utilities {
+        .bg-foreground-muted\/30 { background-color: #8d96a14d; }
+        :where(:root[data-theme="light"]) .bg-background\/20 { background-color: #ffffff33; }
+        :where(:root[data-theme="light"]) .bg-background\/40 { background-color: #ffffff66; }
+        :where(:root[data-theme="light"]) .bg-background\/90 { background-color: #ffffffe6; }
+        :where(:root[data-theme="light"]) .bg-background\/95 { background-color: #fffffff2; }
+        :where(:root[data-theme="light"]) .bg-error\/10 { background-color: #ff4d5b1a; }
+        :where(:root[data-theme="light"]) .bg-error\/5 { background-color: #ff4d5b0d; }
+        :where(:root[data-theme="light"]) .bg-foreground-muted\/30 { background-color: #7b7d844d; }
+        :where(:root[data-theme="light"]) .bg-foreground\/10 { background-color: #2a2e391a; }
+        :where(:root[data-theme="light"]) .bg-foreground\/5 { background-color: #2a2e390d; }
+        :where(:root[data-theme="light"]) .bg-primary-foreground\/20 { background-color: #ffffff33; }
+        :where(:root[data-theme="light"]) .bg-primary\/10 { background-color: #1858511a; }
+        :where(:root[data-theme="light"]) .bg-primary\/15 { background-color: #18585126; }
+        :where(:root[data-theme="light"]) .bg-primary\/20 { background-color: #18585133; }
+        :where(:root[data-theme="light"]) .bg-primary\/30 { background-color: #1858514d; }
+        :where(:root[data-theme="light"]) .bg-primary\/60 { background-color: #18585199; }
+        :where(:root[data-theme="light"]) .bg-surface\/80 { background-color: #ffffffcc; }
+        :where(:root[data-theme="light"]) .bg-surface\/90 { background-color: #ffffffe6; }
+        :where(:root[data-theme="light"]) .border-border\/60 { border-color: #e0e3eb99; }
+        :where(:root[data-theme="light"]) .border-error\/30 { border-color: #ff4d5b4d; }
+        :where(:root[data-theme="light"]) .border-foreground\/10 { border-color: #2a2e391a; }
+        :where(:root[data-theme="light"]) .border-primary\/30 { border-color: #1858514d; }
+        :where(:root[data-theme="light"]) .border-warning\/40 { border-color: #f36f3266; }
+        :where(:root[data-theme="light"]) .focus\:ring-foreground\/10:focus { --tw-ring-color: #2a2e391a; }
+        :where(:root[data-theme="light"]) .group-hover\:ring-primary\/40:is(:where(.group):hover *) { --tw-ring-color: #18585166; }
+        :where(:root[data-theme="light"]) .hover\:bg-destructive\/\[0\.9\]:hover { background-color: #ff4d5be6; }
+        :where(:root[data-theme="light"]) .hover\:bg-primary\/\[0\.9\]:hover { background-color: #185851e6; }
+        :where(:root[data-theme="light"]) .hover\:border-primary\/40:hover { border-color: #18585166; }
+        :where(:root[data-theme="light"]) .hover\:text-foreground\/80:hover { color: #2a2e39cc; }
+        :where(:root[data-theme="light"]) .ring-primary\/30 { --tw-ring-color: #1858514d; }
+        :where(:root[data-theme="light"]) .text-foreground\/60 { color: #2a2e3999; }
+        :where(:root[data-theme="light"]) .text-primary-foreground\/60 { color: #ffffff99; }
+        :where(:root[data-theme="light"]) .text-primary-foreground\/70 { color: #ffffffb3; }
+        :where(:root[data-theme="light"]) .text-primary-foreground\/80 { color: #ffffffcc; }
+    }
+}
+
+@supports not (background-image: linear-gradient(in oklab, red, blue)) {
+    @layer utilities {
+        .bg-gradient-to-br { --tw-gradient-position: to bottom right; }
+        .bg-gradient-to-r { --tw-gradient-position: to right; }
+        .bg-gradient-to-t { --tw-gradient-position: to top; }
+    }
+}
+/* END generated:color-mix-fallback */

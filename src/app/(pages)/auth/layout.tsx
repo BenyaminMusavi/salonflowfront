@@ -48,7 +48,7 @@ function AuthLayout({ children }: IProps) {
   // }, [accessToken, isLogoutPage, pathname]);
 
   return (
-    <div className="flex flex-col items-center h-dvh scroll-smooth relative overflow-hidden">
+    <div className="flex flex-col items-center h-dvh scroll-smooth relative overflow-x-hidden overflow-y-auto">
 
       <Suspense fallback={null}>
         <AuthCallbackHandler />

@@ -13,7 +13,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
     <Hydration>
       <div
         className={
-          "flex justify-center sm:items-center min-h-screen  w-screen px-safe-area"
+          "flex shrink-0 justify-center sm:items-center min-h-full w-full px-safe-area"
         }
       >
         <div
