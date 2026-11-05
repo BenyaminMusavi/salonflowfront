@@ -6,6 +6,7 @@ import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet
 import { GenderType } from "@/services/common/enums/domain-enums";
 import { cn } from "@/shared/utils/className";
 import { MoneyInput } from "@/shared/components/primitives/input/MoneyInput";
+import AmenityPicker from "@/shared/components/composites/amenities/AmenityPicker";
 
 export interface ISearchFilters {
   minPrice: string;
@@ -14,6 +15,8 @@ export interface ISearchFilters {
   genderType: GenderType | null;
   /** Search radius around the reference point; null = no limit (only used while «نزدیک‌ترین به من» is on). */
   radiusKm: number | null;
+  /** Amenity keys; salons whose one active branch has all of them. */
+  amenities: string[];
 }
 
 export const EMPTY_SEARCH_FILTERS: ISearchFilters = {
@@ -22,6 +25,7 @@ export const EMPTY_SEARCH_FILTERS: ISearchFilters = {
   minRating: null,
   genderType: null,
   radiusKm: null,
+  amenities: [],
 };
 
 const RADIUS_OPTIONS = [5, 10, 25, 50];
@@ -168,6 +172,18 @@ export default function SearchFilterSheet({
               </span>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-bold text-foreground">امکانات سالن</span>
+          <AmenityPicker
+            compact
+            value={draft.amenities}
+            onChange={(amenities) => setDraft((d) => ({ ...d, amenities }))}
+          />
+          {draft.amenities.length > 1 ? (
+            <p className="text-xs text-foreground-muted">سالن‌هایی که همه‌ی این امکانات را دارند.</p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2">

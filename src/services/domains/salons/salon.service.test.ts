@@ -110,4 +110,20 @@ describe("salonService.getApproved", () => {
     expect(config?.params).toMatchObject({ cityPublicId: "c-1", districtPublicId: "d-1" });
     getSpy.mockRestore();
   });
+
+  // ASP.NET binds a list from repeated keys (`amenities=a&amenities=b`); axios' default `amenities[]=` would be ignored.
+  it("sends the amenity filter as repeated `amenities` keys on the list and the map", async () => {
+    const getSpy = vi.spyOn(axiosInstance, "get").mockResolvedValue({ data: { items: [] } });
+
+    await salonService.getApproved({ amenities: ["parking", "free_wifi"] });
+    await salonService.getMapPins({ north: 36, south: 35, east: 52, west: 51, amenities: ["parking"] });
+    await salonService.getApproved({ amenities: [] });
+
+    const urls = getSpy.mock.calls.map(([url, config]) => decodeURIComponent(axiosInstance.getUri({ url, ...config })));
+    expect(urls[0]).toContain("amenities=parking&amenities=free_wifi");
+    expect(urls[1]).toContain("amenities=parking");
+    expect(urls[0]).not.toContain("amenities[]");
+    expect(urls[2]).not.toContain("amenities");
+    getSpy.mockRestore();
+  });
 });

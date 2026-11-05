@@ -28,6 +28,8 @@ export interface BranchEditorValues {
   longitude: number | null;
   /** false blocks NEW bookings against this branch; existing appointments are untouched. */
   isActive: boolean;
+  /** Selected amenity keys (GET /api/amenities). */
+  amenityKeys: string[];
 }
 
 export interface BranchEditorErrors {
@@ -54,6 +56,7 @@ export const createEmptyBranch = (): BranchEditorValues => ({
   latitude: null,
   longitude: null,
   isActive: true,
+  amenityKeys: [],
 });
 
 interface BranchEditorItemProps {

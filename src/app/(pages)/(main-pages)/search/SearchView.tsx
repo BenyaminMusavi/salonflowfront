@@ -37,6 +37,8 @@ export default function SearchView() {
   const urlMinRating = searchParams.get("minRating");
   const urlGenderType = searchParams.get("genderType");
   const urlRadiusKm = searchParams.get("radiusKm");
+  // Comma-separated amenity keys (`amenities=parking,free_wifi`) — survives refresh/share like the other filters.
+  const urlAmenities = searchParams.get("amenities") ?? "";
   // `sort=newest` is a real API sort and lives in the URL, so it survives category / filter / list-map changes.
   const sort: TSearchSort = searchParams.get("sort") === "newest" ? "newest" : "recommended";
   // `view=map` survives refresh/share; the toggle is hidden (and the param ignored) while no basemap is configured.
@@ -49,8 +51,9 @@ export default function SearchView() {
       minRating: urlMinRating ? Number(urlMinRating) : null,
       genderType: urlGenderType ? (Number(urlGenderType) as GenderType) : null,
       radiusKm: urlRadiusKm ? Number(urlRadiusKm) : null,
+      amenities: urlAmenities.split(",").map((k) => k.trim()).filter(Boolean),
     }),
-    [urlMinPrice, urlMaxPrice, urlMinRating, urlGenderType, urlRadiusKm]
+    [urlMinPrice, urlMaxPrice, urlMinRating, urlGenderType, urlRadiusKm, urlAmenities]
   );
 
   const hasActiveFilters =
@@ -58,7 +61,8 @@ export default function SearchView() {
     filters.maxPrice !== "" ||
     filters.minRating != null ||
     filters.genderType != null ||
-    filters.radiusKm != null;
+    filters.radiusKm != null ||
+    filters.amenities.length > 0;
 
   const [draftSearch, setDraftSearch] = useState(urlSearch);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -120,6 +124,9 @@ export default function SearchView() {
       if (nextFilters.radiusKm != null)
         params.set("radiusKm", String(nextFilters.radiusKm));
       else params.delete("radiusKm");
+      if (nextFilters.amenities.length)
+        params.set("amenities", nextFilters.amenities.join(","));
+      else params.delete("amenities");
 
       const qs = params.toString();
       router.replace(
@@ -187,6 +194,7 @@ export default function SearchView() {
     // A radius only makes sense around a reference point; the backend rejects it without lat/lng.
     radiusKm: coords && filters.radiusKm != null ? filters.radiusKm : undefined,
     sort: sort === "newest" ? "newest" : undefined,
+    amenities: filters.amenities.length ? filters.amenities : undefined,
     ...area,
   });
 
@@ -208,6 +216,7 @@ export default function SearchView() {
       minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
       maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
       minRating: filters.minRating ?? undefined,
+      amenities: filters.amenities.length ? filters.amenities : undefined,
       cityPublicId: area.cityPublicId,
       districtPublicId: area.districtPublicId,
     }),

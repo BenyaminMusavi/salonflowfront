@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
 import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
 import BranchAreaField from "@/shared/components/composites/user-location/BranchAreaField";
+import AmenityPicker from "@/shared/components/composites/amenities/AmenityPicker";
 import { coordinatesPairError } from "@/shared/utils/coordinates";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { Button } from "@/shared/components/primitives/button/Button";
@@ -66,6 +67,7 @@ function toApi(branches: BranchEditorValues[]): IOnboardingBranch[] {
     genderType: b.genderType,
     phone: b.phone.trim() || null,
     isActive: b.isActive,
+    amenityKeys: b.amenityKeys,
   })) as IOnboardingBranch[];
 }
 
@@ -83,6 +85,7 @@ function toBranchRequest(b: BranchEditorValues): IBranchRequest {
     genderType: b.genderType,
     phone: b.phone.trim() || null,
     isActive: b.isActive,
+    amenityKeys: b.amenityKeys,
   };
 }
 
@@ -247,6 +250,10 @@ export default function SalonBranchesView() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold text-foreground-muted">امکانات سالن (اختیاری)</p>
+              <AmenityPicker compact value={draft.amenityKeys} onChange={(amenityKeys) => setDraft({ ...draft, amenityKeys })} />
             </div>
             <label className="flex items-center justify-between gap-3 rounded-[16px] bg-background-secondary px-4 py-3">
               <span>

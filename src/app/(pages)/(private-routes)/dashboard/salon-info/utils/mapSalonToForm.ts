@@ -108,5 +108,6 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
     latitude: branch.latitude ?? null,
     longitude: branch.longitude ?? null,
     isActive: branch.isActive ?? true,
+    amenityKeys: (branch.amenities ?? []).map((a) => a.key),
   }));
 }

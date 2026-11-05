@@ -14,6 +14,7 @@ import { isLocationFeatureEnabled } from "@/services/domains/locations/utils/use
 import GenderAudienceBadge from "@/shared/components/composites/gender-audience-badge/GenderAudienceBadge";
 import { cn } from "@/shared/utils/className";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
+import AmenityIcon from "@/shared/components/composites/amenities/AmenityIcon";
 
 function SearchSalonCard({ salon, onShowOnMap }: { salon: ISalonCard; onShowOnMap?: (salon: ISalonCard) => void }) {
   const image = salonImageSrc(
@@ -98,6 +99,17 @@ function SearchSalonCard({ salon, onShowOnMap }: { salon: ISalonCard; onShowOnMa
               شروع از {formatToman(salon.minPrice)} تومان
             </p>
           )}
+          {salon.amenities?.length ? (
+            // Icons only (at most 3 decisive ones: parking, accessibility, kids) so the small card stays clean; the full list is on the salon page.
+            <ul aria-label="امکانات" className="mt-1 flex items-center gap-1.5 text-on-media/90">
+              {salon.amenities.slice(0, 3).map((a) => (
+                <li key={a.key} title={a.title} className="flex h-6 w-6 items-center justify-center rounded-full bg-overlay/60 backdrop-blur-sm">
+                  <AmenityIcon amenityKey={a.key} size={14} />
+                  <span className="sr-only">{a.title}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground backdrop-blur-sm">

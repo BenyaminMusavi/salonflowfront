@@ -10,6 +10,8 @@ import SalonsDetailDescription from "./components/salons-details-description/Sal
 import SalonsDetailSocialStrip from "./components/salons-details-social-strip/SalonsDetailSocialStrip";
 import SalonsDetailServices from "./components/salons-details-services/SalonsDetailServices";
 import SalonsDetailHours from "./components/salons-details-hours/SalonsDetailHours";
+import SalonsDetailAmenities from "./components/salons-details-amenities/SalonsDetailAmenities";
+import SalonsDetailBranchPicker from "./components/salons-details-branch-picker/SalonsDetailBranchPicker";
 import SalonsDetailStickyCta from "./components/salons-details-sticky-cta/SalonsDetailStickyCta";
 import SalonReviewsSection from "./components/salon-reviews-section/SalonReviewsSection";
 import ReportSalonSheet from "./components/report-salon-sheet/ReportSalonSheet";
@@ -29,6 +31,8 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
   const requestedUsername = "username" in source ? source.username : undefined;
   const [reportOpen, setReportOpen] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
+  // One branch for the whole page: «خدمات» prices and «امکانات و رفاه» always show the same branch (default: first active).
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   const byId = useQuerySalonById("id" in source ? source.id : undefined);
   const byUsername = useQuerySalonByUsername(requestedUsername);
@@ -75,6 +79,8 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
     );
   }
 
+  const activeBranches = (salon.branches ?? []).filter((b) => b.publicId && b.isActive !== false);
+  const selectedBranch = activeBranches.find((b) => b.publicId === selectedBranchId) ?? activeBranches[0] ?? null;
   // The API sends address/city only on the branches (not on the salon), so the address row and the directions destination
   // both come from the same branch: the first with real coordinates, else the first with an address (no invented coordinates).
   const addressBranch = pickAddressBranch(salon.branches);
@@ -115,7 +121,18 @@ export default function SalonsDetailView({ source }: { source: SalonDetailSource
           whatsappNumber={salon.whatsappNumber}
           websiteUrl={salon.websiteUrl}
         />
-        <SalonsDetailServices salonId={salon.id} branches={salon.branches} services={salon.services} />
+        <SalonsDetailBranchPicker
+          branches={activeBranches}
+          selectedPublicId={selectedBranch?.publicId ?? null}
+          onSelect={setSelectedBranchId}
+        />
+        <SalonsDetailServices
+          salonId={salon.id}
+          branches={salon.branches}
+          branchPublicId={selectedBranch?.publicId ?? null}
+          services={salon.services}
+        />
+        <SalonsDetailAmenities branch={selectedBranch} showBranchName={activeBranches.length > 1} />
         <SalonsDetailHours workingHours={salon.workingHours} />
 
         <SalonReviewsSection salonId={numericSalonId} />

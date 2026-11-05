@@ -29,6 +29,7 @@ import { SalonPhotosEditor } from "../../dashboard/salon/photos/SalonPhotosEdito
 import { OnboardingWeekEditor, scheduleSummary } from "./OnboardingWeekEditor";
 import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
 import BranchAreaField from "@/shared/components/composites/user-location/BranchAreaField";
+import AmenityPicker from "@/shared/components/composites/amenities/AmenityPicker";
 import { coordinatesPairError } from "@/shared/utils/coordinates";
 import { Field, RemoveButton, StepTitle, cardClass, chipClass } from "./ui";
 
@@ -161,6 +162,7 @@ export const newBranch = (): IOnboardingBranch => ({
   genderType: 0 as GenderType,
   phone: "",
   isActive: true,
+  amenityKeys: [],
 });
 
 export function StepBranches({ showErrors }: { showErrors: boolean }) {
@@ -209,6 +211,9 @@ export function StepBranches({ showErrors }: { showErrors: boolean }) {
                 </button>
               ))}
             </div>
+          </Field>
+          <Field label="امکانات سالن (اختیاری)">
+            <AmenityPicker value={b.amenityKeys ?? []} onChange={(amenityKeys) => update(idx, { amenityKeys })} />
           </Field>
           {branches.length > 1 ? (
             <RemoveButton

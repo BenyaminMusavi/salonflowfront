@@ -66,6 +66,11 @@ export const API_ADDRESS = {
       `/api/salons/${salonPublicId}/submit-for-review`,
   },
 
+  /** Branch amenity catalog (public). */
+  AMENITIES: {
+    LIST: "/api/amenities",
+  },
+
   LOCATIONS: {
     PROVINCES: "/api/locations/provinces",
     /** `?provincePublicId=` (all cities of it) or `?search=` (whole country); neither = the 30 biggest cities. */

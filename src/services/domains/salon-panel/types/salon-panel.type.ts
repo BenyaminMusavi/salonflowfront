@@ -41,6 +41,8 @@ export interface IBranchRequest {
   clearCoordinates?: boolean;
   genderType?: number;
   isActive?: boolean;
+  /** Amenity keys; absent = unchanged, [] = none. */
+  amenityKeys?: string[] | null;
 }
 
 export interface IBranchItem extends IBranchRequest {

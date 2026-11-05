@@ -1,3 +1,4 @@
+import type { IBranchAmenity } from "@/services/domains/amenities/types/amenities.type";
 import type { DepositMode, PriceSource } from "@/services/common/enums/domain-enums";
 import type { ICancellationTier } from "@/services/domains/catalog/types/catalog.type";
 import { TResponse } from "@/services/common/data-types/SharedDataTypes";
@@ -22,6 +23,8 @@ export interface ISalonBranch {
   /** Owner/staff view only — the public salon-detail endpoint only ever returns active branches
    * to anonymous/customer callers, so this is always true (or absent) there. */
   isActive?: boolean;
+  /** Active amenities of this branch, ordered by category; empty = the «امکانات و رفاه» section is hidden. */
+  amenities?: IBranchAmenity[] | null;
 }
 
 /** Branch catalog line — Guid-first for customer booking. */

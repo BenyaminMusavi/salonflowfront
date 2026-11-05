@@ -52,6 +52,8 @@ class SalonService {
       API_ADDRESS.SALON.APPROVED,
       {
         headers: searchLocationHeaders(params.lat, params.lng),
+        // `amenities=a&amenities=b` (ASP.NET list binding), not axios' default `amenities[]=`.
+        paramsSerializer: { indexes: null },
         params: {
           page: params.page ?? 1,
           pageSize: params.pageSize ?? 20,
@@ -65,6 +67,7 @@ class SalonService {
           sort: params.sort,
           cityPublicId: params.cityPublicId,
           districtPublicId: params.districtPublicId,
+          amenities: params.amenities?.length ? params.amenities : undefined,
         },
       }
     );
@@ -75,6 +78,7 @@ class SalonService {
     return await axiosInstance.get<unknown, TMapPinsEntity>(API_ADDRESS.SALON.MAP, {
       signal,
       headers: searchLocationHeaders(params.lat, params.lng),
+      paramsSerializer: { indexes: null },
       params: {
         north: params.north,
         south: params.south,
@@ -88,6 +92,7 @@ class SalonService {
         minRating: params.minRating,
         cityPublicId: params.cityPublicId,
         districtPublicId: params.districtPublicId,
+        amenities: params.amenities?.length ? params.amenities : undefined,
       },
     });
   }

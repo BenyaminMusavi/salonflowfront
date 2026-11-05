@@ -13,6 +13,8 @@ import ServicePrice from "@/shared/components/composites/service-price/ServicePr
 interface SalonsDetailServicesProps {
   salonId: string;
   branches?: ISalonBranch[] | null;
+  /** The branch picked on the page (shared with «امکانات و رفاه»); absent = the first active branch. */
+  branchPublicId?: string | null;
   /** Names only — shown while/if the priced list can't load. */
   services?: ISalonServiceSummary[] | null;
 }
@@ -21,9 +23,9 @@ interface SalonsDetailServicesProps {
  * «خدمات» with price and duration (the first active branch's priced list — every salon has one,
  * most have only one). A row starts booking with that service already picked.
  */
-export default function SalonsDetailServices({ salonId, branches, services }: SalonsDetailServicesProps) {
+export default function SalonsDetailServices({ salonId, branches, branchPublicId, services }: SalonsDetailServicesProps) {
   const active = (branches ?? []).filter((b) => b.publicId && b.isActive !== false);
-  const branch = active[0] ?? (branches ?? []).find((b) => b.publicId) ?? null;
+  const branch = active.find((b) => b.publicId === branchPublicId) ?? active[0] ?? (branches ?? []).find((b) => b.publicId) ?? null;
   const priced = useQueryBranchServices(branch?.publicId ?? null).data?.data ?? [];
   const items = priced.filter((s) => s.offeringPublicId);
 

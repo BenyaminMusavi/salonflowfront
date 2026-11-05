@@ -34,6 +34,8 @@ export interface IOnboardingBranch {
   phone?: string | null;
   /** false blocks NEW bookings against this branch; existing appointments are untouched. */
   isActive: boolean;
+  /** Amenity keys (GET /api/amenities). Request: absent/null = unchanged, [] = none. Response: the branch's active amenities. */
+  amenityKeys?: string[] | null;
 }
 
 export interface IOnboardingService {

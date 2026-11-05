@@ -1,3 +1,4 @@
+import type { IBranchAmenity } from "@/services/domains/amenities/types/amenities.type";
 import { TPagedResult, TResponse } from "@/services/common/data-types/SharedDataTypes";
 
 /** Public catalog card — `id` is salon Guid (publicId). */
@@ -31,6 +32,8 @@ export interface ISalonCard {
   cityName?: string | null;
   districtName?: string | null;
   minPrice?: number | null;
+  /** Up to 3 key amenities (parking, accessibility, kids) of the representative branch; the rest are on the detail page. */
+  amenities?: IBranchAmenity[] | null;
   /** Numeric long id when API includes it (reviews / reports). */
   salonId?: number | null;
 }
@@ -55,6 +58,8 @@ export interface IGetApprovedSalonsParams {
   cityPublicId?: string;
   /** Only branches registered in this district; always together with its `cityPublicId` (else 400). */
   districtPublicId?: string;
+  /** Amenity keys: only salons with one active branch that has all of them. */
+  amenities?: string[];
 }
 
 export type TSalonsEntity = TResponse<TPagedResult<ISalonCard>>;
@@ -103,4 +108,5 @@ export interface IGetMapPinsParams extends IMapBounds {
   minRating?: number;
   cityPublicId?: string;
   districtPublicId?: string;
+  amenities?: string[];
 }

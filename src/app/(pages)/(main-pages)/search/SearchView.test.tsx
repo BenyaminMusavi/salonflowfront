@@ -107,3 +107,18 @@ describe("SearchView — view and sort controls", () => {
     expect(lastUrl()).toContain("sort=newest");
   });
 });
+
+describe("SearchView — amenity filter", () => {
+  it("reads the amenity keys from the URL and sends them to the list API", () => {
+    state.query = "amenities=parking,free_wifi";
+    render(<SearchView />);
+
+    expect(lastSalonsParams?.amenities).toEqual(["parking", "free_wifi"]);
+  });
+
+  it("sends no amenity filter when the URL has none", () => {
+    render(<SearchView />);
+
+    expect(lastSalonsParams?.amenities).toBeUndefined();
+  });
+});
