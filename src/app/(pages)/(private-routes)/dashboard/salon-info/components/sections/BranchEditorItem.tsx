@@ -20,6 +20,7 @@ export interface BranchEditorValues {
   cityPublicId: string | null;
   districtPublicId: string | null;
   districtName: string | null;
+  provincePublicId: string | null;
   address: string;
   phone: string;
   genderType: GenderType;
@@ -46,6 +47,7 @@ export const createEmptyBranch = (): BranchEditorValues => ({
   cityPublicId: null,
   districtPublicId: null,
   districtName: null,
+  provincePublicId: null,
   address: "",
   phone: "",
   genderType: GenderType.Mixed,

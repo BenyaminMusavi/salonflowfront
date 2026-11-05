@@ -183,7 +183,7 @@ export function StepBranches({ showErrors }: { showErrors: boolean }) {
           </Field>
           <Field label="شهر و محله" error={showErrors && !b.city.trim() ? "شهر را بنویسید یا از فهرست انتخاب کنید." : null}>
             <BranchAreaField
-              value={{ city: b.city, cityPublicId: b.cityPublicId ?? null, districtPublicId: b.districtPublicId ?? null, districtName: b.districtName ?? null }}
+              value={{ city: b.city, cityPublicId: b.cityPublicId ?? null, districtPublicId: b.districtPublicId ?? null, districtName: b.districtName ?? null, provincePublicId: b.provincePublicId ?? null }}
               onChange={(area) => update(idx, area)}
               hasError={showErrors && !b.city.trim()}
             />

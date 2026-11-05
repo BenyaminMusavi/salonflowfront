@@ -279,6 +279,11 @@
         max-height: 88vh;
     }
 
+    /* LocationPickerSheet: fixed height so steps / loading / search never resize the sheet. */
+    .h-\[74dvh\] {
+        height: 74vh;
+    }
+
     .data-\[vaul-drawer-direction\=bottom\]\:h-\[88dvh\][data-vaul-drawer-direction="bottom"] {
         height: 88vh;
     }

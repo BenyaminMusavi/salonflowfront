@@ -45,7 +45,7 @@ describe("BranchAreaField", () => {
     fireEvent.click(screen.getByRole("button", { name: /انتخاب شهر و محله از فهرست/ }));
     fireEvent.click(screen.getByRole("button", { name: "pick-narmak" }));
 
-    expect(onValue).toHaveBeenLastCalledWith({ city: "تهران", cityPublicId: "c-teh", districtPublicId: "d-1", districtName: "نارمک" });
+    expect(onValue).toHaveBeenLastCalledWith({ city: "تهران", cityPublicId: "c-teh", districtPublicId: "d-1", districtName: "نارمک", provincePublicId: "p" });
     expect(screen.getByText("محله‌ی نارمک، تهران")).toBeTruthy();
   });
 
@@ -55,6 +55,6 @@ describe("BranchAreaField", () => {
 
     fireEvent.change(screen.getByLabelText("شهر"), { target: { value: "کرج" } });
 
-    expect(onValue).toHaveBeenLastCalledWith({ city: "کرج", cityPublicId: null, districtPublicId: null, districtName: null });
+    expect(onValue).toHaveBeenLastCalledWith({ city: "کرج", cityPublicId: null, districtPublicId: null, districtName: null, provincePublicId: null });
   });
 });

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import locationsService from "../locations.service";
 
 export const LOCATIONS_QUERY_KEY = "LOCATIONS_QUERY_KEY";
@@ -15,12 +15,18 @@ export const useQueryProvinces = (enabled = true) =>
   });
 
 /** With a province: all its cities. Without: `search` across the country, or the biggest cities when empty. */
-export const useQueryCities = (params: { provincePublicId?: string | null; search?: string }, enabled = true) =>
+export const useQueryCities = (
+  params: { provincePublicId?: string | null; search?: string },
+  enabled = true,
+  /** `keepPreviousData` for a search box: the old list stays while the next one loads (no empty flash, no jump). */
+  placeholderData?: typeof keepPreviousData
+) =>
   useQuery({
     queryKey: [LOCATIONS_QUERY_KEY, "cities", params.provincePublicId ?? null, params.search?.trim() ?? ""],
     queryFn: () => locationsService.cities({ provincePublicId: params.provincePublicId ?? undefined, search: params.search }),
     enabled,
     staleTime: REFERENCE_STALE_MS,
+    placeholderData,
   });
 
 export const useQueryDistricts = (cityPublicId: string | null | undefined, enabled = true) =>

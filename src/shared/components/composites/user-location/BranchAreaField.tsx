@@ -12,6 +12,8 @@ export interface IBranchAreaValue {
   cityPublicId: string | null;
   districtPublicId: string | null;
   districtName: string | null;
+  /** Province of the reference city: the picker reopens on it (absent for older branches = starts at the province list). */
+  provincePublicId?: string | null;
 }
 
 interface IBranchAreaFieldProps {
@@ -34,7 +36,7 @@ export default function BranchAreaField({ value, onChange, hasError }: IBranchAr
     <div className="flex flex-col gap-2">
       <Input
         value={value.city}
-        onChange={(e) => onChange({ city: e.target.value, cityPublicId: null, districtPublicId: null, districtName: null })}
+        onChange={(e) => onChange({ city: e.target.value, cityPublicId: null, districtPublicId: null, districtName: null, provincePublicId: null })}
         placeholder="تهران"
         aria-label="شهر"
         className="rounded-[12px]"
@@ -65,8 +67,16 @@ export default function BranchAreaField({ value, onChange, hasError }: IBranchAr
         open={open}
         onClose={() => setOpen(false)}
         title="شهر و محله‌ی شعبه"
+        // Always this branch's own value: a half-finished choice never carries over to another branch.
+        initial={linked ? { provincePublicId: value.provincePublicId, cityPublicId: value.cityPublicId, districtPublicId: value.districtPublicId } : undefined}
         onPick={(city, district) => {
-          onChange({ city: city.name, cityPublicId: city.publicId, districtPublicId: district?.publicId ?? null, districtName: district?.name ?? null });
+          onChange({
+            city: city.name,
+            cityPublicId: city.publicId,
+            districtPublicId: district?.publicId ?? null,
+            districtName: district?.name ?? null,
+            provincePublicId: city.provincePublicId,
+          });
           setOpen(false);
         }}
       />

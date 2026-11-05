@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface IProps {
@@ -10,6 +10,9 @@ interface IProps {
   children: ReactNode;
 }
 
+/** Open sheets, newest last: Escape closes only the top one (a picker opened over a form sheet, not both). */
+const openSheets: symbol[] = [];
+
 export default function BottomSheet({ open, onClose, children }: IProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -17,14 +20,23 @@ export default function BottomSheet({ open, onClose, children }: IProps) {
     setMounted(true);
   }, []);
 
+  // Latest onClose without re-subscribing: a parent re-render must not move this sheet in the stack.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
+    const id = Symbol("sheet");
+    openSheets.push(id);
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && openSheets[openSheets.length - 1] === id) onCloseRef.current();
     };
     document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      openSheets.splice(openSheets.indexOf(id), 1);
+    };
+  }, [open]);
 
   if (!mounted) return null;
 

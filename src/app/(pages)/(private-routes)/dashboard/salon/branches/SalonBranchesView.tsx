@@ -59,6 +59,7 @@ function toApi(branches: BranchEditorValues[]): IOnboardingBranch[] {
     cityPublicId: b.cityPublicId,
     districtPublicId: b.cityPublicId ? b.districtPublicId : null,
     districtName: b.districtName,
+    provincePublicId: b.provincePublicId,
     address: b.address.trim(),
     latitude: b.latitude,
     longitude: b.longitude,
@@ -224,9 +225,13 @@ export default function SalonBranchesView() {
             <Field label="نام شعبه" error={errors.name}>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="مثلاً ونک" className="rounded-[12px]" hasError={!!errors.name} />
             </Field>
-            <Field label="شهر و محله" error={errors.city}>
-              <BranchAreaField value={draft} onChange={(area) => setDraft({ ...draft, ...area })} hasError={!!errors.city} />
-            </Field>
+            {/* Not a <label> like the other fields: a tap on the chosen-area line would focus the city box and open the
+                phone keyboard under the picker. */}
+            <div className="flex flex-col gap-1.5 text-xs font-semibold text-foreground-muted">
+              شهر و محله
+              <BranchAreaField value={draft} onChange={(area) => setDraft((d) => (d ? { ...d, ...area } : d))} hasError={!!errors.city} />
+              {errors.city ? <span className="font-medium text-error">{errors.city}</span> : null}
+            </div>
             <Field label="آدرس" error={errors.address}>
               <Input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} placeholder="خیابان، پلاک…" className="rounded-[12px]" hasError={!!errors.address} />
             </Field>

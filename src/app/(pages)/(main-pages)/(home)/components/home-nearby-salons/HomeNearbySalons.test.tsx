@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 const salons = vi.hoisted(() => ({ items: [] as unknown[], calls: [] as { params: Record<string, unknown>; enabled: boolean }[] }));
 
@@ -36,66 +36,65 @@ beforeEach(() => {
 });
 
 describe("HomeNearbySalons", () => {
-  it("without a location: a prompt with both ways to set it, no salon request, and GPS is not asked by itself", () => {
+  it("without a location: only one compact row, no big card, no request, and GPS is never asked by itself", () => {
     const getCurrentPosition = vi.fn();
     vi.stubGlobal("navigator", { geolocation: { getCurrentPosition } });
 
     render(<HomeNearbySalons />);
 
-    expect(screen.getByRole("button", { name: /موقعیت فعلی من/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /انتخاب شهر و محله/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "موقعیتت رو انتخاب کن" })).toBeTruthy();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByText(/موقعیت فعلی من/)).toBeNull();
     expect(last().enabled).toBe(false);
     expect(getCurrentPosition).not.toHaveBeenCalled();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: /انتخاب شهر و محله/ }));
+  it("the row opens the shared picker (device position and city/district live there)", () => {
+    render(<HomeNearbySalons />);
+    fireEvent.click(screen.getByRole("button", { name: "موقعیتت رو انتخاب کن" }));
     expect(screen.getByTestId("picker")).toBeTruthy();
   });
 
-  it("tapping «موقعیت فعلی من» asks once and lists nearby salons with a radius and a rounded position", async () => {
-    vi.stubGlobal("navigator", {
-      geolocation: { getCurrentPosition: vi.fn((ok: PositionCallback) => ok({ coords: { latitude: 35.712345, longitude: 51.398765 } } as GeolocationPosition)) },
-    });
+  it("device position: the row says so; nearby salons within 20 km from a rounded point, and «همه» keeps the radius", () => {
+    useUserLocationStore.getState().setGps({ lat: 35.712345, lng: 51.398765, at: 1 });
     salons.items = [{ id: "s1", name: "سالن نزدیک" }];
     render(<HomeNearbySalons />);
 
-    fireEvent.click(screen.getByRole("button", { name: /موقعیت فعلی من/ }));
-
-    await waitFor(() => expect(screen.getByText("سالن نزدیک")).toBeTruthy());
+    expect(screen.getByRole("button", { name: /موقعیت فعلی شما/ })).toBeTruthy();
+    expect(screen.getByText("سالن نزدیک")).toBeTruthy();
     expect(last().params).toMatchObject({ lat: 35.712, lng: 51.399, radiusKm: 20 });
     expect(last().params.cityPublicId).toBeUndefined();
     expect(screen.getByRole("link", { name: "همه" }).getAttribute("href")).toBe("/search?radiusKm=20");
   });
 
-  it("GPS denied: a clear message, and the manual choice stays available", async () => {
-    vi.stubGlobal("navigator", {
-      geolocation: { getCurrentPosition: vi.fn((_ok: PositionCallback, fail: PositionErrorCallback) => fail({ code: 1 } as GeolocationPositionError)) },
-    });
-    render(<HomeNearbySalons />);
-
-    fireEvent.click(screen.getByRole("button", { name: /موقعیت فعلی من/ }));
-
-    expect((await screen.findByRole("alert")).textContent).toContain("اجازه‌ی دسترسی");
-    expect(screen.getByRole("button", { name: /انتخاب شهر و محله/ })).toBeTruthy();
-  });
-
-  it("manual choice: lists that area without any position, and says so when it is empty", () => {
+  it("manual choice: the row shows district and city (tap to change); that area is listed without any position", () => {
     useUserLocationStore.getState().setManual(tehran, { publicId: "d-1", name: "سعادت آباد", latitude: 35.78, longitude: 51.37 });
     render(<HomeNearbySalons />);
 
+    const row = screen.getByRole("button", { name: /سعادت آباد، تهران/ });
+    expect(row.textContent).toContain("سعادت آباد، تهران");
     expect(last()).toMatchObject({ enabled: true, params: { cityPublicId: "c-teh", districtPublicId: "d-1" } });
     expect(last().params.lat).toBeUndefined();
-    expect(last().params.radiusKm).toBeUndefined();
-    expect(screen.getByRole("heading").textContent).toBe("سالن‌های سعادت آباد");
-    expect(screen.getByText("در این محدوده هنوز سالنی در صفا نیست.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "تغییر موقعیت" })).toBeTruthy();
+
+    fireEvent.click(row);
+    expect(screen.getByTestId("picker")).toBeTruthy();
   });
 
-  it("device far from the saved city: only a suggestion — the saved city is not replaced", () => {
+  it("no salon in the area: one short line, no card or extra buttons", () => {
+    useUserLocationStore.getState().setManual(tehran, null);
+    render(<HomeNearbySalons />);
+
+    expect(screen.getByText("در این محدوده هنوز سالنی در صفا نیست.")).toBeTruthy();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("device far from the saved city: only a short suggestion — the saved city is not replaced", () => {
     useUserLocationStore.getState().setManual(tehran, null);
     useUserLocationStore.getState().setGps({ lat: 29.61, lng: 52.54, at: 1 });
     render(<HomeNearbySalons />);
 
-    expect(screen.getByText(/از «تهران» دور هستید/)).toBeTruthy();
+    expect(screen.getByText(/دور از «تهران» هستید؟/)).toBeTruthy();
     expect(useUserLocationStore.getState().manual?.city.name).toBe("تهران");
   });
 });

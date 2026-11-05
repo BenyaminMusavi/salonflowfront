@@ -101,6 +101,7 @@ export function mapSalonToBranches(salon: ISalon): BranchEditorValues[] {
     cityPublicId: branch.cityPublicId ?? null,
     districtPublicId: branch.districtPublicId ?? null,
     districtName: branch.districtName ?? null,
+    provincePublicId: branch.provincePublicId ?? null,
     address: branch.address ?? "",
     phone: branch.phone ?? "",
     genderType: parseGenderType(branch.genderType),
