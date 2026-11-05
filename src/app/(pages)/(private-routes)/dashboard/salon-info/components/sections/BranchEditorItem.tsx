@@ -16,6 +16,10 @@ export interface BranchEditorValues {
   clientKey: string;
   name: string;
   city: string;
+  /** Reference city/district (see `BranchAreaField`); null = text only. */
+  cityPublicId: string | null;
+  districtPublicId: string | null;
+  districtName: string | null;
   address: string;
   phone: string;
   genderType: GenderType;
@@ -39,6 +43,9 @@ export const createEmptyBranch = (): BranchEditorValues => ({
       : `branch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   name: "",
   city: "",
+  cityPublicId: null,
+  districtPublicId: null,
+  districtName: null,
   address: "",
   phone: "",
   genderType: GenderType.Mixed,

@@ -19,7 +19,14 @@ export interface ISaveBasicInfoResult {
 export interface IOnboardingBranch {
   publicId: string | null;
   name: string;
+  /** Display city text (required by the API). With `cityPublicId` the server writes the reference city's name. */
   city: string;
+  /** Reference city/district (`api/locations`); null/absent = text only (older branch). District only with its city. */
+  cityPublicId?: string | null;
+  districtPublicId?: string | null;
+  /** Response only. */
+  districtName?: string | null;
+  provincePublicId?: string | null;
   address: string;
   latitude?: number | null;
   longitude?: number | null;

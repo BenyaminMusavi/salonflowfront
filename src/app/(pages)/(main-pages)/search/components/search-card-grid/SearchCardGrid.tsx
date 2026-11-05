@@ -10,6 +10,7 @@ import { RouteAddress } from "@/shared/data/routeAddress";
 import { formatToman, salonImageSrc } from "@/shared/utils/salonDisplay";
 import barbershop from "@/shared/assets/images/barbershop.png";
 import { formatDistanceKm } from "@/shared/utils/distance";
+import { isLocationFeatureEnabled } from "@/services/domains/locations/utils/userLocation";
 import GenderAudienceBadge from "@/shared/components/composites/gender-audience-badge/GenderAudienceBadge";
 import { cn } from "@/shared/utils/className";
 import FavoriteHeartButton from "@/shared/components/composites/favorite-heart/FavoriteHeartButton";
@@ -87,6 +88,11 @@ function SearchSalonCard({ salon, onShowOnMap }: { salon: ISalonCard; onShowOnMa
           <h4 className="truncate text-[14px] font-bold text-on-media">
             {salon.name}
           </h4>
+          {isLocationFeatureEnabled && (salon.districtName || salon.cityName) ? (
+            <p className="truncate text-[11px] text-on-media/80">
+              {[salon.districtName, salon.cityName].filter(Boolean).join("، ")}
+            </p>
+          ) : null}
           {salon.minPrice != null && (
             <p className="mt-0.5 truncate text-[11px] text-on-media/80">
               شروع از {formatToman(salon.minPrice)} تومان
@@ -111,6 +117,8 @@ interface SearchCardGridProps {
   onLoadMore?: () => void;
   /** A radius filter is on, so an empty list means «nothing nearby», not «no match». */
   withinRadius?: boolean;
+  /** A city/district is chosen, so an empty list means «nothing in this area» — the user may change the location. */
+  withinArea?: boolean;
   /** The list on screen is the previous query's while a new filter loads: dim it and block taps so it is never mistaken for the new result. */
   isStale?: boolean;
   /** Shown on cards that have a branch with coordinates: switches to the map with that branch selected. */
@@ -125,6 +133,7 @@ export default function SearchCardGrid({
   isLoadingMore,
   onLoadMore,
   withinRadius,
+  withinArea,
   isStale,
   onShowOnMap,
 }: SearchCardGridProps) {
@@ -149,7 +158,9 @@ export default function SearchCardGrid({
       <p className="px-safe-area text-[13px] text-foreground-muted">
         {withinRadius
           ? "در این شعاع سالنی پیدا نشد؛ شعاع را بیشتر کنید یا حذفش کنید."
-          : "سالنی با این فیلترها یافت نشد"}
+          : withinArea
+            ? "در این محدوده سالنی با این فیلترها پیدا نشد؛ موقعیت یا فیلترها را تغییر دهید."
+            : "سالنی با این فیلترها یافت نشد"}
       </p>
     );
   }

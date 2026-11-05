@@ -36,14 +36,23 @@ import {
   TUsernameAvailabilityEntity,
 } from "@/services/domains/salons/types/onboarding.type";
 
+/**
+ * The «نزدیک من» point goes in a header, not the URL: IIS and the CDN log every URL (query string included) but not
+ * custom headers, so the user's position never lands in an access log. The backend still accepts ?lat=&lng=.
+ */
+export function searchLocationHeaders(lat?: number, lng?: number): Record<string, string> | undefined {
+  return lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+    ? { "X-Search-Location": `${lat},${lng}` }
+    : undefined;
+}
+
 class SalonService {
   async getApproved(params: IGetApprovedSalonsParams = {}) {
     return await axiosInstance.get<unknown, TSalonsEntity>(
       API_ADDRESS.SALON.APPROVED,
       {
+        headers: searchLocationHeaders(params.lat, params.lng),
         params: {
-          lat: params.lat,
-          lng: params.lng,
           page: params.page ?? 1,
           pageSize: params.pageSize ?? 20,
           search: params.search || undefined,
@@ -54,6 +63,8 @@ class SalonService {
           minRating: params.minRating,
           radiusKm: params.radiusKm,
           sort: params.sort,
+          cityPublicId: params.cityPublicId,
+          districtPublicId: params.districtPublicId,
         },
       }
     );
@@ -63,19 +74,20 @@ class SalonService {
   async getMapPins(params: IGetMapPinsParams, signal?: AbortSignal) {
     return await axiosInstance.get<unknown, TMapPinsEntity>(API_ADDRESS.SALON.MAP, {
       signal,
+      headers: searchLocationHeaders(params.lat, params.lng),
       params: {
         north: params.north,
         south: params.south,
         east: params.east,
         west: params.west,
-        lat: params.lat,
-        lng: params.lng,
         search: params.search || undefined,
         genderType: params.genderType,
         serviceTypePublicId: params.serviceTypePublicId,
         minPrice: params.minPrice,
         maxPrice: params.maxPrice,
         minRating: params.minRating,
+        cityPublicId: params.cityPublicId,
+        districtPublicId: params.districtPublicId,
       },
     });
   }

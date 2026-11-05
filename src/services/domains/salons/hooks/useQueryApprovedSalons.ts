@@ -4,10 +4,11 @@ import { IGetApprovedSalonsParams } from "../types/salons.type";
 
 export const SALON_APPROVED_QUERY_KEY = "SALON_APPROVED_QUERY_KEY";
 
-export const useQueryApprovedSalons = (params: IGetApprovedSalonsParams = {}) => {
+export const useQueryApprovedSalons = (params: IGetApprovedSalonsParams = {}, enabled = true) => {
   return useQuery({
     queryKey: [SALON_APPROVED_QUERY_KEY, params],
     queryFn: () => salonService.getApproved(params),
+    enabled,
     // Keep the previous list on screen while a filter / location change loads (no empty flash).
     placeholderData: keepPreviousData,
   });

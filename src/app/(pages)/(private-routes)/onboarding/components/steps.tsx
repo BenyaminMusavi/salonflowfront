@@ -28,6 +28,7 @@ import { isValidServiceDuration } from "@/shared/utils/serviceDuration";
 import { SalonPhotosEditor } from "../../dashboard/salon/photos/SalonPhotosEditor";
 import { OnboardingWeekEditor, scheduleSummary } from "./OnboardingWeekEditor";
 import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
+import BranchAreaField from "@/shared/components/composites/user-location/BranchAreaField";
 import { coordinatesPairError } from "@/shared/utils/coordinates";
 import { Field, RemoveButton, StepTitle, cardClass, chipClass } from "./ui";
 
@@ -150,6 +151,9 @@ export const newBranch = (): IOnboardingBranch => ({
   publicId: null,
   name: "",
   city: "",
+  cityPublicId: null,
+  districtPublicId: null,
+  districtName: null,
   address: "",
   latitude: null,
   longitude: null,
@@ -177,8 +181,12 @@ export function StepBranches({ showErrors }: { showErrors: boolean }) {
           <Field label="نام شعبه" error={showErrors && !b.name.trim() ? "نام شعبه را بنویسید." : null}>
             <Input value={b.name} onChange={(e) => update(idx, { name: e.target.value })} placeholder="مثلاً ونک" className="rounded-[12px]" hasError={showErrors && !b.name.trim()} />
           </Field>
-          <Field label="شهر" error={showErrors && !b.city.trim() ? "شهر را بنویسید." : null}>
-            <Input value={b.city} onChange={(e) => update(idx, { city: e.target.value })} placeholder="تهران" className="rounded-[12px]" hasError={showErrors && !b.city.trim()} />
+          <Field label="شهر و محله" error={showErrors && !b.city.trim() ? "شهر را بنویسید یا از فهرست انتخاب کنید." : null}>
+            <BranchAreaField
+              value={{ city: b.city, cityPublicId: b.cityPublicId ?? null, districtPublicId: b.districtPublicId ?? null, districtName: b.districtName ?? null }}
+              onChange={(area) => update(idx, area)}
+              hasError={showErrors && !b.city.trim()}
+            />
           </Field>
           <Field label="آدرس" error={showErrors && !b.address.trim() ? "آدرس را بنویسید." : null}>
             <Input value={b.address} onChange={(e) => update(idx, { address: e.target.value })} placeholder="خیابان، کوچه، پلاک" className="rounded-[12px]" hasError={showErrors && !b.address.trim()} />
@@ -505,7 +513,7 @@ export function StepPhotosSubmit({ serviceTypes, onEdit }: { serviceTypes: IServ
         <SummaryBlock title={draft.branches.length > 1 ? "شعبه‌ها" : "شعبه"} onEdit={() => onEdit(2)}>
           {draft.branches.map((b, i) => (
             <span key={b.publicId ?? i} className="block">
-              {b.name} · {b.city}، {b.address} · {genderLabel(Number(b.genderType))}
+              {b.name} · {b.districtName ? `${b.districtName}، ` : ""}{b.city}، {b.address} · {genderLabel(Number(b.genderType))}
             </span>
           ))}
         </SummaryBlock>

@@ -9,6 +9,11 @@ export interface ISalonBranch {
   branchId: number;
   name: string;
   city?: string | null;
+  /** Reference city/district of the branch; null for an older branch whose city is text only. */
+  cityPublicId?: string | null;
+  provincePublicId?: string | null;
+  districtPublicId?: string | null;
+  districtName?: string | null;
   address?: string | null;
   phone?: string | null;
   latitude?: number | null;

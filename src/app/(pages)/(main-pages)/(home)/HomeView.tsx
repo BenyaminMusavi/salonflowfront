@@ -5,6 +5,7 @@ import HomeSearch from "@/app/(pages)/(main-pages)/(home)/components/home-search
 import IncompleteDraftBanner from "@/app/(pages)/(main-pages)/(home)/components/incomplete-draft-banner/IncompleteDraftBanner";
 import HomeNextAppointment from "@/app/(pages)/(main-pages)/(home)/components/home-next-appointment/HomeNextAppointment";
 import HomeExplore from "@/app/(pages)/(main-pages)/(home)/components/home-explore/HomeExplore";
+import HomeNearbySalons from "@/app/(pages)/(main-pages)/(home)/components/home-nearby-salons/HomeNearbySalons";
 
 function HomeView() {
   return (
@@ -13,6 +14,7 @@ function HomeView() {
       <IncompleteDraftBanner />
       <HomeNextAppointment />
       <HomeSearch />
+      <HomeNearbySalons />
       <HomeSalons />
       <HomeExplore />
       <div className="flex justify-end px-safe-area pt-2">

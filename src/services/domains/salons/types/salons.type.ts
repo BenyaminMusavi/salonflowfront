@@ -27,6 +27,9 @@ export interface ISalonCard {
   branchName?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /** City / district of the representative branch (or the oldest matching one) — «سعادت‌آباد، تهران». */
+  cityName?: string | null;
+  districtName?: string | null;
   minPrice?: number | null;
   /** Numeric long id when API includes it (reviews / reports). */
   salonId?: number | null;
@@ -48,6 +51,10 @@ export interface IGetApprovedSalonsParams {
   radiusKm?: number;
   /** `newest` = most recently registered salon first; omit for the default («پیشنهادی») order. */
   sort?: "newest";
+  /** Manual location: salons with an active branch in this city (salons without a map pin included). */
+  cityPublicId?: string;
+  /** Only branches registered in this district; always together with its `cityPublicId` (else 400). */
+  districtPublicId?: string;
 }
 
 export type TSalonsEntity = TResponse<TPagedResult<ISalonCard>>;
@@ -94,4 +101,6 @@ export interface IGetMapPinsParams extends IMapBounds {
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
+  cityPublicId?: string;
+  districtPublicId?: string;
 }

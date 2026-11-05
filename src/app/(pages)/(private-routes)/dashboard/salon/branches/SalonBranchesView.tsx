@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
 import BranchLocationField from "@/shared/components/composites/location-picker/BranchLocationField";
+import BranchAreaField from "@/shared/components/composites/user-location/BranchAreaField";
 import { coordinatesPairError } from "@/shared/utils/coordinates";
 import BottomSheet from "@/shared/components/composites/bottom-sheet/BottomSheet";
 import { Button } from "@/shared/components/primitives/button/Button";
@@ -55,6 +56,9 @@ function toApi(branches: BranchEditorValues[]): IOnboardingBranch[] {
     publicId: b.publicId || null,
     name: b.name.trim(),
     city: b.city.trim(),
+    cityPublicId: b.cityPublicId,
+    districtPublicId: b.cityPublicId ? b.districtPublicId : null,
+    districtName: b.districtName,
     address: b.address.trim(),
     latitude: b.latitude,
     longitude: b.longitude,
@@ -68,6 +72,8 @@ function toBranchRequest(b: BranchEditorValues): IBranchRequest {
   return {
     name: b.name.trim(),
     city: b.city.trim(),
+    // Picked from the list: city + exact district (null = none). Typed only: no ids, the server keeps or relinks by name.
+    ...(b.cityPublicId ? { cityPublicId: b.cityPublicId, districtPublicId: b.districtPublicId } : {}),
     address: b.address.trim(),
     latitude: b.latitude,
     longitude: b.longitude,
@@ -201,7 +207,7 @@ export default function SalonBranchesView() {
                   {b.name || "بدون نام"}
                 </span>
                 <span className="block truncate text-xs text-foreground-muted">
-                  {[b.city, b.address].filter(Boolean).join(" · ")}
+                  {[b.districtName ? `${b.districtName}، ${b.city}` : b.city, b.address].filter(Boolean).join(" · ")}
                   {b.isActive ? "" : " · غیرفعال"}
                 </span>
               </span>
@@ -218,8 +224,8 @@ export default function SalonBranchesView() {
             <Field label="نام شعبه" error={errors.name}>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="مثلاً ونک" className="rounded-[12px]" hasError={!!errors.name} />
             </Field>
-            <Field label="شهر" error={errors.city}>
-              <Input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="تهران" className="rounded-[12px]" hasError={!!errors.city} />
+            <Field label="شهر و محله" error={errors.city}>
+              <BranchAreaField value={draft} onChange={(area) => setDraft({ ...draft, ...area })} hasError={!!errors.city} />
             </Field>
             <Field label="آدرس" error={errors.address}>
               <Input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} placeholder="خیابان، پلاک…" className="rounded-[12px]" hasError={!!errors.address} />

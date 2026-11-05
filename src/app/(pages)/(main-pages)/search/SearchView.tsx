@@ -19,6 +19,10 @@ import { isMapConfigured } from "@/shared/map/mapConfig";
 import MapErrorBoundary from "@/shared/map/MapErrorBoundary";
 import SearchViewToggle, { type TSearchView } from "./components/search-view-toggle/SearchViewToggle";
 import type { ISalonCard, ISalonMapPin } from "@/services/domains/salons/types/salons.type";
+import { useCurrentPosition, useUserLocation } from "@/services/domains/locations/hooks/useUserLocation";
+import { useUserLocationStore } from "@/services/domains/locations/store/useUserLocationStore";
+import { isLocationFeatureEnabled } from "@/services/domains/locations/utils/userLocation";
+import LocationChip from "@/shared/components/composites/user-location/LocationChip";
 
 // The whole map chunk (view + MapLibre + CSS) loads only when the «نقشه» view is shown.
 const SearchMapView = dynamic(() => import("./components/search-map/SearchMapView"), { ssr: false });
@@ -59,10 +63,18 @@ export default function SearchView() {
   const [draftSearch, setDraftSearch] = useState(urlSearch);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Geolocation is never put in the URL (it's location data) — kept in memory only.
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  // One location for the whole customer app (`useUserLocationStore`): the device position lives in memory only and is
+  // never put in the URL; a manual city/district (only when the feature is on) is the saved choice. Never both at once.
+  const location = useUserLocation();
+  const currentPosition = useCurrentPosition();
+  const coords = location.mode === "gps" && location.params.lat != null && location.params.lng != null
+    ? { lat: location.params.lat, lng: location.params.lng }
+    : null;
+  const area = isLocationFeatureEnabled && location.mode === "manual"
+    ? { cityPublicId: location.params.cityPublicId, districtPublicId: location.params.districtPublicId }
+    : {};
+  const locationLoading = currentPosition.loading;
+  const locationError = currentPosition.error;
 
   // Branch selected on the map / from a card, and the "fly here" request that goes with it.
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -144,29 +156,14 @@ export default function SearchView() {
     setView("map");
   };
 
+  // «نزدیک‌ترین به من»: GPS only on this tap. Turning it off returns to the saved city/district (never deleted by GPS).
   const handleToggleMyLocation = (next: boolean) => {
     if (!next) {
-      setCoords(null);
-      setLocationError(null);
+      useUserLocationStore.getState().stopGps();
+      currentPosition.clearError();
       return;
     }
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocationError("مرورگر شما از موقعیت مکانی پشتیبانی نمی‌کند.");
-      return;
-    }
-    setLocationLoading(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocationLoading(false);
-      },
-      () => {
-        setLocationError("دسترسی به موقعیت مکانی رد شد یا در دسترس نیست.");
-        setLocationLoading(false);
-      },
-      { enableHighAccuracy: false, timeout: 10000 }
-    );
+    void currentPosition.request();
   };
 
   const {
@@ -190,6 +187,7 @@ export default function SearchView() {
     // A radius only makes sense around a reference point; the backend rejects it without lat/lng.
     radiusKm: coords && filters.radiusKm != null ? filters.radiusKm : undefined,
     sort: sort === "newest" ? "newest" : undefined,
+    ...area,
   });
 
   const { data: serviceTypesRes, isLoading: typesLoading } =
@@ -210,16 +208,24 @@ export default function SearchView() {
       minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
       maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
       minRating: filters.minRating ?? undefined,
+      cityPublicId: area.cityPublicId,
+      districtPublicId: area.districtPublicId,
     }),
-    [urlSearch, urlServiceTypePublicId, filters]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- area is derived from these two ids
+    [urlSearch, urlServiceTypePublicId, filters, area.cityPublicId, area.districtPublicId]
   );
-  const fitPoints = useMemo(
-    () =>
-      salons
-        .filter((s) => s.latitude != null && s.longitude != null)
-        .map((s): [number, number] => [s.longitude as number, s.latitude as number]),
-    [salons]
-  );
+  const manualArea = isLocationFeatureEnabled && location.mode === "manual" ? location.manual : null;
+  const fitPoints = useMemo(() => {
+    const points = salons
+      .filter((s) => s.latitude != null && s.longitude != null)
+      .map((s): [number, number] => [s.longitude as number, s.latitude as number]);
+    // No salon with a pin in the chosen area yet: still open the map on that city/district, not on the default centre.
+    if (points.length === 0 && manualArea) {
+      const centre = manualArea.district ?? manualArea.city;
+      points.push([centre.longitude, centre.latitude]);
+    }
+    return points;
+  }, [salons, manualArea]);
   const handleSelectPin = (pin: ISalonMapPin) => selectOnMap(pin.branchPublicId, pin.latitude, pin.longitude);
 
   return (
@@ -231,6 +237,11 @@ export default function SearchView() {
         onOpenFilters={() => setFiltersOpen(true)}
         hasActiveFilters={hasActiveFilters}
       />
+      {isLocationFeatureEnabled ? (
+        <div className="px-safe-area">
+          <LocationChip />
+        </div>
+      ) : null}
       {view === "list" ? <SearchHero salons={salons} /> : null}
       <SearchCategories
         categories={categories}
@@ -277,6 +288,7 @@ export default function SearchView() {
             isLoadingMore={isFetchingNextPage}
             onLoadMore={() => fetchNextPage()}
             withinRadius={coords != null && filters.radiusKm != null}
+            withinArea={!!area.cityPublicId}
             isStale={isPlaceholderData}
             onShowOnMap={isMapConfigured ? handleShowOnMap : undefined}
           />

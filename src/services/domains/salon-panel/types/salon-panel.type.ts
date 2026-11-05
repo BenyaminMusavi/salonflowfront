@@ -27,6 +27,12 @@ export interface IPatchSalonProfileRequest {
 export interface IBranchRequest {
   name?: string | null;
   city?: string | null;
+  /**
+   * Reference city (`api/locations`). When sent, the district becomes exactly `districtPublicId` (null = none) and the server
+   * writes the city's name; when absent on PATCH, the current city/district stay (or `city` text relinks by a unique name).
+   */
+  cityPublicId?: string | null;
+  districtPublicId?: string | null;
   address?: string | null;
   phone?: string | null;
   latitude?: number | null;

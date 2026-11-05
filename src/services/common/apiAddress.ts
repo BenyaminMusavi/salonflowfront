@@ -66,6 +66,15 @@ export const API_ADDRESS = {
       `/api/salons/${salonPublicId}/submit-for-review`,
   },
 
+  LOCATIONS: {
+    PROVINCES: "/api/locations/provinces",
+    /** `?provincePublicId=` (all cities of it) or `?search=` (whole country); neither = the 30 biggest cities. */
+    CITIES: "/api/locations/cities",
+    DISTRICTS: (cityPublicId: string) => `/api/locations/cities/${cityPublicId}/districts`,
+    /** Logged-in user's manually chosen city/district (never GPS). GET 204 = nothing saved. */
+    PREFERENCE: "/api/users/me/location-preference",
+  },
+
   FAVORITES: {
     BASE: "/api/favorites",
     BY_SALON: (salonPublicId: string) => `/api/favorites/${salonPublicId}`,

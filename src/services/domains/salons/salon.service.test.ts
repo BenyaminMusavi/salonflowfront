@@ -84,4 +84,30 @@ describe("salonService.getApproved", () => {
 
     getSpy.mockRestore();
   });
+
+  // The «نزدیک من» point must never be in the URL (IIS / CDN access logs record the full URL, not custom headers).
+  it("sends the GPS point only in the X-Search-Location header, never in the query string", async () => {
+    const getSpy = vi.spyOn(axiosInstance, "get").mockResolvedValue({ data: { items: [] } });
+
+    await salonService.getApproved({ lat: 35.712, lng: 51.399, radiusKm: 20, cityPublicId: undefined });
+    await salonService.getMapPins({ north: 36, south: 35, east: 52, west: 51, lat: 35.712, lng: 51.399 });
+
+    for (const [, config] of getSpy.mock.calls) {
+      expect(config?.headers).toEqual({ "X-Search-Location": "35.712,51.399" });
+      expect(config?.params).not.toHaveProperty("lat");
+      expect(config?.params).not.toHaveProperty("lng");
+    }
+    getSpy.mockRestore();
+  });
+
+  it("sends no location header without a point, and the manual area as query params", async () => {
+    const getSpy = vi.spyOn(axiosInstance, "get").mockResolvedValue({ data: { items: [] } });
+
+    await salonService.getApproved({ cityPublicId: "c-1", districtPublicId: "d-1" });
+
+    const [, config] = getSpy.mock.calls[0];
+    expect(config?.headers).toBeUndefined();
+    expect(config?.params).toMatchObject({ cityPublicId: "c-1", districtPublicId: "d-1" });
+    getSpy.mockRestore();
+  });
 });
